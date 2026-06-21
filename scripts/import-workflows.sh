@@ -57,7 +57,7 @@ strip_readonly() {
 import json, sys
 with open(sys.argv[1]) as f:
     wf = json.load(f)
-for key in ('id', 'active', 'versionId', 'activeVersionId', 'activeVersion', 'tags', 'shared'):
+for key in ('id', 'active', 'versionId', 'activeVersionId', 'activeVersion', 'tags', 'shared', 'meta'):
     wf.pop(key, None)
 if 'settings' not in wf:
     wf['settings'] = {"executionOrder": "v1"}
