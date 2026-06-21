@@ -292,8 +292,7 @@ await scenario('Veículo PF — carro completo', [
   ['1',                   'awaiting_seller_context'],     // flex
   ['2',                   'awaiting_purchase_intent'],    // concessionária
   ['1',                   'awaiting_cnh'],                // comprando
-  ['1',                   'awaiting_residence_state'],    // tem CNH
-  ['SP',                  'awaiting_vehicle_value'],
+  ['1',                   'awaiting_vehicle_value'],      // tem CNH (skips residence_state, reuses state)
   ['85000',               'awaiting_vehicle_down_payment'],
   ['1',                   'awaiting_down_payment_amount'], // tem entrada
   ['15000',               'awaiting_term'],               // valor da entrada
@@ -322,8 +321,7 @@ await scenario('Veículo PF — sem entrada', [
   ['1',                   'awaiting_seller_context'],
   ['1',                   'awaiting_purchase_intent'],
   ['1',                   'awaiting_cnh'],
-  ['1',                   'awaiting_residence_state'],
-  ['SP',                  'awaiting_vehicle_value'],
+  ['1',                   'awaiting_vehicle_value'],      // tem CNH (skips residence_state)
   ['70000',               'awaiting_vehicle_down_payment'],
   ['2',                   'awaiting_term'],               // sem entrada
   ['3',                   'simulation_ready'],            // 36 meses
