@@ -34,7 +34,7 @@
       "parameters": {
         "operation": "executeQuery",
         "query": "SELECT current_state, context FROM conversation_sessions WHERE whatsapp_number = $1 LIMIT 1",
-        "queryParams": "={{ [$json.phone] }}"
+        "options": { "queryParameters": "={{ [$json.phone] }}" }
       },
       "credentials": {
         "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
@@ -59,7 +59,9 @@
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO financing_clients (\n  whatsapp_number, person_type,\n  name, cpf_encrypted, birth_date, civil_status, phone, email, city, state, monthly_income_encrypted,\n  has_co_participant, co_participant_income_encrypted,\n  company_name, cnpj_encrypted, responsible_name, company_revenue_encrypted\n) VALUES (\n  $1, COALESCE($2,'pf'),\n  $3, $4, $5::date, $6::civil_status, $7, $8, $9, $10, $11,\n  $12, $13,\n  $14, $15, $16, $17\n)\nON CONFLICT (whatsapp_number) DO UPDATE SET\n  person_type                  = COALESCE(EXCLUDED.person_type, financing_clients.person_type),\n  name                         = COALESCE(EXCLUDED.name, financing_clients.name),\n  cpf_encrypted                = COALESCE(EXCLUDED.cpf_encrypted, financing_clients.cpf_encrypted),\n  birth_date                   = COALESCE(EXCLUDED.birth_date, financing_clients.birth_date),\n  civil_status                 = COALESCE(EXCLUDED.civil_status, financing_clients.civil_status),\n  phone                        = COALESCE(EXCLUDED.phone, financing_clients.phone),\n  email                        = COALESCE(EXCLUDED.email, financing_clients.email),\n  city                         = COALESCE(EXCLUDED.city, financing_clients.city),\n  state                        = COALESCE(EXCLUDED.state, financing_clients.state),\n  monthly_income_encrypted     = COALESCE(EXCLUDED.monthly_income_encrypted, financing_clients.monthly_income_encrypted),\n  has_co_participant           = COALESCE(EXCLUDED.has_co_participant, financing_clients.has_co_participant),\n  co_participant_income_encrypted = COALESCE(EXCLUDED.co_participant_income_encrypted, financing_clients.co_participant_income_encrypted),\n  company_name                 = COALESCE(EXCLUDED.company_name, financing_clients.company_name),\n  cnpj_encrypted               = COALESCE(EXCLUDED.cnpj_encrypted, financing_clients.cnpj_encrypted),\n  responsible_name             = COALESCE(EXCLUDED.responsible_name, financing_clients.responsible_name),\n  company_revenue_encrypted    = COALESCE(EXCLUDED.company_revenue_encrypted, financing_clients.company_revenue_encrypted)\nRETURNING *",
-        "queryParams": "={{ [\n  $json.clientPayload.whatsappNumber,\n  $json.clientPayload.personType ?? 'pf',\n  $json.clientPayload.name ?? null,\n  $json.clientPayload.cpf ?? null,\n  $json.clientPayload.birthDate ? $json.clientPayload.birthDate.split('/').reverse().join('-') : null,\n  $json.clientPayload.civilStatus ?? null,\n  $json.clientPayload.phone ?? null,\n  $json.clientPayload.email ?? null,\n  $json.clientPayload.city ?? null,\n  $json.clientPayload.state ?? null,\n  $json.clientPayload.monthlyIncome ? String($json.clientPayload.monthlyIncome) : null,\n  $json.clientPayload.hasCoParticipant ?? false,\n  $json.clientPayload.coParticipantIncome ? String($json.clientPayload.coParticipantIncome) : null,\n  $json.clientPayload.companyName ?? null,\n  $json.clientPayload.cnpj ?? null,\n  $json.clientPayload.responsibleName ?? null,\n  $json.clientPayload.companyRevenue ? String($json.clientPayload.companyRevenue) : null\n] }}"
+        "options": {
+          "queryParameters": "={{ [\n  $json.clientPayload.whatsappNumber,\n  $json.clientPayload.personType ?? 'pf',\n  $json.clientPayload.name ?? null,\n  $json.clientPayload.cpf ?? null,\n  $json.clientPayload.birthDate ? $json.clientPayload.birthDate.split('/').reverse().join('-') : null,\n  $json.clientPayload.civilStatus ?? null,\n  $json.clientPayload.phone ?? null,\n  $json.clientPayload.email ?? null,\n  $json.clientPayload.city ?? null,\n  $json.clientPayload.state ?? null,\n  $json.clientPayload.monthlyIncome ? String($json.clientPayload.monthlyIncome) : null,\n  $json.clientPayload.hasCoParticipant ?? false,\n  $json.clientPayload.coParticipantIncome ? String($json.clientPayload.coParticipantIncome) : null,\n  $json.clientPayload.companyName ?? null,\n  $json.clientPayload.cnpj ?? null,\n  $json.clientPayload.responsibleName ?? null,\n  $json.clientPayload.companyRevenue ? String($json.clientPayload.companyRevenue) : null\n] }}"
+        }
       },
       "credentials": {
         "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
@@ -127,7 +129,9 @@
       "parameters": {
         "operation": "executeQuery",
         "query": "INSERT INTO conversation_sessions (whatsapp_number, current_state, context, last_activity)\nVALUES ($1, $2, $3::jsonb, NOW())\nON CONFLICT (whatsapp_number)\nDO UPDATE SET current_state = $2, context = $3::jsonb, last_activity = NOW(), updated_at = NOW()",
-        "queryParams": "={{ [$json.phone, $json.newState, JSON.stringify($json.newContext)] }}"
+        "options": {
+          "queryParameters": "={{ [$json.phone, $json.newState, JSON.stringify($json.newContext)] }}"
+        }
       },
       "credentials": {
         "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
