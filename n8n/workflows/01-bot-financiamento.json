@@ -75,7 +75,7 @@
       ],
       "parameters": {
         "operation": "executeQuery",
-        "query": "INSERT INTO financing_clients (\n  whatsapp_number, person_type,\n  name, cpf_encrypted, birth_date, civil_status, phone, email, city, state, monthly_income_encrypted,\n  has_co_participant, co_participant_income_encrypted,\n  company_name, cnpj_encrypted, responsible_name, company_revenue_encrypted\n) VALUES (\n  '{{ $json.clientPayload.whatsappNumber }}',\n  COALESCE(NULLIF('{{ $json.clientPayload.personType ?? \"\" }}', ''), 'pf'),\n  NULLIF('{{ $json.clientPayload.name ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.cpf ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.birthDate ? $json.clientPayload.birthDate.split(\"/\").reverse().join(\"-\") : \"\" }}', '')::date,\n  NULLIF('{{ $json.clientPayload.civilStatus ?? \"\" }}', '')::civil_status,\n  NULLIF('{{ $json.clientPayload.phone ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.email ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.city ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.state ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.monthlyIncome ? String($json.clientPayload.monthlyIncome) : \"\" }}', '')::numeric,\n  {{ $json.clientPayload.hasCoParticipant ? 'true' : 'false' }},\n  NULLIF('{{ $json.clientPayload.coParticipantIncome ? String($json.clientPayload.coParticipantIncome) : \"\" }}', '')::numeric,\n  NULLIF('{{ $json.clientPayload.companyName ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.cnpj ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.responsibleName ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.companyRevenue ? String($json.clientPayload.companyRevenue) : \"\" }}', '')::numeric\n)\nON CONFLICT (whatsapp_number) DO UPDATE SET\n  person_type                  = COALESCE(EXCLUDED.person_type, financing_clients.person_type),\n  name                         = COALESCE(EXCLUDED.name, financing_clients.name),\n  cpf_encrypted                = COALESCE(EXCLUDED.cpf_encrypted, financing_clients.cpf_encrypted),\n  birth_date                   = COALESCE(EXCLUDED.birth_date, financing_clients.birth_date),\n  civil_status                 = COALESCE(EXCLUDED.civil_status, financing_clients.civil_status),\n  phone                        = COALESCE(EXCLUDED.phone, financing_clients.phone),\n  email                        = COALESCE(EXCLUDED.email, financing_clients.email),\n  city                         = COALESCE(EXCLUDED.city, financing_clients.city),\n  state                        = COALESCE(EXCLUDED.state, financing_clients.state),\n  monthly_income_encrypted     = COALESCE(EXCLUDED.monthly_income_encrypted, financing_clients.monthly_income_encrypted),\n  has_co_participant           = COALESCE(EXCLUDED.has_co_participant, financing_clients.has_co_participant),\n  co_participant_income_encrypted = COALESCE(EXCLUDED.co_participant_income_encrypted, financing_clients.co_participant_income_encrypted),\n  company_name                 = COALESCE(EXCLUDED.company_name, financing_clients.company_name),\n  cnpj_encrypted               = COALESCE(EXCLUDED.cnpj_encrypted, financing_clients.cnpj_encrypted),\n  responsible_name             = COALESCE(EXCLUDED.responsible_name, financing_clients.responsible_name),\n  company_revenue_encrypted    = COALESCE(EXCLUDED.company_revenue_encrypted, financing_clients.company_revenue_encrypted)\nRETURNING *"
+        "query": "INSERT INTO financing_clients (\n  whatsapp_number, person_type,\n  name, cpf_encrypted, birth_date, civil_status, phone, email, city, state, monthly_income_encrypted,\n  has_co_participant, co_participant_income_encrypted,\n  company_name, cnpj_encrypted, responsible_name, company_revenue_encrypted\n) VALUES (\n  '{{ $json.phone }}',\n  COALESCE(NULLIF('{{ $json.clientPayload.personType ?? \"\" }}', ''), 'pf'),\n  NULLIF('{{ $json.clientPayload.name ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.cpf ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.birthDate ? $json.clientPayload.birthDate.split(\"/\").reverse().join(\"-\") : \"\" }}', '')::date,\n  NULLIF('{{ $json.clientPayload.civilStatus ?? \"\" }}', '')::civil_status,\n  NULLIF('{{ $json.clientPayload.phone ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.email ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.city ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.state ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.monthlyIncome ? String($json.clientPayload.monthlyIncome) : \"\" }}', '')::numeric,\n  TRUE = {{ $json.clientPayload.hasCoParticipant ? 'TRUE' : 'FALSE' }},\n  NULLIF('{{ $json.clientPayload.coParticipantIncome ? String($json.clientPayload.coParticipantIncome) : \"\" }}', '')::numeric,\n  NULLIF('{{ $json.clientPayload.companyName ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.cnpj ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.responsibleName ?? \"\" }}', ''),\n  NULLIF('{{ $json.clientPayload.companyRevenue ? String($json.clientPayload.companyRevenue) : \"\" }}', '')::numeric\n)\nON CONFLICT (whatsapp_number) DO UPDATE SET\n  person_type                  = COALESCE(EXCLUDED.person_type, financing_clients.person_type),\n  name                         = COALESCE(EXCLUDED.name, financing_clients.name),\n  cpf_encrypted                = COALESCE(EXCLUDED.cpf_encrypted, financing_clients.cpf_encrypted),\n  birth_date                   = COALESCE(EXCLUDED.birth_date, financing_clients.birth_date),\n  civil_status                 = COALESCE(EXCLUDED.civil_status, financing_clients.civil_status),\n  phone                        = COALESCE(EXCLUDED.phone, financing_clients.phone),\n  email                        = COALESCE(EXCLUDED.email, financing_clients.email),\n  city                         = COALESCE(EXCLUDED.city, financing_clients.city),\n  state                        = COALESCE(EXCLUDED.state, financing_clients.state),\n  monthly_income_encrypted     = COALESCE(EXCLUDED.monthly_income_encrypted, financing_clients.monthly_income_encrypted),\n  has_co_participant           = COALESCE(EXCLUDED.has_co_participant, financing_clients.has_co_participant),\n  co_participant_income_encrypted = COALESCE(EXCLUDED.co_participant_income_encrypted, financing_clients.co_participant_income_encrypted),\n  company_name                 = COALESCE(EXCLUDED.company_name, financing_clients.company_name),\n  cnpj_encrypted               = COALESCE(EXCLUDED.cnpj_encrypted, financing_clients.cnpj_encrypted),\n  responsible_name             = COALESCE(EXCLUDED.responsible_name, financing_clients.responsible_name),\n  company_revenue_encrypted    = COALESCE(EXCLUDED.company_revenue_encrypted, financing_clients.company_revenue_encrypted)\nRETURNING *"
       },
       "credentials": {
         "postgres": {
@@ -226,6 +226,37 @@
           "timeout": 10000
         }
       }
+    },
+    {
+      "id": "node-if-save-client",
+      "name": "Tem Dados do Cliente?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        830,
+        200
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "check-client",
+              "leftValue": "={{ .clientPayload != null }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ]
+        }
+      }
     }
   ],
   "connections": {
@@ -266,7 +297,7 @@
       "main": [
         [
           {
-            "node": "Salvar Cliente",
+            "node": "Tem Dados do Cliente?",
             "type": "main",
             "index": 0
           },
@@ -347,6 +378,18 @@
     },
     "Enviar WhatsApp": {
       "main": [
+        []
+      ]
+    },
+    "Tem Dados do Cliente?": {
+      "main": [
+        [
+          {
+            "node": "Salvar Cliente",
+            "type": "main",
+            "index": 0
+          }
+        ],
         []
       ]
     }
