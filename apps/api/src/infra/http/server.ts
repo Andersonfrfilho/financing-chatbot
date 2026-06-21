@@ -4,7 +4,7 @@ import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
 import { WebSocketHub } from '@/infra/websocket/WebSocketHub'
 import { buildContainer } from '@/infra/container'
-import { checkDatabaseConnection, runMigrations } from '@/infra/database/connection'
+import { checkDatabaseConnection, runMigrations, ensureN8nDatabase } from '@/infra/database/connection'
 import { checkRedisConnection } from '@/infra/redis/connection'
 import { RedisProvider } from '@/infra/redis/RedisProvider'
 import { registerAuthRoutes } from '@/modules/auth/infra/http/AuthRoutes'
@@ -24,6 +24,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173')
 export async function createServer() {
   logger.info(LOG_EVENTS.SERVER_STARTING, { env: NODE_ENV, port: PORT })
   await checkDatabaseConnection()
+  await ensureN8nDatabase()
   await runMigrations()
   await checkRedisConnection()
 

@@ -19,6 +19,20 @@ export async function checkDatabaseConnection(): Promise<void> {
   console.log('[DB] Connected to PostgreSQL')
 }
 
+export async function ensureN8nDatabase(): Promise<void> {
+  // CREATE DATABASE cannot run inside a transaction — use a direct client
+  const client = await pool.connect()
+  try {
+    const result = await client.query(`SELECT 1 FROM pg_database WHERE datname = 'n8n'`)
+    if (result.rowCount === 0) {
+      await client.query('CREATE DATABASE n8n')
+      console.log('[DB] Database "n8n" created')
+    }
+  } finally {
+    client.release()
+  }
+}
+
 export async function runMigrations(): Promise<void> {
   const migrationsFolder = './drizzle/migrations'
   const hasMigrations = fs.existsSync(migrationsFolder) && fs.readdirSync(migrationsFolder).some((f) => f.endsWith('.sql'))
