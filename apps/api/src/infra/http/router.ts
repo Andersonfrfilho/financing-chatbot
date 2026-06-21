@@ -19,8 +19,7 @@ export interface ResponseHelper {
   error(error: unknown): void
 }
 
-function buildResponseHelper(res: uWS.HttpResponse, req: uWS.HttpRequest): ResponseHelper {
-  const origin = req.getHeader('origin')
+function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHelper {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173').split(',')
 
   function writeHeaders(statusCode: string) {
@@ -79,8 +78,12 @@ export class Router {
     this.app[method](path, async (res, req) => {
       res.onAborted(() => {})
 
+      // Must read ALL req properties synchronously before any await
       const headers: Record<string, string> = {}
       req.forEach((key, value) => { headers[key] = value })
+      const origin = req.getHeader('origin')
+      const method_ = req.getMethod().toUpperCase()
+      const url = req.getUrl()
 
       const query: Record<string, string> = {}
       const queryString = req.getQuery()
@@ -91,11 +94,11 @@ export class Router {
       }
 
       const body = method !== 'get' ? await readBody(res) : {}
-      const responseHelper = buildResponseHelper(res, req)
+      const responseHelper = buildResponseHelper(res, origin)
 
       const parsedRequest: ParsedRequest = {
-        method: req.getMethod().toUpperCase(),
-        url: req.getUrl(),
+        method: method_,
+        url,
         headers,
         params: {},
         query,
