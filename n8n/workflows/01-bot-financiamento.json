@@ -138,11 +138,21 @@
       }
     },
     {
+      "id": "node-compor-mensagem",
+      "name": "Compor Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 400],
+      "parameters": {
+        "jsCode": "const router = $('Roteador de Conversa').first().json\n\nlet response = router.response\ntry {\n  const fmt = $('Formatar Resultado').first().json\n  if (fmt && fmt.response) response = fmt.response\n} catch (e) {\n  // sem simulação, usa resposta do router\n}\n\nreturn [{ json: {\n  phone: router.phone,\n  phoneNumberId: router.phoneNumberId,\n  response,\n} }]"
+      }
+    },
+    {
       "id": "node-enviar-whatsapp",
       "name": "Enviar WhatsApp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
-      "position": [1700, 400],
+      "position": [1900, 400],
       "parameters": {
         "method": "POST",
         "url": "=https://graph.facebook.com/{{ $env.WHATSAPP_API_VERSION }}/{{ $json.phoneNumberId }}/messages",
@@ -192,6 +202,9 @@
       "main": [[{ "node": "Salvar Sessão", "type": "main", "index": 0 }]]
     },
     "Salvar Sessão": {
+      "main": [[{ "node": "Compor Mensagem", "type": "main", "index": 0 }]]
+    },
+    "Compor Mensagem": {
       "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
     },
     "Enviar WhatsApp": {
