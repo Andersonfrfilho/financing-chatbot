@@ -37,7 +37,7 @@
         "options": { "queryParams": "={{ [$json.phone] }}" }
       },
       "credentials": {
-        "postgres": { "id": "postgres-financiamento", "name": "PostgreSQL Financiamento" }
+        "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
       }
     },
     {
@@ -64,7 +64,7 @@
         }
       },
       "credentials": {
-        "postgres": { "id": "postgres-financiamento", "name": "PostgreSQL Financiamento" }
+        "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
       }
     },
     {
@@ -134,7 +134,7 @@
         }
       },
       "credentials": {
-        "postgres": { "id": "postgres-financiamento", "name": "PostgreSQL Financiamento" }
+        "postgres": { "id": "P9HBtvSRBDMaK2yr", "name": "PostgreSQL Financiamento" }
       }
     },
     {

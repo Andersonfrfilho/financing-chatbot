@@ -1,4 +1,4 @@
-.PHONY: setup up down logs ps db-reset db-seed api-shell test typecheck build
+.PHONY: setup up down logs ps db-reset db-seed api-shell test typecheck build test-n8n
 
 COMPOSE = docker compose -f infra/docker-compose.yml --env-file infra/.env
 
@@ -89,6 +89,24 @@ docker-build-check:
 	@echo "→ Build Docker da API..."
 	docker build -f apps/api/Dockerfile -t financiamento-api-test apps/api
 	@echo "✓ Build OK — sem erros"
+
+# ──────────────────────────────────────────────
+# Teste completo n8n (sobe → testa → derruba)
+# ──────────────────────────────────────────────
+test-n8n:
+	@echo "▶ Subindo serviços..."
+	$(COMPOSE) up -d
+	@echo "⏳ Aguardando healthchecks..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		if $(COMPOSE) ps | grep -q '(healthy)'; then break; fi; \
+		sleep 3; \
+	done
+	@echo "▶ Rodando testes do n8n..."
+	node scripts/test-n8n-full.mjs
+	@RESULT=$$?; \
+	echo "▶ Derrubando serviços..."; \
+	$(COMPOSE) down; \
+	exit $$RESULT
 
 # ──────────────────────────────────────────────
 # URLs locais
