@@ -11,7 +11,8 @@
       "parameters": {
         "path": "whatsapp-bot",
         "httpMethod": "POST",
-        "options": { "responseMode": "lastNode" }
+        "responseMode": "onReceived",
+        "options": {}
       }
     },
     {
@@ -157,18 +158,6 @@
         },
         "options": { "timeout": 10000 }
       }
-    },
-    {
-      "id": "node-respond-ok",
-      "name": "Responder OK",
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1,
-      "position": [1900, 400],
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={ \"status\": \"ok\" }",
-        "options": { "responseCode": 200 }
-      }
     }
   ],
   "connections": {
@@ -206,7 +195,7 @@
       "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
     },
     "Enviar WhatsApp": {
-      "main": [[{ "node": "Responder OK", "type": "main", "index": 0 }]]
+      "main": [[]]
     }
   },
   "active": false,
