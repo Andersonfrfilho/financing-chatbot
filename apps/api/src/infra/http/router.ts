@@ -1,8 +1,9 @@
 import type uWS from 'uWebSockets.js'
 import { AppError } from '@/shared/errors/AppError'
 import type { JwtPayload } from '@/shared/types'
-import { logger } from '@/shared/logger'
+import { logger, sanitizeHeaders } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
+import { runWithContext } from '@/shared/request-context'
 
 export type Handler = (request: ParsedRequest, response: ResponseHelper) => Promise<void>
 
@@ -21,14 +22,16 @@ export interface ResponseHelper {
   error(error: unknown): void
 }
 
+const log = logger.child('Router')
+
 function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHelper {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173').split(',')
 
   function writeHeaders(statusCode: string) {
     res.writeStatus(statusCode)
     res.writeHeader('Content-Type', 'application/json; charset=utf-8')
-    if (allowedOrigins.includes(origin)) {
-      res.writeHeader('Access-Control-Allow-Origin', origin)
+    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+      res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
     }
   }
 
@@ -83,9 +86,10 @@ export class Router {
       // Must read ALL req properties synchronously before any await
       const headers: Record<string, string> = {}
       req.forEach((key, value) => { headers[key] = value })
-      const origin = req.getHeader('origin')
-      const method_ = req.getMethod().toUpperCase()
-      const url = req.getUrl()
+      const origin    = req.getHeader('origin')
+      const method_   = req.getMethod().toUpperCase()
+      const url       = req.getUrl()
+      const paramKeys = path.match(/:(\w+)/g)?.map(p => p.slice(1)) ?? []
 
       const query: Record<string, string> = {}
       const queryString = req.getQuery()
@@ -95,34 +99,42 @@ export class Router {
         }
       }
 
+      const params: Record<string, string> = {}
+      paramKeys.forEach((key, i) => {
+        params[key] = req.getParameter(i)
+      })
+
       const body = method !== 'get' ? await readBody(res) : {}
       const responseHelper = buildResponseHelper(res, origin)
 
-      const parsedRequest: ParsedRequest = {
-        method: method_,
-        url,
-        headers,
-        params: {},
-        query,
-        body,
-      }
+      const parsedRequest: ParsedRequest = { method: method_, url, headers, params, query, body }
 
-      const start = Date.now()
-      logger.debug(LOG_EVENTS.REQUEST, { method: method_, url, query })
+      await runWithContext(async () => {
+        const start = Date.now()
 
-      try {
-        for (const handler of handlers) {
-          await handler(parsedRequest, responseHelper)
+        log.debug(LOG_EVENTS.REQUEST, {
+          method: method_,
+          url,
+          params,
+          query,
+          headers: sanitizeHeaders(headers),
+          ...(method !== 'get' && { body }),
+        })
+
+        try {
+          for (const handler of handlers) {
+            await handler(parsedRequest, responseHelper)
+          }
+          log.debug(LOG_EVENTS.RESPONSE_OK, { method: method_, url, ms: Date.now() - start })
+        } catch (error) {
+          if (error instanceof AppError) {
+            log.info(LOG_EVENTS.RESPONSE_ERROR, { method: method_, url, code: error.code, status: error.statusCode, ms: Date.now() - start })
+          } else {
+            log.error(LOG_EVENTS.RESPONSE_UNHANDLED, { method: method_, url, error: String(error), ms: Date.now() - start })
+          }
+          responseHelper.error(error)
         }
-        logger.debug(LOG_EVENTS.RESPONSE_OK, { method: method_, url, ms: Date.now() - start })
-      } catch (error) {
-        if (error instanceof AppError) {
-          logger.info(LOG_EVENTS.RESPONSE_ERROR, { method: method_, url, code: error.code, status: error.statusCode })
-        } else {
-          logger.error(LOG_EVENTS.RESPONSE_UNHANDLED, { method: method_, url, error: String(error) })
-        }
-        responseHelper.error(error)
-      }
+      })
     })
   }
 
