@@ -247,7 +247,7 @@
           "conditions": [
             {
               "id": "check-client",
-              "leftValue": "={{ .clientPayload != null }}",
+              "leftValue": "={{ $json.clientPayload != null }}",
               "rightValue": true,
               "operator": {
                 "type": "boolean",
