@@ -1,0 +1,19 @@
+-- Add missing conversation states to the enum
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_phone';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_co_participant';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_co_participant_income';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_include_fees';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_purchase_timeline';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_re_objective';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_company_name';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_responsible_name';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_cnpj';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_vehicle_brand';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_vehicle_model';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_vehicle_fuel';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_seller_context';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_purchase_intent';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_cnh';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'awaiting_residence_state';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'abandoned';
+ALTER TYPE "conversation_state" ADD VALUE IF NOT EXISTS 'route_to_product';
