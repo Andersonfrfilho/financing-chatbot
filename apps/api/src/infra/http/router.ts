@@ -101,7 +101,7 @@ export class Router {
 
       const params: Record<string, string> = {}
       paramKeys.forEach((key, i) => {
-        params[key] = req.getParameter(i)
+        params[key] = req.getParameter(i) ?? ''
       })
 
       const body = method !== 'get' ? await readBody(res) : {}

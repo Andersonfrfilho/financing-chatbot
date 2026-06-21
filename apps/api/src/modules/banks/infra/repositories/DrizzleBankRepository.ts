@@ -58,10 +58,17 @@ export class DrizzleBankRepository {
   async upsertRate(input: CreateBankRateInput): Promise<BankRate> {
     const result = await db
       .insert(bankRates)
-      .values(input)
+      .values({
+        ...input,
+        modality: input.modality as BankRate['modality'],
+        source:   (input.source ?? 'manual') as BankRate['source'],
+      })
       .onConflictDoUpdate({
         target: [bankRates.bankId, bankRates.modality, bankRates.effectiveDate],
-        set: { rateAnnual: input.rateAnnual, source: input.source },
+        set: {
+          rateAnnual: input.rateAnnual,
+          source:     (input.source ?? 'manual') as BankRate['source'],
+        },
       })
       .returning()
     return result[0]

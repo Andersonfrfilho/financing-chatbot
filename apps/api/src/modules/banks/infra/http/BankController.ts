@@ -1,44 +1,42 @@
-import type { HttpRequest, HttpResponse } from 'uWebSockets.js'
 import { z } from 'zod'
+import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import type { ListBanksUseCase } from '../../application/use-cases/ListBanksUseCase'
 import type { GetBankRatesAdminUseCase } from '../../application/use-cases/GetBankRatesAdminUseCase'
 import type { CreateBankRateUseCase } from '../../application/use-cases/CreateBankRateUseCase'
 
 const rateSchema = z.object({
-  modality: z.string(),
-  rateAnnual: z.string(),
+  modality:      z.string(),
+  rateAnnual:    z.string(),
   minTermMonths: z.number().optional(),
   maxTermMonths: z.number().optional(),
-  maxLtv: z.string().optional(),
+  maxLtv:        z.string().optional(),
   effectiveDate: z.string(),
-  source: z.string().default('manual'),
+  source:        z.string().default('manual'),
 })
 
 export class BankController {
   constructor(
-    private readonly listBanks: ListBanksUseCase,
-    private readonly getBankRates: GetBankRatesAdminUseCase,
+    private readonly listBanks:     ListBanksUseCase,
+    private readonly getBankRates:  GetBankRatesAdminUseCase,
     private readonly createBankRate: CreateBankRateUseCase,
   ) {}
 
-  async list(res: HttpResponse, req: HttpRequest) {
-    const query = new URLSearchParams(req.getQuery())
-    const onlyActive = query.get('active') === 'true' || query.get('active') === '1'
+  async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const onlyActive = request.query['active'] === 'true' || request.query['active'] === '1'
     const result = await this.listBanks.execute(onlyActive || undefined)
-    res.writeStatus('200 OK').end(JSON.stringify(result))
+    response.json(result)
   }
 
-  async getRates(res: HttpResponse, req: HttpRequest) {
-    const bankId = req.getParameter(0)
-    const query = new URLSearchParams(req.getQuery())
-    const result = await this.getBankRates.execute(bankId, query.get('modality') ?? undefined)
-    res.writeStatus('200 OK').end(JSON.stringify(result))
+  async getRates(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const bankId = request.params['id'] ?? ''
+    const result = await this.getBankRates.execute(bankId, request.query['modality'])
+    response.json(result)
   }
 
-  async createRate(res: HttpResponse, req: HttpRequest, body: unknown) {
-    const bankId = req.getParameter(0)
-    const input = rateSchema.parse(body)
-    const rate = await this.createBankRate.execute({ ...input, bankId })
-    res.writeStatus('201 Created').end(JSON.stringify(rate))
+  async createRate(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const bankId = request.params['id'] ?? ''
+    const input  = rateSchema.parse(request.body)
+    const rate   = await this.createBankRate.execute({ ...input, bankId })
+    response.json(rate, 201)
   }
 }

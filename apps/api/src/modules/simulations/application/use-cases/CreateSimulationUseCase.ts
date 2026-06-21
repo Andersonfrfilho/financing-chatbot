@@ -21,7 +21,7 @@ const MODALITY_BY_TYPE: Record<string, FinancingModality[]> = {
 }
 
 export interface SimulationInput {
-  whatsappNumber: string
+  whatsappNumber?: string
   clientId?: string
   financingType: string
   requestedAmount: number
@@ -82,6 +82,7 @@ export class CreateSimulationUseCase {
   ) {}
 
   async execute(input: SimulationInput): Promise<SimulationOutput> {
+    const whatsappNumber = input.whatsappNumber ?? 'internal'
     const financedAmount = input.requestedAmount - input.downPaymentAmount - (input.fgtsAmount ?? 0)
 
     if (financedAmount <= 0) {
@@ -115,7 +116,7 @@ export class CreateSimulationUseCase {
       .insert(schema.financingSimulations)
       .values({
         clientId:       input.clientId ?? null,
-        whatsappNumber: input.whatsappNumber,
+        whatsappNumber,
         financingType:  input.financingType as schema.NewFinancingSimulation['financingType'],
         requestedAmount:   input.requestedAmount.toFixed(2),
         downPaymentAmount: input.downPaymentAmount.toFixed(2),
@@ -196,12 +197,13 @@ export class CreateSimulationUseCase {
           totalCost: sacResult.totalCost.toFixed(2),
         },
         {
-          simulationId: simulation.id,
-          bankId: rate.bankId,
+          simulationId:       simulation.id,
+          bankId:             rate.bankId,
           amortizationSystem: 'PRICE',
-          fixedInstallment: priceResult.fixedInstallment.toFixed(2),
-          totalInterest: priceResult.totalInterest.toFixed(2),
-          totalCost: priceResult.totalCost.toFixed(2),
+          firstInstallment:   priceResult.fixedInstallment.toFixed(2),
+          fixedInstallment:   priceResult.fixedInstallment.toFixed(2),
+          totalInterest:      priceResult.totalInterest.toFixed(2),
+          totalCost:          priceResult.totalCost.toFixed(2),
         },
       )
     }

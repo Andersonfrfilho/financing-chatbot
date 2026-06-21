@@ -1,6 +1,12 @@
 export type AmortizationSystem = 'SAC' | 'PRICE'
 
-export type FinancingModality = 'SFH' | 'SFI' | 'FGTS' | 'CH' | 'CCFI'
+export type FinancingModality =
+  | 'SFH' | 'SFI' | 'FGTS' | 'MCMV'
+  | 'CDC' | 'LEASING'
+  | 'PESSOAL' | 'CONSIGNADO_PUBLICO' | 'CONSIGNADO_PRIVADO' | 'CONSIGNADO_INSS'
+  | 'CAPITAL_GIRO' | 'DESCONTO_DUPLICATAS'
+  | 'RURAL'
+  | 'FINAME'
 
 export type LeadStatus =
   | 'new'
