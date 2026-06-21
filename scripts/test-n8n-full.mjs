@@ -123,7 +123,7 @@ function runComporMensagem(routerJson) {
 }
 
 // ── Run Roteador de Conversa node ─────────────────────────────────────────────
-function runRouter(text, currentState, ctx = {}, clientData = null) {
+async function runRouter(text, currentState, ctx = {}, clientData = null) {
   const sessionRow    = currentState === 'new' ? {} : { current_state: currentState, context: JSON.stringify(ctx) }
   const extractedJson = { phone: PHONE, incomingText: text.toLowerCase().trim(), rawText: text.trim(), messageId: 'test-msg-id', phoneNumberId: PHONE_ID }
   const makeRef = (json) => ({ first: () => ({ json }), all: () => [{ json }] })
@@ -134,8 +134,8 @@ function runRouter(text, currentState, ctx = {}, clientData = null) {
     if (name === 'Buscar Cliente')   return clientData ? makeRef(clientData) : makeNullRef()
     throw new Error(`Router: node desconhecido "${name}"`)
   }
-  const fn = new Function('$input', '$', '$env', codes['Roteador de Conversa'])
-  const result = fn(makeRef({}), $, $env)
+  const fn = new Function('$input', '$', '$env', `return (async () => { ${codes['Roteador de Conversa']} })()`)
+  const result = await fn(makeRef({}), $, $env)
   if (!result || result.length === 0) throw new Error(`Router retornou vazio para: "${text}" @ ${currentState}`)
   return result[0].json
 }
@@ -146,7 +146,7 @@ let passed = 0, failed = 0, totalSteps = 0, payloadErrors = 0
 // ── Run one step: router + Compor Mensagem + WA validation ───────────────────
 async function step(text, state, ctx, clientData) {
   totalSteps++
-  const router  = runRouter(text, state, ctx, clientData)
+  const router  = await runRouter(text, state, ctx, clientData)
   const composed = await runComporMensagem(router)
 
   if (!composed || composed.length === 0) throw new Error(`Compor Mensagem retornou vazio`)
