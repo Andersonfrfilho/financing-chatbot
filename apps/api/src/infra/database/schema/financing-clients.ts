@@ -4,7 +4,7 @@ import { civilStatusEnum } from './enums'
 // CPF, renda e dados financeiros armazenados criptografados (LGPD)
 export const financingClients = pgTable('financing_clients', {
   id: uuid('id').primaryKey().defaultRandom(),
-  whatsappNumber: varchar('whatsapp_number', { length: 20 }).notNull(),
+  whatsappNumber: varchar('whatsapp_number', { length: 20 }).notNull().unique(),
 
   // Dados pessoais
   name: varchar('name', { length: 255 }),

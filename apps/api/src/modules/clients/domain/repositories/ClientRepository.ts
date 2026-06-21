@@ -31,7 +31,7 @@ export interface ClientRepository {
   findById(id: string): Promise<FinancingClient | null>
   findByWhatsappNumber(whatsappNumber: string): Promise<FinancingClient | null>
   findAll(filters: ClientFilters): Promise<{ data: FinancingClient[]; total: number }>
-  create(input: CreateClientInput): Promise<FinancingClient>
+  upsert(input: CreateClientInput): Promise<FinancingClient>
   update(id: string, input: UpdateClientInput): Promise<FinancingClient>
   softDelete(id: string): Promise<void>
 }

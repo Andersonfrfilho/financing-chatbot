@@ -44,8 +44,16 @@ export class DrizzleClientRepository implements ClientRepository {
     return { data, total: Number(countResult[0].count) }
   }
 
-  async create(input: CreateClientInput): Promise<FinancingClient> {
-    const result = await db.insert(financingClients).values(input).returning()
+  async upsert(input: CreateClientInput): Promise<FinancingClient> {
+    const { whatsappNumber, ...updateFields } = input
+    const result = await db
+      .insert(financingClients)
+      .values(input)
+      .onConflictDoUpdate({
+        target: financingClients.whatsappNumber,
+        set: { ...updateFields, updatedAt: new Date() },
+      })
+      .returning()
     return result[0]
   }
 
