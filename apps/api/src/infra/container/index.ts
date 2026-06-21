@@ -2,6 +2,10 @@ import { db } from '@/infra/database/connection'
 import { RedisProvider } from '@/infra/redis/RedisProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
 
+// Fipe
+import { LookupFipePriceUseCase } from '@/modules/fipe/application/use-cases/LookupFipePriceUseCase'
+import { FipeController } from '@/modules/fipe/infra/http/FipeController'
+
 // Auth
 import { DrizzleUserRepository } from '@/modules/auth/infra/repositories/DrizzleUserRepository'
 import { LoginUseCase } from '@/modules/auth/application/use-cases/LoginUseCase'
@@ -70,6 +74,7 @@ export interface AppContainer {
   userController: UserController
   sessionController: SessionController
   dashboardController: DashboardController
+  fipeController: FipeController
 }
 
 export function buildContainer(wsHub: WebSocketHub): AppContainer {
@@ -139,6 +144,10 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
     new GetCommercialReportUseCase(),
   )
 
+  // Fipe
+  const lookupFipePriceUseCase = new LookupFipePriceUseCase(cache)
+  const fipeController = new FipeController(lookupFipePriceUseCase)
+
   return {
     cache,
     wsHub,
@@ -151,5 +160,6 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
     userController,
     sessionController,
     dashboardController,
+    fipeController,
   }
 }
