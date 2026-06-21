@@ -1,5 +1,7 @@
 import uWS from 'uWebSockets.js'
 import { Router } from './router'
+import { logger } from '@/shared/logger'
+import { LOG_EVENTS } from '@/shared/constants/log-events'
 import { WebSocketHub } from '@/infra/websocket/WebSocketHub'
 import { buildContainer } from '@/infra/container'
 import { checkDatabaseConnection, runMigrations } from '@/infra/database/connection'
@@ -20,6 +22,7 @@ const NODE_ENV = process.env.NODE_ENV ?? 'development'
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173').split(',')
 
 export async function createServer() {
+  logger.info(LOG_EVENTS.SERVER_STARTING, { env: NODE_ENV, port: PORT })
   await checkDatabaseConnection()
   await runMigrations()
   await checkRedisConnection()
@@ -67,9 +70,9 @@ export async function createServer() {
     listen() {
       app.listen(PORT, (token) => {
         if (token) {
-          console.log(`[API] Listening on port ${PORT} [${NODE_ENV}]`)
+          logger.info(LOG_EVENTS.SERVER_READY, { port: PORT, env: NODE_ENV })
         } else {
-          console.error(`[API] Failed to listen on port ${PORT}`)
+          logger.error(LOG_EVENTS.SERVER_FAILED, { port: PORT })
           process.exit(1)
         }
       })

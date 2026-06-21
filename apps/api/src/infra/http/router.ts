@@ -1,6 +1,8 @@
 import type uWS from 'uWebSockets.js'
 import { AppError } from '@/shared/errors/AppError'
 import type { JwtPayload } from '@/shared/types'
+import { logger } from '@/shared/logger'
+import { LOG_EVENTS } from '@/shared/constants/log-events'
 
 export type Handler = (request: ParsedRequest, response: ResponseHelper) => Promise<void>
 
@@ -105,11 +107,20 @@ export class Router {
         body,
       }
 
+      const start = Date.now()
+      logger.debug(LOG_EVENTS.REQUEST, { method: method_, url, query })
+
       try {
         for (const handler of handlers) {
           await handler(parsedRequest, responseHelper)
         }
+        logger.debug(LOG_EVENTS.RESPONSE_OK, { method: method_, url, ms: Date.now() - start })
       } catch (error) {
+        if (error instanceof AppError) {
+          logger.info(LOG_EVENTS.RESPONSE_ERROR, { method: method_, url, code: error.code, status: error.statusCode })
+        } else {
+          logger.error(LOG_EVENTS.RESPONSE_UNHANDLED, { method: method_, url, error: String(error) })
+        }
         responseHelper.error(error)
       }
     })
