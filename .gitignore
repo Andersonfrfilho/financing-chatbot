@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+*.env.local
+infra/.env
+*.lock
+.DS_Store
+drizzle/migrations/*.sql

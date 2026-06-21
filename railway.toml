@@ -1,0 +1,35 @@
+[build]
+# Cada serviço (api, web) tem seu próprio Dockerfile em apps/*/
+# Railway: crie um serviço por pasta apontando para o Dockerfile correto
+
+[deploy]
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# ─── Variáveis obrigatórias no dashboard Railway ───
+#
+# Banco de dados (Railway PostgreSQL add-on):
+#   DATABASE_URL  (gerado automaticamente pelo add-on)
+#
+# Redis (Railway Redis add-on):
+#   REDIS_URL     (gerado automaticamente pelo add-on)
+#
+# JWT (gere com: openssl rand -hex 32):
+#   JWT_SECRET
+#   JWT_REFRESH_SECRET
+#
+# WhatsApp Cloud API:
+#   WHATSAPP_ACCESS_TOKEN
+#   WHATSAPP_PHONE_NUMBER_ID
+#   WHATSAPP_WEBHOOK_VERIFY_TOKEN
+#   WHATSAPP_API_VERSION=v19.0
+#
+# Criptografia LGPD (gere com: openssl rand -hex 32):
+#   ENCRYPTION_KEY
+#
+# URL interna da API (usada pelo frontend):
+#   VITE_API_URL=https://financiamento-api.up.railway.app
+#   VITE_API_WS_URL=wss://financiamento-api.up.railway.app
+#
+# API token interno (n8n → API):
+#   API_INTERNAL_TOKEN

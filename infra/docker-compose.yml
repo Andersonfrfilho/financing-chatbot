@@ -1,0 +1,124 @@
+services:
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: financiamento_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - financiamento_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: financiamento_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - financiamento_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: financiamento_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASSWORD}
+      - N8N_HOST=${N8N_HOST:-localhost}
+      - WEBHOOK_URL=${N8N_WEBHOOK_URL:-http://localhost:5678}
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+      - TZ=America/Sao_Paulo
+      - N8N_LOG_LEVEL=info
+      - WHATSAPP_ACCESS_TOKEN=${WHATSAPP_ACCESS_TOKEN}
+      - WHATSAPP_PHONE_NUMBER_ID=${WHATSAPP_PHONE_NUMBER_ID}
+      - WHATSAPP_WEBHOOK_VERIFY_TOKEN=${WHATSAPP_WEBHOOK_VERIFY_TOKEN}
+      - WHATSAPP_API_VERSION=${WHATSAPP_API_VERSION:-v21.0}
+      - API_BASE_URL=http://financiamento-api:3333
+      - API_INTERNAL_TOKEN=${API_INTERNAL_TOKEN}
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ../n8n/workflows:/home/node/.n8n/workflows:ro
+    networks:
+      - financiamento_net
+
+  financiamento-api:
+    image: oven/bun:1
+    container_name: financiamento_api
+    working_dir: /app
+    command: sh -c "bun install && bun run db:generate && bun run db:migrate && bun run db:seed && bun run dev"
+    volumes:
+      - ../apps/api:/app
+      - api_bun_cache:/root/.bun
+    environment:
+      - PORT=3333
+      - NODE_ENV=development
+      - DATABASE_URL=postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_REFRESH_SECRET=${JWT_REFRESH_SECRET}
+      - JWT_ACCESS_EXPIRES_IN=15m
+      - JWT_REFRESH_EXPIRES_IN=7d
+      - WHATSAPP_WEBHOOK_VERIFY_TOKEN=${WHATSAPP_WEBHOOK_VERIFY_TOKEN}
+      - ALLOWED_ORIGINS=http://localhost:5173
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - API_INTERNAL_TOKEN=${API_INTERNAL_TOKEN}
+    ports:
+      - "3333:3333"
+    networks:
+      - financiamento_net
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  financiamento-web:
+    image: oven/bun:1
+    container_name: financiamento_web
+    working_dir: /app
+    command: sh -c "bun install && bun run dev --host"
+    volumes:
+      - ../apps/web:/app
+      - web_bun_cache:/root/.bun
+    environment:
+      - VITE_API_URL=http://localhost:3333
+      - VITE_API_WS_URL=ws://localhost:3333/ws
+    ports:
+      - "5173:5173"
+    networks:
+      - financiamento_net
+    depends_on:
+      - financiamento-api
+
+volumes:
+  postgres_data:
+  redis_data:
+  n8n_data:
+  api_bun_cache:
+  web_bun_cache:
+
+networks:
+  financiamento_net:
+    driver: bridge

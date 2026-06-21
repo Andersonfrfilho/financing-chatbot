@@ -1,0 +1,272 @@
+{
+  "name": "Bot Financiamento WhatsApp",
+  "nodes": [
+    {
+      "id": "node-webhook-meta",
+      "name": "Webhook Meta",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [100, 300],
+      "webhookId": "financiamento-whatsapp",
+      "parameters": {
+        "path": "whatsapp-financiamento",
+        "httpMethod": "POST",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-check-method",
+      "name": "Verificar Tipo de Requisição",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [300, 300],
+      "parameters": {
+        "mode": "expression",
+        "output": "single",
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "hub-challenge",
+                    "leftValue": "={{ $json.query?.['hub.mode'] }}",
+                    "rightValue": "subscribe",
+                    "operator": { "type": "string", "operation": "equals" }
+                  }
+                ]
+              },
+              "output": 0,
+              "renameOutput": true,
+              "outputKey": "verification"
+            }
+          ]
+        },
+        "fallbackOutput": 1
+      }
+    },
+    {
+      "id": "node-respond-challenge",
+      "name": "Responder Challenge",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [500, 150],
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "={{ $json.query?.['hub.challenge'] }}",
+        "options": { "responseCode": 200 }
+      }
+    },
+    {
+      "id": "node-extract-message",
+      "name": "Extrair Mensagem",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [500, 400],
+      "parameters": {
+        "jsCode": "// Extrai dados da mensagem do payload WhatsApp Cloud API\nconst body = $input.first().json\n\nconst entry = body?.entry?.[0]\nconst change = entry?.changes?.[0]\nconst value = change?.value\nconst message = value?.messages?.[0]\n\nif (!message) {\n  // Sem mensagem (pode ser status update)\n  return []\n}\n\nconst phone = message.from\nconst incomingText = (message.text?.body ?? '').trim().toLowerCase()\nconst messageId = message.id\nconst timestamp = message.timestamp\n\nreturn [{\n  json: {\n    phone,\n    incomingText,\n    messageId,\n    timestamp,\n    rawMessage: message,\n    businessPhone: value?.metadata?.phone_number_id,\n  }\n}]"
+      }
+    },
+    {
+      "id": "node-buscar-sessao",
+      "name": "Buscar Sessão",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [700, 400],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT * FROM conversation_sessions WHERE whatsapp_number = $1 LIMIT 1",
+        "options": {
+          "queryParams": "={{ [$json.phone] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "postgres-financiamento",
+          "name": "PostgreSQL Financiamento"
+        }
+      }
+    },
+    {
+      "id": "node-merge-context",
+      "name": "Preparar Contexto",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [900, 400],
+      "parameters": {
+        "mode": "combine",
+        "combinationMode": "mergeByPosition",
+        "options": {}
+      }
+    },
+    {
+      "id": "node-rotear-responder",
+      "name": "Rotear e Responder",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1100, 400],
+      "parameters": {
+        "jsCode": "// ATENÇÃO: Este código é gerado automaticamente por scripts/build-workflow.js\n// Execute: node scripts/build-workflow.js para atualizar\n\n// ─── Contexto da sessão ───\nconst messageData = $input.first().json\nconst phone = messageData.phone\nconst incomingText = messageData.incomingText\nconst messageId = messageData.messageId\n\nconst sessionRow = $('Buscar Sessão').first()?.json\nconst currentState = sessionRow?.current_state ?? 'new'\nconst context = sessionRow?.context ?? {}\n\nconst isGreeting = /^(oi|olá|ola|alo|hey|hi|hello|bom dia|boa tarde|boa noite|inicio|início|start)$/i.test(incomingText)\nconst isCancel = /^(cancelar|cancel|sair|exit|parar|stop)$/i.test(incomingText)\nconst isRestart = /^(recomeçar|recomecar|restart|novo|nova simulação|nova simulacao)$/i.test(incomingText)\n\nconst FINANCING_TYPE_MAP = {\n  '1': 'imobiliario', 'imobiliario': 'imobiliario', 'imóvel': 'imobiliario', 'imovel': 'imobiliario', 'casa': 'imobiliario', 'apartamento': 'imobiliario',\n  '2': 'veiculo', 'veiculo': 'veiculo', 'veículo': 'veiculo', 'carro': 'veiculo', 'moto': 'veiculo', 'caminhao': 'veiculo',\n  '3': 'pessoal', 'pessoal': 'pessoal', 'empréstimo pessoal': 'pessoal', 'emprestimo pessoal': 'pessoal',\n  '4': 'consignado', 'consignado': 'consignado',\n  '5': 'empresa', 'empresa': 'empresa', 'pj': 'empresa', 'empresarial': 'empresa',\n  '6': 'equipamento', 'equipamento': 'equipamento', 'maquinario': 'equipamento', 'máquina': 'equipamento',\n  '7': 'rural', 'rural': 'rural', 'agrícola': 'rural', 'agricola': 'rural',\n}\n\nconst TERM_SHORTCUTS = { '1': 12, '2': 24, '3': 36, '4': 48, '5': 60 }\nconst VALID_STATES = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO']\n\nfunction isValidCPF(cpf) {\n  const clean = cpf.replace(/\\D/g, '')\n  if (clean.length !== 11 || /^(\\d)\\1+$/.test(clean)) return false\n  let sum = 0\n  for (let i = 0; i < 9; i++) sum += parseInt(clean[i]) * (10 - i)\n  let r = (sum * 10) % 11\n  if (r === 10 || r === 11) r = 0\n  if (r !== parseInt(clean[9])) return false\n  sum = 0\n  for (let i = 0; i < 10; i++) sum += parseInt(clean[i]) * (11 - i)\n  r = (sum * 10) % 11\n  if (r === 10 || r === 11) r = 0\n  return r === parseInt(clean[10])\n}\n\nfunction parseAmount(text) {\n  const clean = text.replace(/[^0-9,.]/g, '').replace('.', '').replace(',', '.')\n  return parseFloat(clean)\n}\n\nfunction formatCurrency(value) {\n  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)\n}\n\nconst CIVIL_STATUS_MAP = { '1': 'solteiro', '2': 'casado', '3': 'divorciado', '4': 'viuvo', '5': 'uniao_estavel' }\nconst PROPERTY_TYPE_MAP = { '1': 'residencial', '2': 'comercial', '3': 'terreno', '4': 'rural' }\nconst VEHICLE_TYPE_MAP = { '1': 'carro', '2': 'moto', '3': 'caminhao', '4': 'outro' }\nconst EMPLOYMENT_TYPE_MAP = { '1': 'clt', '2': 'servidor_publico', '3': 'autonomo', '4': 'empresario', '5': 'aposentado' }\n\n// ─── Handlers ───\n\n// GlobalHandler\nlet routerResult = null\n\nif (isCancel && currentState !== 'new') {\n  routerResult = {\n    response: 'Atendimento encerrado. Digite \"oi\" quando quiser fazer uma nova simulação.',\n    newState: 'abandoned',\n    newContext: context,\n    handled: true,\n  }\n}\n\nif (!routerResult && isRestart) {\n  routerResult = {\n    response: '🔄 Vamos recomeçar! De qual modalidade você precisa?\\n\\n1️⃣ Imóvel\\n2️⃣ Veículo\\n3️⃣ Crédito Pessoal\\n4️⃣ Consignado\\n5️⃣ Empresa/PJ\\n6️⃣ Equipamento\\n7️⃣ Rural/Agrícola',\n    newState: 'awaiting_financing_type',\n    newContext: {},\n    handled: true,\n  }\n}\n\n// GreetingHandler\nif (!routerResult && (currentState === 'new' || isGreeting)) {\n  if (currentState !== 'new' && currentState !== 'completed' && currentState !== 'abandoned') {\n    routerResult = {\n      response: `Bem-vindo de volta, ${context.name ?? 'cliente'}! 👋\\n\\nVocê tinha uma simulação em andamento. Deseja continuar de onde parou?\\n\\n1️⃣ Continuar\\n2️⃣ Recomeçar`,\n      newState: currentState,\n      newContext: context,\n      handled: true,\n    }\n  } else {\n    routerResult = {\n      response: '👋 Olá! Seja bem-vindo ao simulador de financiamentos!\\n\\nPosso te ajudar a simular as melhores condições de financiamento nos principais bancos do mercado.\\n\\nQual modalidade você precisa?\\n\\n1️⃣ Imóvel\\n2️⃣ Veículo\\n3️⃣ Crédito Pessoal\\n4️⃣ Consignado\\n5️⃣ Empresa/PJ\\n6️⃣ Equipamento\\n7️⃣ Rural/Agrícola',\n      newState: 'awaiting_financing_type',\n      newContext: {},\n      handled: true,\n    }\n  }\n}\n\n// FinancingTypeHandler\nif (!routerResult && currentState === 'awaiting_financing_type') {\n  const type = FINANCING_TYPE_MAP[incomingText]\n  if (!type) {\n    routerResult = {\n      response: '❌ Opção inválida. Por favor, escolha uma das opções:\\n\\n1️⃣ Imóvel\\n2️⃣ Veículo\\n3️⃣ Crédito Pessoal\\n4️⃣ Consignado\\n5️⃣ Empresa/PJ\\n6️⃣ Equipamento\\n7️⃣ Rural/Agrícola',\n      newState: currentState,\n      newContext: context,\n      handled: true,\n    }\n  } else {\n    routerResult = {\n      response: `Ótimo! Você escolheu *${type.charAt(0).toUpperCase() + type.slice(1)}* 👍\\n\\nAgora vou precisar de alguns dados seus.\\n\\nQual é o seu *nome completo*?`,\n      newState: 'awaiting_name',\n      newContext: { financingType: type },\n      handled: true,\n    }\n  }\n}\n\n// PersonalDataHandler\nif (!routerResult) {\n  const personalStates = ['awaiting_name','awaiting_cpf','awaiting_birth_date','awaiting_civil_status','awaiting_email','awaiting_city','awaiting_state']\n  if (personalStates.includes(currentState)) {\n    if (currentState === 'awaiting_name') {\n      if (incomingText.length < 3 || !incomingText.includes(' ')) {\n        routerResult = { response: '❌ Por favor, informe seu nome completo (nome e sobrenome):', newState: currentState, newContext: context, handled: true }\n      } else {\n        const name = incomingText.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')\n        routerResult = { response: `Obrigado, ${name}! 😊\\n\\nQual é o seu *CPF*? (somente números)`, newState: 'awaiting_cpf', newContext: { ...context, name }, handled: true }\n      }\n    } else if (currentState === 'awaiting_cpf') {\n      if (!isValidCPF(incomingText)) {\n        routerResult = { response: '❌ CPF inválido. Por favor, informe um CPF válido (somente números):', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'CPF registrado ✅\\n\\nQual sua *data de nascimento*? (DD/MM/AAAA)', newState: 'awaiting_birth_date', newContext: { ...context, cpf: incomingText.replace(/\\D/g,'') }, handled: true }\n      }\n    } else if (currentState === 'awaiting_birth_date') {\n      const dateRegex = /^(\\d{2})\\/(\\d{2})\\/(\\d{4})$/\n      if (!dateRegex.test(incomingText)) {\n        routerResult = { response: '❌ Data inválida. Use o formato DD/MM/AAAA:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'Data registrada ✅\\n\\nQual seu *estado civil*?\\n\\n1️⃣ Solteiro(a)\\n2️⃣ Casado(a)\\n3️⃣ Divorciado(a)\\n4️⃣ Viúvo(a)\\n5️⃣ União Estável', newState: 'awaiting_civil_status', newContext: { ...context, birthDate: incomingText }, handled: true }\n      }\n    } else if (currentState === 'awaiting_civil_status') {\n      const status = CIVIL_STATUS_MAP[incomingText]\n      if (!status) {\n        routerResult = { response: '❌ Opção inválida. Escolha de 1 a 5:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'Registrado ✅\\n\\nQual seu *e-mail*?', newState: 'awaiting_email', newContext: { ...context, civilStatus: status }, handled: true }\n      }\n    } else if (currentState === 'awaiting_email') {\n      const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/\n      if (!emailRegex.test(incomingText)) {\n        routerResult = { response: '❌ E-mail inválido. Por favor, informe um e-mail válido:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'E-mail registrado ✅\\n\\nEm qual *cidade* você mora?', newState: 'awaiting_city', newContext: { ...context, email: incomingText }, handled: true }\n      }\n    } else if (currentState === 'awaiting_city') {\n      if (incomingText.length < 2) {\n        routerResult = { response: '❌ Por favor, informe o nome da cidade:', newState: currentState, newContext: context, handled: true }\n      } else {\n        const city = incomingText.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')\n        routerResult = { response: `${city} ✅\\n\\nQual o *estado* (UF)? Ex: SP, RJ, MG`, newState: 'awaiting_state', newContext: { ...context, city }, handled: true }\n      }\n    } else if (currentState === 'awaiting_state') {\n      const uf = incomingText.toUpperCase().trim()\n      if (!VALID_STATES.includes(uf)) {\n        routerResult = { response: '❌ UF inválida. Informe a sigla do estado (ex: SP, RJ, MG):', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${uf} ✅\\n\\nQual sua *renda mensal bruta*? (ex: 5000 ou 5.000,00)`, newState: 'awaiting_monthly_income', newContext: { ...context, state: uf }, handled: true }\n      }\n    }\n  }\n}\n\n// FinancialDataHandler\nif (!routerResult && (currentState === 'awaiting_monthly_income' || currentState === 'awaiting_family_income')) {\n  if (currentState === 'awaiting_monthly_income') {\n    const amount = parseAmount(incomingText)\n    if (isNaN(amount) || amount <= 0) {\n      routerResult = { response: '❌ Valor inválido. Informe sua renda mensal (ex: 5000):', newState: currentState, newContext: context, handled: true }\n    } else {\n      const nextState = ['imobiliario','veiculo','pessoal','consignado','empresa','equipamento','rural'].includes(context.financingType) ? 'awaiting_family_income' : 'awaiting_family_income'\n      routerResult = { response: `Renda registrada ✅\\n\\nQual a *renda familiar total*? (incluindo cônjuge, se houver)\\n(ex: 8000 ou \"mesma\" se for igual)`, newState: nextState, newContext: { ...context, monthlyIncome: amount }, handled: true }\n    }\n  } else if (currentState === 'awaiting_family_income') {\n    let familyIncome\n    if (incomingText === 'mesma' || incomingText === 'mesmo') {\n      familyIncome = context.monthlyIncome\n    } else {\n      familyIncome = parseAmount(incomingText)\n    }\n    if (isNaN(familyIncome) || familyIncome <= 0) {\n      routerResult = { response: '❌ Valor inválido. Informe a renda familiar:', newState: currentState, newContext: context, handled: true }\n    } else {\n      const ft = context.financingType\n      let nextState, nextMsg\n      if (ft === 'imobiliario') {\n        nextState = 'awaiting_fgts'\n        nextMsg = 'Você possui saldo de *FGTS* para usar na entrada?\\n\\n1️⃣ Sim\\n2️⃣ Não'\n      } else if (ft === 'veiculo') {\n        nextState = 'awaiting_vehicle_type'\n        nextMsg = 'Qual tipo de veículo?\\n\\n1️⃣ Carro\\n2️⃣ Moto\\n3️⃣ Caminhão\\n4️⃣ Outro'\n      } else {\n        nextState = 'awaiting_loan_amount'\n        nextMsg = 'Qual o *valor* que você precisa? (ex: 10000)'\n      }\n      routerResult = { response: `Renda familiar registrada ✅\\n\\n${nextMsg}`, newState: nextState, newContext: { ...context, familyIncome }, handled: true }\n    }\n  }\n}\n\n// ImmovableHandler\nif (!routerResult) {\n  const imobStates = ['awaiting_fgts','awaiting_fgts_amount','awaiting_down_payment','awaiting_down_payment_amount','awaiting_property_value','awaiting_property_type','awaiting_property_city','awaiting_property_state']\n  if (imobStates.includes(currentState) && context.financingType === 'imobiliario') {\n    if (currentState === 'awaiting_fgts') {\n      if (incomingText === '1' || /^sim/i.test(incomingText)) {\n        routerResult = { response: 'Qual o saldo aproximado do seu *FGTS*? (ex: 15000)', newState: 'awaiting_fgts_amount', newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'Ok, sem FGTS.\\n\\nVocê tem *entrada* disponível (além do FGTS)?\\n\\n1️⃣ Sim\\n2️⃣ Não', newState: 'awaiting_down_payment', newContext: { ...context, fgtsAmount: 0 }, handled: true }\n      }\n    } else if (currentState === 'awaiting_fgts_amount') {\n      const fgtsAmount = parseAmount(incomingText)\n      if (isNaN(fgtsAmount) || fgtsAmount <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o saldo do FGTS:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `FGTS: ${formatCurrency(fgtsAmount)} ✅\\n\\nVocê tem *entrada adicional* disponível?\\n\\n1️⃣ Sim\\n2️⃣ Não`, newState: 'awaiting_down_payment', newContext: { ...context, fgtsAmount }, handled: true }\n      }\n    } else if (currentState === 'awaiting_down_payment') {\n      if (incomingText === '1' || /^sim/i.test(incomingText)) {\n        routerResult = { response: 'Qual o valor da *entrada*? (ex: 30000)', newState: 'awaiting_down_payment_amount', newContext: context, handled: true }\n      } else {\n        routerResult = { response: 'Ok.\\n\\nQual o *valor do imóvel*? (ex: 300000)', newState: 'awaiting_property_value', newContext: { ...context, downPaymentAmount: 0 }, handled: true }\n      }\n    } else if (currentState === 'awaiting_down_payment_amount') {\n      const dpAmount = parseAmount(incomingText)\n      if (isNaN(dpAmount) || dpAmount <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o valor da entrada:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `Entrada: ${formatCurrency(dpAmount)} ✅\\n\\nQual o *valor do imóvel*? (ex: 300000)`, newState: 'awaiting_property_value', newContext: { ...context, downPaymentAmount: dpAmount }, handled: true }\n      }\n    } else if (currentState === 'awaiting_property_value') {\n      const propertyValue = parseAmount(incomingText)\n      if (isNaN(propertyValue) || propertyValue <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o valor do imóvel:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${formatCurrency(propertyValue)} ✅\\n\\nQual o *tipo do imóvel*?\\n\\n1️⃣ Residencial\\n2️⃣ Comercial\\n3️⃣ Terreno\\n4️⃣ Rural`, newState: 'awaiting_property_type', newContext: { ...context, propertyValue }, handled: true }\n      }\n    } else if (currentState === 'awaiting_property_type') {\n      const propertyType = PROPERTY_TYPE_MAP[incomingText]\n      if (!propertyType) {\n        routerResult = { response: '❌ Opção inválida. Escolha de 1 a 4:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${propertyType} ✅\\n\\nEm qual *cidade* fica o imóvel?`, newState: 'awaiting_property_city', newContext: { ...context, propertyType }, handled: true }\n      }\n    } else if (currentState === 'awaiting_property_city') {\n      const propertyCity = incomingText.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ')\n      routerResult = { response: `${propertyCity} ✅\\n\\nQual o *estado* do imóvel? (UF)`, newState: 'awaiting_property_state', newContext: { ...context, propertyCity }, handled: true }\n    } else if (currentState === 'awaiting_property_state') {\n      const uf = incomingText.toUpperCase().trim()\n      if (!VALID_STATES.includes(uf)) {\n        routerResult = { response: '❌ UF inválida. Informe a sigla (ex: SP, RJ):', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${uf} ✅\\n\\nPor quanto tempo você quer financiar?\\n\\n1️⃣ 12 meses\\n2️⃣ 24 meses\\n3️⃣ 36 meses\\n4️⃣ 48 meses\\n5️⃣ 60 meses\\n\\nOu informe o número de meses (6 a 420):`, newState: 'awaiting_term', newContext: { ...context, propertyState: uf }, handled: true }\n      }\n    }\n  }\n}\n\n// VehicleHandler\nif (!routerResult) {\n  const vehicleStates = ['awaiting_vehicle_type','awaiting_vehicle_value','awaiting_vehicle_year','awaiting_vehicle_down_payment']\n  if (vehicleStates.includes(currentState) && context.financingType === 'veiculo') {\n    if (currentState === 'awaiting_vehicle_type') {\n      const vehicleType = VEHICLE_TYPE_MAP[incomingText]\n      if (!vehicleType) {\n        routerResult = { response: '❌ Opção inválida. Escolha de 1 a 4:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${vehicleType} ✅\\n\\nQual o *valor do veículo*? (ex: 50000)`, newState: 'awaiting_vehicle_value', newContext: { ...context, vehicleType }, handled: true }\n      }\n    } else if (currentState === 'awaiting_vehicle_value') {\n      const vehicleValue = parseAmount(incomingText)\n      if (isNaN(vehicleValue) || vehicleValue <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o valor do veículo:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${formatCurrency(vehicleValue)} ✅\\n\\nQual o *ano do veículo*? (ex: 2022)`, newState: 'awaiting_vehicle_year', newContext: { ...context, vehicleValue }, handled: true }\n      }\n    } else if (currentState === 'awaiting_vehicle_year') {\n      const year = parseInt(incomingText)\n      if (isNaN(year) || year < 1990 || year > 2027) {\n        routerResult = { response: '❌ Ano inválido. Informe um ano entre 1990 e 2027:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${year} ✅\\n\\nVocê tem *entrada*?\\n\\n1️⃣ Sim\\n2️⃣ Não`, newState: 'awaiting_vehicle_down_payment', newContext: { ...context, vehicleYear: year }, handled: true }\n      }\n    } else if (currentState === 'awaiting_vehicle_down_payment') {\n      if (incomingText === '1' || /^sim/i.test(incomingText)) {\n        routerResult = { response: 'Qual o valor da *entrada*? (ex: 10000)', newState: 'awaiting_vehicle_down_payment_amount', newContext: context, handled: true }\n      } else {\n        routerResult = { response: `Ok, sem entrada.\\n\\nPor quanto tempo você quer financiar?\\n\\n1️⃣ 12 meses\\n2️⃣ 24 meses\\n3️⃣ 36 meses\\n4️⃣ 48 meses\\n5️⃣ 60 meses\\n\\nOu informe o número de meses (6 a 420):`, newState: 'awaiting_term', newContext: { ...context, downPaymentAmount: 0 }, handled: true }\n      }\n    }\n  }\n  if (!routerResult && currentState === 'awaiting_vehicle_down_payment_amount' && context.financingType === 'veiculo') {\n    const dpAmount = parseAmount(incomingText)\n    if (isNaN(dpAmount) || dpAmount <= 0) {\n      routerResult = { response: '❌ Valor inválido. Informe o valor da entrada:', newState: currentState, newContext: context, handled: true }\n    } else {\n      routerResult = { response: `${formatCurrency(dpAmount)} ✅\\n\\nPor quanto tempo você quer financiar?\\n\\n1️⃣ 12 meses\\n2️⃣ 24 meses\\n3️⃣ 36 meses\\n4️⃣ 48 meses\\n5️⃣ 60 meses\\n\\nOu informe o número de meses (6 a 420):`, newState: 'awaiting_term', newContext: { ...context, downPaymentAmount: dpAmount }, handled: true }\n    }\n  }\n}\n\n// LoanHandler (pessoal, consignado, empresa, equipamento, rural)\nif (!routerResult) {\n  const loanTypes = ['pessoal','consignado','empresa','equipamento','rural']\n  const loanStates = ['awaiting_loan_amount','awaiting_employment_type','awaiting_employer','awaiting_cnpj','awaiting_company_revenue']\n  if (loanStates.includes(currentState) && loanTypes.includes(context.financingType)) {\n    if (currentState === 'awaiting_loan_amount') {\n      const loanAmount = parseAmount(incomingText)\n      if (isNaN(loanAmount) || loanAmount <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o valor desejado:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${formatCurrency(loanAmount)} ✅\\n\\nQual seu *tipo de emprego*?\\n\\n1️⃣ CLT\\n2️⃣ Servidor Público\\n3️⃣ Autônomo\\n4️⃣ Empresário\\n5️⃣ Aposentado/Pensionista`, newState: 'awaiting_employment_type', newContext: { ...context, loanAmount }, handled: true }\n      }\n    } else if (currentState === 'awaiting_employment_type') {\n      const employmentType = EMPLOYMENT_TYPE_MAP[incomingText]\n      if (!employmentType) {\n        routerResult = { response: '❌ Opção inválida. Escolha de 1 a 5:', newState: currentState, newContext: context, handled: true }\n      } else if (['empresa','equipamento'].includes(context.financingType)) {\n        routerResult = { response: `${employmentType} ✅\\n\\nQual o *CNPJ* da empresa? (somente números)`, newState: 'awaiting_cnpj', newContext: { ...context, employmentType }, handled: true }\n      } else {\n        routerResult = { response: `${employmentType} ✅\\n\\nQual o nome do seu *empregador/empresa*?`, newState: 'awaiting_employer', newContext: { ...context, employmentType }, handled: true }\n      }\n    } else if (currentState === 'awaiting_employer') {\n      routerResult = { response: `Registrado ✅\\n\\nPor quanto tempo você quer o crédito?\\n\\n1️⃣ 12 meses\\n2️⃣ 24 meses\\n3️⃣ 36 meses\\n4️⃣ 48 meses\\n5️⃣ 60 meses\\n\\nOu informe o número de meses (6 a 420):`, newState: 'awaiting_term', newContext: { ...context, employer: incomingText }, handled: true }\n    } else if (currentState === 'awaiting_cnpj') {\n      const cnpj = incomingText.replace(/\\D/g, '')\n      if (cnpj.length !== 14) {\n        routerResult = { response: '❌ CNPJ inválido. Informe os 14 dígitos:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `CNPJ registrado ✅\\n\\nQual o *faturamento mensal* da empresa?`, newState: 'awaiting_company_revenue', newContext: { ...context, cnpj }, handled: true }\n      }\n    } else if (currentState === 'awaiting_company_revenue') {\n      const revenue = parseAmount(incomingText)\n      if (isNaN(revenue) || revenue <= 0) {\n        routerResult = { response: '❌ Valor inválido. Informe o faturamento mensal:', newState: currentState, newContext: context, handled: true }\n      } else {\n        routerResult = { response: `${formatCurrency(revenue)} ✅\\n\\nPor quanto tempo você quer o crédito?\\n\\n1️⃣ 12 meses\\n2️⃣ 24 meses\\n3️⃣ 36 meses\\n4️⃣ 48 meses\\n5️⃣ 60 meses\\n\\nOu informe o número de meses (6 a 420):`, newState: 'awaiting_term', newContext: { ...context, companyRevenue: revenue }, handled: true }\n      }\n    }\n  }\n}\n\n// TermAndSimulationHandler\nif (!routerResult && currentState === 'awaiting_term') {\n  let termMonths = TERM_SHORTCUTS[incomingText] ?? null\n  if (!termMonths) {\n    const parsed = parseInt(incomingText)\n    if (!isNaN(parsed) && parsed >= 6 && parsed <= 420) termMonths = parsed\n  }\n  if (!termMonths) {\n    routerResult = { response: '❌ Prazo inválido. Informe um número entre 6 e 420 (meses):', newState: currentState, newContext: context, handled: true }\n  } else {\n    const requestedAmount = context.propertyValue ?? context.vehicleValue ?? context.loanAmount ?? 0\n    const downPaymentAmount = context.downPaymentAmount ?? 0\n    const fgtsAmount = context.fgtsAmount ?? 0\n    routerResult = {\n      response: `⏳ Calculando simulação para *${context.name}*...\\n\\nConsultando taxas dos principais bancos do mercado.`,\n      newState: 'simulation_ready',\n      newContext: { ...context, termMonths, requestedAmount, downPaymentAmount, fgtsAmount },\n      triggerSimulation: true,\n      simulationPayload: {\n        whatsappNumber: phone,\n        financingType: context.financingType,\n        requestedAmount,\n        downPaymentAmount,\n        fgtsAmount,\n        termMonths,\n        propertyValue: context.propertyValue,\n        propertyType: context.propertyType,\n        propertyCity: context.propertyCity,\n        propertyState: context.propertyState,\n        vehicleType: context.vehicleType,\n        vehicleYear: context.vehicleYear,\n        metadata: {\n          employmentType: context.employmentType,\n          employer: context.employer,\n          cnpj: context.cnpj,\n          companyRevenue: context.companyRevenue,\n        },\n      },\n      handled: true,\n    }\n  }\n}\n\n// SimulationResultHandler\nif (!routerResult && currentState === 'simulation_ready') {\n  if (incomingText === '1' || /^sim/i.test(incomingText)) {\n    routerResult = {\n      response: '👨‍💼 Ótimo! Um de nossos consultores entrará em contato em breve.\\n\\nObrigado por confiar em nós! 🏠',\n      newState: 'human_handoff',\n      newContext: context,\n      triggerHandoff: true,\n      handled: true,\n    }\n  } else if (incomingText === '2' || /^n[ãa]o/i.test(incomingText)) {\n    routerResult = {\n      response: '😊 Obrigado! Se precisar de mais simulações ou tiver dúvidas, é só enviar \"oi\".',\n      newState: 'completed',\n      newContext: context,\n      handled: true,\n    }\n  } else if (isGreeting) {\n    routerResult = {\n      response: '👋 Olá! Seja bem-vindo ao simulador de financiamentos!\\n\\nQual modalidade você precisa?\\n\\n1️⃣ Imóvel\\n2️⃣ Veículo\\n3️⃣ Crédito Pessoal\\n4️⃣ Consignado\\n5️⃣ Empresa/PJ\\n6️⃣ Equipamento\\n7️⃣ Rural/Agrícola',\n      newState: 'awaiting_financing_type',\n      newContext: {},\n      handled: true,\n    }\n  }\n}\n\n// Fallback\nif (!routerResult) {\n  routerResult = {\n    response: 'Desculpe, não entendi sua mensagem. Envie \"oi\" para recomeçar ou \"cancelar\" para sair.',\n    newState: currentState,\n    newContext: context,\n    handled: true,\n  }\n}\n\nreturn [{\n  json: {\n    phone,\n    response: routerResult.response,\n    newState: routerResult.newState,\n    newContext: routerResult.newContext,\n    triggerSimulation: routerResult.triggerSimulation ?? false,\n    simulationPayload: routerResult.simulationPayload ?? null,\n    triggerHandoff: routerResult.triggerHandoff ?? false,\n    handoffData: routerResult.triggerHandoff ? {\n      phone,\n      name: routerResult.newContext?.name,\n      financingType: routerResult.newContext?.financingType,\n      simulationId: routerResult.newContext?.simulationId,\n    } : null,\n    businessPhone: messageData.businessPhone,\n  }\n}]"
+      }
+    },
+    {
+      "id": "node-if-simulation",
+      "name": "Precisa Simular?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1300, 400],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "combinator": "and",
+          "conditions": [
+            {
+              "id": "check-trigger",
+              "leftValue": "={{ $json.triggerSimulation }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "equals" }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "node-api-simulacao",
+      "name": "Chamar API Simulação",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1500, 300],
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.API_BASE_URL }}/api/simulations",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={{ JSON.stringify($json.simulationPayload) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "values": [
+            { "name": "Content-Type", "value": "application/json" },
+            { "name": "Authorization", "value": "=Bearer {{ $env.API_INTERNAL_TOKEN }}" }
+          ]
+        },
+        "options": { "timeout": 30000 }
+      }
+    },
+    {
+      "id": "node-formatar-resultado",
+      "name": "Formatar Resultado Simulação",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1700, 300],
+      "parameters": {
+        "jsCode": "const routerData = $('Rotear e Responder').first().json\nconst simResult = $input.first().json\n\nlet responseText = routerData.response + '\\n\\n'\n\nif (simResult?.results?.length > 0) {\n  responseText += '📊 *Resultados da Simulação*\\n\\n'\n  simResult.results.slice(0, 5).forEach((r, i) => {\n    const emoji = ['🥇','🥈','🥉','4️⃣','5️⃣'][i]\n    const bank = r.bankName ?? 'Banco'\n    responseText += `${emoji} *${bank}*\\n`\n    if (r.amortizationSystem === 'SAC') {\n      responseText += `   SAC: 1ª parcela ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(r.firstInstallment)}\\n`\n      responseText += `   Última: ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(r.lastInstallment)}\\n`\n    } else {\n      responseText += `   PRICE: ${new Intl.NumberFormat('pt-BR',{style:'currency',currency:'BRL'}).format(r.fixedInstallment)}/mês\\n`\n    }\n    responseText += `   Taxa: ${(r.annualRate * 100).toFixed(2)}% a.a.\\n`\n    responseText += `   CET: ${(r.cetAnnual * 100).toFixed(2)}% a.a.\\n\\n`\n  })\n  responseText += '---\\nDeseja falar com um consultor para mais detalhes?\\n\\n1️⃣ Sim, quero falar com um consultor\\n2️⃣ Não, obrigado'\n} else {\n  responseText += '⚠️ Não foi possível calcular a simulação no momento. Um consultor entrará em contato.'\n}\n\nreturn [{\n  json: {\n    ...routerData,\n    response: responseText,\n    simulationId: simResult?.id,\n  }\n}]"
+      }
+    },
+    {
+      "id": "node-salvar-sessao",
+      "name": "Salvar Sessão",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [1900, 400],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO conversation_sessions (whatsapp_number, current_state, context, last_activity)\nVALUES ($1, $2, $3::jsonb, NOW())\nON CONFLICT (whatsapp_number)\nDO UPDATE SET current_state = $2, context = $3::jsonb, last_activity = NOW()",
+        "options": {
+          "queryParams": "={{ [$json.phone, $json.newState, JSON.stringify($json.newContext)] }}"
+        }
+      },
+      "credentials": {
+        "postgres": {
+          "id": "postgres-financiamento",
+          "name": "PostgreSQL Financiamento"
+        }
+      }
+    },
+    {
+      "id": "node-enviar-whatsapp",
+      "name": "Enviar WhatsApp",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2100, 400],
+      "parameters": {
+        "method": "POST",
+        "url": "=https://graph.facebook.com/{{ $env.WHATSAPP_API_VERSION }}/{{ $env.WHATSAPP_PHONE_NUMBER_ID }}/messages",
+        "sendBody": true,
+        "bodyContentType": "json",
+        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $json.phone, type: 'text', text: { body: $json.response } }) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "values": [
+            { "name": "Authorization", "value": "=Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}" },
+            { "name": "Content-Type", "value": "application/json" }
+          ]
+        },
+        "options": { "timeout": 10000 }
+      }
+    },
+    {
+      "id": "node-respond-ok",
+      "name": "Responder OK para Meta",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [2300, 400],
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={ \"status\": \"ok\" }",
+        "options": { "responseCode": 200 }
+      }
+    }
+  ],
+  "connections": {
+    "Webhook Meta": {
+      "main": [[{ "node": "Verificar Tipo de Requisição", "type": "main", "index": 0 }]]
+    },
+    "Verificar Tipo de Requisição": {
+      "main": [
+        [{ "node": "Responder Challenge", "type": "main", "index": 0 }],
+        [{ "node": "Extrair Mensagem", "type": "main", "index": 0 }]
+      ]
+    },
+    "Extrair Mensagem": {
+      "main": [[{ "node": "Buscar Sessão", "type": "main", "index": 0 }]]
+    },
+    "Buscar Sessão": {
+      "main": [[{ "node": "Rotear e Responder", "type": "main", "index": 0 }]]
+    },
+    "Rotear e Responder": {
+      "main": [[{ "node": "Precisa Simular?", "type": "main", "index": 0 }]]
+    },
+    "Precisa Simular?": {
+      "main": [
+        [{ "node": "Chamar API Simulação", "type": "main", "index": 0 }],
+        [{ "node": "Salvar Sessão", "type": "main", "index": 0 }]
+      ]
+    },
+    "Chamar API Simulação": {
+      "main": [[{ "node": "Formatar Resultado Simulação", "type": "main", "index": 0 }]]
+    },
+    "Formatar Resultado Simulação": {
+      "main": [[{ "node": "Salvar Sessão", "type": "main", "index": 0 }]]
+    },
+    "Salvar Sessão": {
+      "main": [[{ "node": "Enviar WhatsApp", "type": "main", "index": 0 }]]
+    },
+    "Enviar WhatsApp": {
+      "main": [[{ "node": "Responder OK para Meta", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "timezone": "America/Sao_Paulo",
+    "saveManualExecutions": true,
+    "callerPolicy": "workflowsFromSameOwner",
+    "errorWorkflow": ""
+  },
+  "tags": ["financiamento", "whatsapp", "bot"],
+  "staticData": null,
+  "meta": {
+    "instanceId": "financiamento-bot"
+  }
+}
