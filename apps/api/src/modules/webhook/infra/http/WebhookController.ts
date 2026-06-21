@@ -5,15 +5,13 @@ import { LOG_EVENTS } from '@/shared/constants/log-events'
 
 const VERIFY_TOKEN = process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN ?? 'change-me'
 
-const log = logger.child('WebhookController')
-
 export class WebhookController {
   constructor(
     private readonly receiveWebhookUseCase: ReceiveWhatsAppWebhookUseCase,
   ) {}
 
   async verify(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    const log_ = log.child('verify')
+    const log_ = logger.child('WebhookController.verify')
     const mode      = request.query['hub.mode']
     const token     = request.query['hub.verify_token']
     const challenge = request.query['hub.challenge']
@@ -30,7 +28,7 @@ export class WebhookController {
   }
 
   async receive(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    const log_ = log.child('receive')
+    const log_ = logger.child('WebhookController.receive')
     const signature = request.headers['x-hub-signature-256'] ?? ''
     const nonce     = request.headers['x-request-id'] ?? Date.now().toString()
     const rawBody   = Buffer.from(JSON.stringify(request.body))
