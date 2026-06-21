@@ -1,4 +1,4 @@
-import argon2 from 'argon2'
+import { hash } from '@node-rs/argon2'
 import type { UserManagementRepository, UpdateUserInput } from '../../domain/repositories/UserManagementRepository'
 import { NotFoundError } from '@/shared/errors/AppError'
 
@@ -11,7 +11,7 @@ export class UpdateUserUseCase {
 
     const { password, ...rest } = input
     const updateData: UpdateUserInput = { ...rest }
-    if (password) updateData.passwordHash = await argon2.hash(password)
+    if (password) updateData.passwordHash = await hash(password)
 
     return this.userRepository.update(id, updateData)
   }

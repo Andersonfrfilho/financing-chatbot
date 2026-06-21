@@ -1,4 +1,4 @@
-import * as argon2 from 'argon2'
+import { verify } from '@node-rs/argon2'
 import { SignJWT } from 'jose'
 import type { UserRepository } from '../../domain/repositories/UserRepository'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
@@ -30,7 +30,7 @@ export class LoginUseCase {
     const user = await this.userRepository.findByEmail(input.email)
     if (!user || !user.active) throw new UnauthorizedError('Invalid credentials')
 
-    const passwordValid = await argon2.verify(user.passwordHash, input.password)
+    const passwordValid = await verify(user.passwordHash, input.password)
     if (!passwordValid) throw new UnauthorizedError('Invalid credentials')
 
     const payload = {

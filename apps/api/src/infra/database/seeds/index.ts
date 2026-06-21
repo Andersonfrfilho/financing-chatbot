@@ -1,6 +1,6 @@
 import { db } from '../connection'
 import * as schema from '../schema'
-import * as argon2 from 'argon2'
+import { hash } from '@node-rs/argon2'
 
 async function seed() {
   console.log('[Seed] Starting...')
@@ -42,7 +42,7 @@ async function seed() {
 
   // Admin user
   if (adminRole) {
-    const passwordHash = await argon2.hash('admin@123')
+    const passwordHash = await hash('admin@123')
     await db.insert(schema.users).values({
       roleId: adminRole.id,
       name: 'Administrador',
