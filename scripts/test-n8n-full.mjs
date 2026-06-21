@@ -116,6 +116,7 @@ function runComporMensagem(routerJson) {
   const makeRef = (json) => ({ first: () => ({ json }), all: () => [{ json }] })
   const $ = (name) => {
     if (name === 'Roteador de Conversa') return makeRef(routerJson)
+    if (name === 'Formatar Resultado')   return { first: () => ({ json: {} }), all: () => [] }
     throw new Error(`Compor Mensagem: node desconhecido "${name}"`)
   }
   const fn = new Function('$input', '$', '$env', `return (async () => { ${codes['Compor Mensagem']} })()`)
