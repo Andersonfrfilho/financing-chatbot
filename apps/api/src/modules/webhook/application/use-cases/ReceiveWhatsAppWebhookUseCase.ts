@@ -4,16 +4,16 @@ import { UnauthorizedError, ConflictError } from '@/shared/errors/AppError'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
 
-const WEBHOOK_SECRET  = process.env.WEBHOOK_VERIFY_TOKEN ?? 'change-webhook-secret'
 const NONCE_TTL_SECONDS = 300
 const MESSAGE_TTL_SECONDS = 3600
 
-
 function verifyHmac(rawBody: Buffer, signature: string): boolean {
+  const appSecret = process.env.WHATSAPP_APP_SECRET
+  if (!appSecret) return false
   if (!signature.startsWith('sha256=')) return false
   const expected = Buffer.from(signature.slice(7), 'hex')
   const actual = Buffer.from(
-    createHmac('sha256', process.env.WHATSAPP_ACCESS_TOKEN ?? WEBHOOK_SECRET)
+    createHmac('sha256', appSecret)
       .update(rawBody)
       .digest('hex'),
     'hex',
@@ -67,8 +67,8 @@ export class ReceiveWhatsAppWebhookUseCase {
     if (!verifyHmac(input.rawBody, input.signature)) {
       log_.warn(LOG_EVENTS.WEBHOOK_HMAC_FAILED, {
         nonce: input.nonce,
-        reason: 'HMAC signature mismatch — Meta signs with App Secret, not Access Token',
-        hint: 'Verify WHATSAPP_APP_SECRET env var is set correctly in Railway',
+        appSecretPresent: !!process.env.WHATSAPP_APP_SECRET,
+        reason: 'HMAC mismatch or WHATSAPP_APP_SECRET not set',
       })
       throw new UnauthorizedError('invalid_webhook_signature')
     }
