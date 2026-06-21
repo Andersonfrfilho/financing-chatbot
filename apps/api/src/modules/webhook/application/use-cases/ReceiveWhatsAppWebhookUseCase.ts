@@ -25,7 +25,11 @@ interface WhatsAppMessage {
   from:        string
   type:        string
   text?:       { body: string }
-  interactive?: { type: string; button_reply?: { id: string; title: string } }
+  interactive?: {
+    type:          string
+    button_reply?: { id: string; title: string }
+    list_reply?:   { id: string; title: string }
+  }
   timestamp:   string
 }
 
@@ -64,10 +68,16 @@ async function forwardToN8n(
     return
   }
 
+  const interactiveId =
+    message.interactive?.button_reply?.id ??
+    message.interactive?.list_reply?.id ??
+    ''
+  const text = message.type === 'interactive' ? interactiveId : (message.text?.body ?? '')
+
   const body = JSON.stringify({
     phone:          message.from,
     messageId:      message.id,
-    text:           message.text?.body ?? '',
+    text,
     type:           message.type,
     timestamp:      message.timestamp,
     phoneNumberId,
