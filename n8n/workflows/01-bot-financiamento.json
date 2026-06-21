@@ -118,34 +118,14 @@
     {
       "id": "node-api-simulacao",
       "name": "Chamar API Simulação",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1100,
         300
       ],
       "parameters": {
-        "method": "POST",
-        "url": "={{ $env.API_BASE_URL }}/api/simulations",
-        "sendBody": true,
-        "bodyContentType": "json",
-        "jsonBody": "={{ JSON.stringify($json.simulationPayload) }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "values": [
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            },
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.API_INTERNAL_TOKEN }}"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 30000
-        }
+        "jsCode": "const apiBaseUrl = $env.API_BASE_URL\nconst apiToken   = $env.API_INTERNAL_TOKEN\nconst payload    = $json.simulationPayload\n\nconst res = await fetch(`${apiBaseUrl}/api/simulations`, {\n  method: 'POST',\n  headers: {\n    'Authorization': `Bearer ${apiToken}`,\n    'Content-Type': 'application/json',\n  },\n  body: JSON.stringify(payload),\n})\n\nconst data = await res.json()\nif (!res.ok) throw new Error(`Simulation API error ${res.status}: ${JSON.stringify(data)}`)\n\nreturn [{ json: { ...data, _routerData: $('Roteador de Conversa').first().json } }]"
       }
     },
     {
@@ -197,34 +177,14 @@
     {
       "id": "node-enviar-whatsapp",
       "name": "Enviar WhatsApp",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
       "position": [
         1900,
         400
       ],
       "parameters": {
-        "method": "POST",
-        "url": "=https://graph.facebook.com/{{ $env.WHATSAPP_API_VERSION }}/{{ $json.phoneNumberId }}/messages",
-        "sendBody": true,
-        "bodyContentType": "json",
-        "jsonBody": "={{ JSON.stringify({ messaging_product: 'whatsapp', recipient_type: 'individual', to: $json.phone, type: 'text', text: { body: $json.response } }) }}",
-        "sendHeaders": true,
-        "headerParameters": {
-          "values": [
-            {
-              "name": "Authorization",
-              "value": "=Bearer {{ $env.WHATSAPP_ACCESS_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "options": {
-          "timeout": 10000
-        }
+        "jsCode": "const phone         = $json.phone\nconst phoneNumberId = $json.phoneNumberId\nconst message       = $json.response\nconst token         = $env.WHATSAPP_ACCESS_TOKEN\nconst version       = $env.WHATSAPP_API_VERSION\n\nconst res = await fetch(`https://graph.facebook.com/${version}/${phoneNumberId}/messages`, {\n  method: 'POST',\n  headers: {\n    'Authorization': `Bearer ${token}`,\n    'Content-Type': 'application/json',\n  },\n  body: JSON.stringify({\n    messaging_product: 'whatsapp',\n    recipient_type: 'individual',\n    to: phone,\n    type: 'text',\n    text: { body: message },\n  }),\n})\n\nconst data = await res.json()\nif (!res.ok) throw new Error(`WhatsApp API error ${res.status}: ${JSON.stringify(data)}`)\nreturn [{ json: data }]"
       }
     },
     {
