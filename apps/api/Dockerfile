@@ -1,5 +1,6 @@
 FROM oven/bun:1.1 AS base
 WORKDIR /app
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
 
 FROM base AS deps
 COPY package.json bun.lockb* ./
