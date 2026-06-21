@@ -40,7 +40,12 @@ export class ClientController {
 
   async update(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const input  = updateSchema.parse(request.body)
-    const client = await this.updateClient.execute(request.params['id'] ?? '', input)
+    const client = await this.updateClient.execute(request.params['id'] ?? '', {
+      name:        input.name,
+      email:       input.email,
+      city:        input.city,
+      state:       input.state,
+    })
     response.json(client)
   }
 

@@ -28,7 +28,12 @@ export class SimulationController {
 
   async create(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const input = validateBody(createSimulationSchema, request.body)
-    const result = await this.createSimulationUseCase.execute(input)
+    const result = await this.createSimulationUseCase.execute({
+      ...input,
+      whatsappNumber:    input.whatsappNumber    ?? 'internal',
+      downPaymentAmount: input.downPaymentAmount ?? 0,
+      fgtsAmount:        input.fgtsAmount        ?? 0,
+    })
     response.json(result, 201)
   }
 

@@ -44,7 +44,12 @@ export class DrizzleLeadRepository implements LeadRepository {
   async update(id: string, input: UpdateLeadInput): Promise<Lead> {
     const result = await db
       .update(leads)
-      .set({ ...input, updatedAt: new Date() })
+      .set({
+        ...(input.status     && { status:     input.status     as Lead['status'] }),
+        ...(input.assignedTo && { assignedTo: input.assignedTo }),
+        ...(input.notes      && { notes:      input.notes }),
+        updatedAt: new Date(),
+      })
       .where(eq(leads.id, id))
       .returning()
     if (!result[0]) throw new NotFoundError('Lead não encontrado')

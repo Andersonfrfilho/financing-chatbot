@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import type { OpenFinanceProvider } from '../../domain/providers/OpenFinanceProvider'
@@ -25,10 +26,7 @@ export class FetchAndCacheBankRatesUseCase {
 
   async execute(financingType: string): Promise<void> {
     const modalities = MODALITIES_BY_FINANCING_TYPE[financingType] ?? ['SFH']
-    const banks = await this.db.select().from(schema.banks).where(
-      // eq imported inline
-      (table) => table.active
-    )
+    const banks = await this.db.select().from(schema.banks).where(eq(schema.banks.active, true))
 
     const today = new Date().toISOString().slice(0, 10)
 

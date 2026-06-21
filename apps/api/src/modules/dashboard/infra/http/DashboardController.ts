@@ -1,23 +1,23 @@
-import type { HttpRequest, HttpResponse } from 'uWebSockets.js'
+import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import type { GetDashboardStatsUseCase } from '../../application/use-cases/GetDashboardStatsUseCase'
 import type { GetCommercialReportUseCase } from '../../application/use-cases/GetCommercialReportUseCase'
 
 export class DashboardController {
   constructor(
-    private readonly getDashboardStats: GetDashboardStatsUseCase,
-    private readonly getCommercialReport: GetCommercialReportUseCase,
+    private readonly getDashboardStats:    GetDashboardStatsUseCase,
+    private readonly getCommercialReport:  GetCommercialReportUseCase,
   ) {}
 
-  async stats(res: HttpResponse) {
+  async stats(_request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const data = await this.getDashboardStats.execute()
-    res.writeStatus('200 OK').end(JSON.stringify(data))
+    response.json(data)
   }
 
-  async commercial(res: HttpResponse, req: HttpRequest) {
-    const query = new URLSearchParams(req.getQuery())
-    const startDate = query.get('startDate') ? new Date(query.get('startDate')!) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-    const endDate = query.get('endDate') ? new Date(query.get('endDate')!) : new Date()
+  async commercial(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const q = request.query
+    const startDate = q['startDate'] ? new Date(q['startDate']) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+    const endDate   = q['endDate']   ? new Date(q['endDate'])   : new Date()
     const data = await this.getCommercialReport.execute(startDate, endDate)
-    res.writeStatus('200 OK').end(JSON.stringify(data))
+    response.json(data)
   }
 }
