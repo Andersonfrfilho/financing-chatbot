@@ -5,6 +5,7 @@ RUN bun install --production
 
 FROM oven/bun:1.1 AS builder
 WORKDIR /app
+ENV NODE_ENV=production
 COPY package.json bun.lockb* ./
 RUN bun install
 COPY . .
