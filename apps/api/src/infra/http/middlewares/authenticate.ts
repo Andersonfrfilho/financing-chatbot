@@ -4,7 +4,7 @@ import { UnauthorizedError } from '@/shared/errors/AppError'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 
 const JWT_SECRET       = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
-const INTERNAL_TOKEN   = process.env.INTERNAL_API_TOKEN
+const INTERNAL_TOKEN   = process.env.API_INTERNAL_TOKEN
 
 export async function authenticate(request: ParsedRequest, _response: ResponseHelper): Promise<void> {
   const authHeader = request.headers['authorization'] ?? null
