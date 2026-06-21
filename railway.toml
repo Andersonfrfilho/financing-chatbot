@@ -1,3 +1,6 @@
+[project]
+name = "financing-chatbot"
+
 [build]
 # Cada serviço (api, web) tem seu próprio Dockerfile em apps/*/
 # Railway: crie um serviço por pasta apontando para o Dockerfile correto
