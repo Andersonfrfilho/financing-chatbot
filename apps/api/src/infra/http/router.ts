@@ -14,6 +14,7 @@ export interface ParsedRequest {
   params: Record<string, string>
   query: Record<string, string>
   body: unknown
+  rawBody: Buffer
   user?: JwtPayload
 }
 
@@ -59,20 +60,20 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
   }
 }
 
-async function readBody(res: uWS.HttpResponse): Promise<unknown> {
+async function readBody(res: uWS.HttpResponse): Promise<{ body: unknown; rawBody: Buffer }> {
   return new Promise((resolve) => {
     let buffer = Buffer.alloc(0)
     res.onData((chunk, isLast) => {
       buffer = Buffer.concat([buffer, Buffer.from(chunk)])
       if (isLast) {
         try {
-          resolve(buffer.length > 0 ? JSON.parse(buffer.toString()) : {})
+          resolve({ body: buffer.length > 0 ? JSON.parse(buffer.toString()) : {}, rawBody: buffer })
         } catch {
-          resolve({})
+          resolve({ body: {}, rawBody: buffer })
         }
       }
     })
-    res.onAborted(() => resolve({}))
+    res.onAborted(() => resolve({ body: {}, rawBody: Buffer.alloc(0) }))
   })
 }
 
@@ -104,10 +105,10 @@ export class Router {
         params[key] = req.getParameter(i) ?? ''
       })
 
-      const body = method !== 'get' ? await readBody(res) : {}
+      const { body, rawBody } = method !== 'get' ? await readBody(res) : { body: {}, rawBody: Buffer.alloc(0) }
       const responseHelper = buildResponseHelper(res, origin)
 
-      const parsedRequest: ParsedRequest = { method: method_, url, headers, params, query, body }
+      const parsedRequest: ParsedRequest = { method: method_, url, headers, params, query, body, rawBody }
 
       await runWithContext(async () => {
         const start = Date.now()

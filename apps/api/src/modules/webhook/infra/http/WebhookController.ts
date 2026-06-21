@@ -31,7 +31,7 @@ export class WebhookController {
     const log_ = logger.child('WebhookController.receive')
     const signature = request.headers['x-hub-signature-256'] ?? ''
     const nonce     = request.headers['x-request-id'] ?? Date.now().toString()
-    const rawBody   = Buffer.from(JSON.stringify(request.body))
+    const rawBody   = request.rawBody
 
     log_.debug(LOG_EVENTS.WEBHOOK_RECEIVED, { nonce, signaturePresent: !!signature })
 
