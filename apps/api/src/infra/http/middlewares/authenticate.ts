@@ -3,7 +3,8 @@ import type { JwtPayload } from '@/shared/types'
 import { UnauthorizedError } from '@/shared/errors/AppError'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+const JWT_SECRET       = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+const INTERNAL_TOKEN   = process.env.INTERNAL_API_TOKEN
 
 export async function authenticate(request: ParsedRequest, _response: ResponseHelper): Promise<void> {
   const authHeader = request.headers['authorization'] ?? null
@@ -13,6 +14,12 @@ export async function authenticate(request: ParsedRequest, _response: ResponseHe
   }
 
   const token = authHeader.slice(7)
+
+  // Static long-lived token for service-to-service calls (n8n → API)
+  if (INTERNAL_TOKEN && token === INTERNAL_TOKEN) {
+    request.user = { sub: 'internal', role: 'service' } as unknown as JwtPayload
+    return
+  }
 
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
