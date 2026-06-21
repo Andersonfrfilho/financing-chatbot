@@ -1,7 +1,7 @@
 /**
  * Local simulator for n8n Code nodes.
- * Mocks $input and $() so we can test without pushing to n8n.
- * Usage: node scripts/test-n8n-nodes.mjs [message]
+ * Mocks $input, $(), $env and $helpers so we can test without pushing to n8n.
+ * Usage: node scripts/test-n8n-nodes.mjs [message] [state]
  */
 
 import { readFileSync } from 'fs'
@@ -20,14 +20,41 @@ const codes = Object.fromEntries(
 const INCOMING_TEXT = process.argv[2] ?? 'oi'
 const PHONE         = '5516993056772'
 const PHONE_NUM_ID  = '1129051206965973'
-const CURRENT_STATE = process.argv[3] ?? 'new'   // simula sessão do DB
+const CURRENT_STATE = process.argv[3] ?? 'new'
 const SESSION_CTX   = {}
 
-// ── Helpers to mock n8n API ───────────────────────────────────────────────────
-function makeItem(json) {
-  return { json, first: () => makeItem(json), all: () => [makeItem(json)] }
+// ── Mock $env ─────────────────────────────────────────────────────────────────
+const $env = {
+  WHATSAPP_ACCESS_TOKEN: 'MOCK_WA_TOKEN',
+  WHATSAPP_API_VERSION:  'v19.0',
+  API_BASE_URL:          'http://localhost:3333',
+  API_INTERNAL_TOKEN:    'MOCK_INTERNAL_TOKEN',
 }
 
+// ── Mock $helpers ─────────────────────────────────────────────────────────────
+const $helpers = {
+  httpRequest: async (opts) => {
+    console.log(`  [mock HTTP] ${opts.method} ${opts.url}`)
+    if (typeof opts.body === 'object') {
+      console.log('  [mock body]', JSON.stringify(opts.body).slice(0, 120))
+    }
+    if (opts.url?.includes('graph.facebook.com')) {
+      return {
+        statusCode: 200,
+        body: { messaging_product: 'whatsapp', contacts: [{ wa_id: PHONE }], messages: [{ id: 'wamid.mock123' }] },
+      }
+    }
+    if (opts.url?.includes('/api/simulations')) {
+      return {
+        statusCode: 200,
+        body: { parcela: 2450.00, totalFinanciado: 294000, totalJuros: 47600, prazo: 120 },
+      }
+    }
+    throw new Error(`[mock] URL não reconhecida: ${opts.url}`)
+  },
+}
+
+// ── Helpers to mock n8n API ───────────────────────────────────────────────────
 function makeNodeRef(json) {
   const item = { json }
   return { first: () => item, all: () => [item] }
@@ -40,10 +67,9 @@ function runNode(name, inputJson, nodeRefs = {}) {
     if (nodeRefs[nodeName]) return makeNodeRef(nodeRefs[nodeName])
     throw new Error(`Node not found in context: ${nodeName}`)
   }
-  const fn = new Function('$input', '$', `
-    ${codes[name]}
-  `)
-  return fn($input, $)
+  const $json = inputJson
+  const fn = new Function('$input', '$', '$env', '$helpers', '$json', `return (async () => { ${codes[name]} })()`)
+  return fn($input, $, $env, $helpers, $json)
 }
 
 // ── Step 1: Extrair Mensagem ──────────────────────────────────────────────────
@@ -58,7 +84,7 @@ const webhookBody = {
     phoneNumberId: PHONE_NUM_ID,
   }
 }
-const extracted = runNode('Extrair Mensagem', webhookBody)
+const extracted = await runNode('Extrair Mensagem', webhookBody)
 if (!extracted || extracted.length === 0) {
   console.error('❌ Retornou vazio — checar validação de phone/messageId')
   process.exit(1)
@@ -73,7 +99,7 @@ const sessionRow = CURRENT_STATE === 'new'
   : { current_state: CURRENT_STATE, context: JSON.stringify(SESSION_CTX) }
 
 const buscarSessaoOutput = sessionRow ?? {}
-const routerOutput = runNode('Roteador de Conversa', {}, {
+const routerOutput = await runNode('Roteador de Conversa', {}, {
   'Extrair Mensagem': extractedJson,
   'Buscar Sessão':    buscarSessaoOutput,
 })
@@ -88,7 +114,7 @@ console.log('   response:', routerJson.response?.slice(0, 120))
 
 // ── Step 3: Compor Mensagem ───────────────────────────────────────────────────
 console.log('\n━━━ Compor Mensagem ━━━')
-const composedOutput = runNode('Compor Mensagem', {}, {
+const composedOutput = await runNode('Compor Mensagem', {}, {
   'Roteador de Conversa': routerJson,
 })
 if (!composedOutput || composedOutput.length === 0) {
@@ -100,12 +126,25 @@ console.log('✅ phone:', composedJson.phone)
 console.log('   phoneNumberId:', composedJson.phoneNumberId)
 console.log('   response:', composedJson.response?.slice(0, 120))
 
-// ── WhatsApp payload preview ──────────────────────────────────────────────────
-console.log('\n━━━ Payload WhatsApp (preview) ━━━')
-console.log(JSON.stringify({
-  messaging_product: 'whatsapp',
-  recipient_type: 'individual',
-  to: composedJson.phone,
-  type: 'text',
-  text: { body: composedJson.response }
-}, null, 2))
+// ── Step 4: Enviar WhatsApp (HTTP Request node — mock via $helpers) ───────────
+console.log('\n━━━ Enviar WhatsApp (HTTP Request node) ━━━')
+console.log('  Simulando POST para Meta WhatsApp...')
+const waRes = await $helpers.httpRequest({
+  method: 'POST',
+  url: `https://graph.facebook.com/${composedJson.waVersion}/${composedJson.phoneNumberId}/messages`,
+  headers: { 'Authorization': `Bearer ${composedJson.waToken}` },
+  body: {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to: composedJson.phone,
+    type: 'text',
+    text: { body: composedJson.response },
+  },
+  json: true,
+  returnFullResponse: true,
+})
+if (!waRes || waRes.statusCode >= 400) {
+  console.error('❌ WhatsApp mock falhou:', waRes)
+  process.exit(1)
+}
+console.log('✅ resposta mock:', JSON.stringify(waRes.body))

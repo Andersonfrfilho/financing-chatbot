@@ -16,6 +16,13 @@ const codes = Object.fromEntries(
 const PHONE = '5516993056772'
 const PHONE_NUM_ID = '1129051206965973'
 
+const $env = {
+  API_BASE_URL:          'http://localhost:3333',
+  API_INTERNAL_TOKEN:    'MOCK_INTERNAL_TOKEN',
+  WHATSAPP_ACCESS_TOKEN: 'MOCK_WA_TOKEN',
+  WHATSAPP_API_VERSION:  'v21.0',
+}
+
 function makeNodeRef(json) { return { first: () => ({ json }), all: () => [{ json }] } }
 
 function runRouter(text, currentState, ctx = {}) {
@@ -26,8 +33,8 @@ function runRouter(text, currentState, ctx = {}) {
     if (name === 'Buscar Sessão')    return makeNodeRef(sessionRow)
     throw new Error(`Unknown node: ${name}`)
   }
-  const fn = new Function('$input', '$', codes['Roteador de Conversa'])
-  const result = fn(makeNodeRef({}), $)
+  const fn = new Function('$input', '$', '$env', codes['Roteador de Conversa'])
+  const result = fn(makeNodeRef({}), $, $env)
   if (!result || result.length === 0) throw new Error(`Router returned empty for: "${text}" @ ${currentState}`)
   return result[0].json
 }
