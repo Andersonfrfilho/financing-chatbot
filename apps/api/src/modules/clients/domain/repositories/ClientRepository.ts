@@ -1,30 +1,39 @@
 import type { FinancingClient } from '@/infra/database/schema'
 
 export type CreateClientInput = {
-  whatsappNumber: string
-  name: string
-  cpfEncrypted: string
-  birthDate?: string
-  email?: string
-  phone?: string
-  city?: string
-  state?: string
-  civilStatus?: string
+  whatsappNumber:   string
+  personType?:      'pf' | 'pj'
+
+  // Pessoa Física
+  name?:                   string
+  cpfEncrypted?:           string
+  birthDate?:              string
+  civilStatus?:            'single' | 'married' | 'divorced' | 'widowed' | 'stable_union'
+  phone?:                  string
+  email?:                  string
+  city?:                   string
+  state?:                  string
   monthlyIncomeEncrypted?: string
-  familyIncomeEncrypted?: string
-  fgtsAmountEncrypted?: string
-  downPaymentAmountEncrypted?: string
-  lgpdConsentAt?: Date
+
+  // Co-participante
+  hasCoParticipant?:             boolean
+  coParticipantIncomeEncrypted?: string
+
+  // Pessoa Jurídica
+  companyName?:             string
+  cnpjEncrypted?:           string
+  responsibleName?:         string
+  companyRevenueEncrypted?: string
 }
 
-export type UpdateClientInput = Partial<Omit<CreateClientInput, 'whatsappNumber' | 'cpfEncrypted'>>
+export type UpdateClientInput = Partial<Omit<CreateClientInput, 'whatsappNumber'>>
 
 export type ClientFilters = {
   search?: string
-  city?: string
-  state?: string
-  page?: number
-  limit?: number
+  city?:   string
+  state?:  string
+  page?:   number
+  limit?:  number
 }
 
 export interface ClientRepository {

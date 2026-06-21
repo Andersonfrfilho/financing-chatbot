@@ -2,6 +2,8 @@
 -- Enums
 -- ============================================================
 
+CREATE TYPE "person_type" AS ENUM ('pf', 'pj');
+
 CREATE TYPE "civil_status" AS ENUM (
   'single', 'married', 'divorced', 'widowed', 'stable_union'
 );
@@ -16,6 +18,30 @@ CREATE TYPE "property_type" AS ENUM (
 
 CREATE TYPE "vehicle_type" AS ENUM (
   'car', 'motorcycle', 'truck', 'other'
+);
+
+CREATE TYPE "seller_context" AS ENUM (
+  'dealer', 'dealership', 'private'
+);
+
+CREATE TYPE "vehicle_fuel" AS ENUM (
+  'flex', 'gasoline', 'diesel', 'electric', 'hybrid'
+);
+
+CREATE TYPE "purchase_intent" AS ENUM (
+  'researching', 'buying'
+);
+
+CREATE TYPE "real_estate_objective" AS ENUM (
+  'financing', 'home_equity', 'portability'
+);
+
+CREATE TYPE "purchase_timeline" AS ENUM (
+  'immediate', '3m', '6m', '12m', 'researching'
+);
+
+CREATE TYPE "employment_type" AS ENUM (
+  'clt', 'public_servant', 'self_employed', 'business_owner', 'retired'
 );
 
 CREATE TYPE "amortization_system" AS ENUM ('SAC', 'PRICE', 'NAO_APLICAVEL');
@@ -35,6 +61,7 @@ CREATE TYPE "lead_status" AS ENUM (
 CREATE TYPE "conversation_state" AS ENUM (
   'greeting',
   'awaiting_financing_type',
+  'awaiting_person_type',
   'awaiting_name',
   'awaiting_cpf',
   'awaiting_birth_date',
@@ -119,27 +146,36 @@ CREATE TABLE "bank_rates" (
   "created_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- CPF e dados financeiros armazenados criptografados (LGPD)
+-- Dados sensíveis armazenados criptografados (LGPD)
 CREATE TABLE "financing_clients" (
-  "id"                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  "whatsapp_number"           VARCHAR(20) NOT NULL UNIQUE,
-  "name"                      VARCHAR(255),
-  "cpf_encrypted"             TEXT,
-  "birth_date"                DATE,
-  "civil_status"              "civil_status",
-  "phone"                     VARCHAR(20),
-  "email"                     VARCHAR(255),
-  "city"                      VARCHAR(100),
-  "state"                     VARCHAR(2),
-  "monthly_income_encrypted"  TEXT,
-  "family_income_encrypted"   TEXT,
-  "has_fgts"                  BOOLEAN,
-  "fgts_amount_encrypted"     TEXT,
-  "has_down_payment"          BOOLEAN,
-  "down_payment_amount_encrypted" TEXT,
-  "created_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "updated_at"                TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "deleted_at"                TIMESTAMPTZ
+  "id"                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  "whatsapp_number"             VARCHAR(20) NOT NULL UNIQUE,
+  "person_type"                 "person_type" NOT NULL DEFAULT 'pf',
+
+  -- Pessoa Física
+  "name"                        VARCHAR(255),
+  "cpf_encrypted"               TEXT,
+  "birth_date"                  DATE,
+  "civil_status"                "civil_status",
+  "phone"                       VARCHAR(20),
+  "email"                       VARCHAR(255),
+  "city"                        VARCHAR(100),
+  "state"                       VARCHAR(2),
+  "monthly_income_encrypted"    TEXT,
+
+  -- Co-participante
+  "has_co_participant"              BOOLEAN DEFAULT FALSE,
+  "co_participant_income_encrypted" TEXT,
+
+  -- Pessoa Jurídica
+  "company_name"                VARCHAR(255),
+  "cnpj_encrypted"              TEXT,
+  "responsible_name"            VARCHAR(255),
+  "company_revenue_encrypted"   TEXT,
+
+  "created_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  "deleted_at"  TIMESTAMPTZ
 );
 
 CREATE TABLE "financing_simulations" (
@@ -148,19 +184,41 @@ CREATE TABLE "financing_simulations" (
   "whatsapp_number"  VARCHAR(20) NOT NULL,
   "session_id"       VARCHAR(100),
   "financing_type"   "financing_type" NOT NULL,
-  "requested_amount" NUMERIC(15,2) NOT NULL,
+
+  -- Valores comuns
+  "requested_amount"    NUMERIC(15,2) NOT NULL,
   "down_payment_amount" NUMERIC(15,2) NOT NULL DEFAULT 0,
-  "financed_amount"  NUMERIC(15,2) NOT NULL,
-  "term_months"      INTEGER NOT NULL,
-  "property_value"   NUMERIC(15,2),
-  "property_type"    "property_type",
-  "property_city"    VARCHAR(100),
-  "property_state"   VARCHAR(2),
-  "fgts_amount"      NUMERIC(15,2) NOT NULL DEFAULT 0,
-  "vehicle_type"     "vehicle_type",
-  "vehicle_year"     INTEGER,
-  "metadata"         JSONB NOT NULL DEFAULT '{}',
-  "created_at"       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  "financed_amount"     NUMERIC(15,2) NOT NULL,
+  "term_months"         INTEGER NOT NULL,
+
+  -- Imobiliário
+  "real_estate_objective" "real_estate_objective",
+  "purchase_timeline"     "purchase_timeline",
+  "include_fees"          BOOLEAN,
+  "property_value"        NUMERIC(15,2),
+  "property_type"         "property_type",
+  "property_city"         VARCHAR(100),
+  "property_state"        VARCHAR(2),
+  "fgts_amount"           NUMERIC(15,2) NOT NULL DEFAULT 0,
+
+  -- Veículo
+  "vehicle_type"    "vehicle_type",
+  "vehicle_brand"   VARCHAR(100),
+  "vehicle_model"   VARCHAR(100),
+  "vehicle_year"    INTEGER,
+  "vehicle_fuel"    "vehicle_fuel",
+  "seller_context"  "seller_context",
+  "purchase_intent" "purchase_intent",
+  "has_cnh"         BOOLEAN,
+  "residence_state" VARCHAR(2),
+
+  -- Pessoal / Consignado
+  "employment_type" "employment_type",
+  "employer"        VARCHAR(255),
+  "loan_purpose"    VARCHAR(255),
+
+  "metadata"    JSONB NOT NULL DEFAULT '{}',
+  "created_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE "simulation_results" (

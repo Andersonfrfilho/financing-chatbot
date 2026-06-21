@@ -28,6 +28,9 @@ export interface SimulationInput {
   downPaymentAmount: number
   termMonths: number
   // Imobiliário
+  realEstateObjective?: string
+  purchaseTimeline?: string
+  includeFees?: boolean
   propertyValue?: number
   propertyType?: string
   propertyCity?: string
@@ -35,7 +38,18 @@ export interface SimulationInput {
   fgtsAmount?: number
   // Veículo
   vehicleType?: string
+  vehicleBrand?: string
+  vehicleModel?: string
   vehicleYear?: number
+  vehicleFuel?: string
+  sellerContext?: string
+  purchaseIntent?: string
+  hasCnh?: boolean
+  residenceState?: string
+  // Pessoal / Consignado
+  employmentType?: string
+  employer?: string
+  loanPurpose?: string
   // Extra
   metadata?: Record<string, unknown>
 }
@@ -100,21 +114,37 @@ export class CreateSimulationUseCase {
     const [simulation] = await this.db
       .insert(schema.financingSimulations)
       .values({
-        clientId: input.clientId ?? null,
+        clientId:       input.clientId ?? null,
         whatsappNumber: input.whatsappNumber,
-        financingType: input.financingType as schema.NewFinancingSimulation['financingType'],
-        requestedAmount: input.requestedAmount.toFixed(2),
+        financingType:  input.financingType as schema.NewFinancingSimulation['financingType'],
+        requestedAmount:   input.requestedAmount.toFixed(2),
         downPaymentAmount: input.downPaymentAmount.toFixed(2),
-        fgtsAmount: (input.fgtsAmount ?? 0).toFixed(2),
-        financedAmount: financedAmount.toFixed(2),
-        termMonths: input.termMonths,
-        propertyValue: input.propertyValue?.toFixed(2) ?? null,
-        propertyType: (input.propertyType as schema.NewFinancingSimulation['propertyType']) ?? null,
-        propertyCity: input.propertyCity ?? null,
-        propertyState: input.propertyState ?? null,
-        vehicleType: (input.vehicleType as schema.NewFinancingSimulation['vehicleType']) ?? null,
-        vehicleYear: input.vehicleYear ?? null,
-        metadata: input.metadata ?? {},
+        financedAmount:    financedAmount.toFixed(2),
+        termMonths:        input.termMonths,
+        // Imobiliário
+        realEstateObjective: (input.realEstateObjective as schema.NewFinancingSimulation['realEstateObjective']) ?? null,
+        purchaseTimeline:    (input.purchaseTimeline    as schema.NewFinancingSimulation['purchaseTimeline'])    ?? null,
+        includeFees:         input.includeFees ?? null,
+        propertyValue:       input.propertyValue?.toFixed(2) ?? null,
+        propertyType:        (input.propertyType as schema.NewFinancingSimulation['propertyType']) ?? null,
+        propertyCity:        input.propertyCity  ?? null,
+        propertyState:       input.propertyState ?? null,
+        fgtsAmount:          (input.fgtsAmount ?? 0).toFixed(2),
+        // Veículo
+        vehicleType:    (input.vehicleType    as schema.NewFinancingSimulation['vehicleType'])    ?? null,
+        vehicleBrand:   input.vehicleBrand    ?? null,
+        vehicleModel:   input.vehicleModel    ?? null,
+        vehicleYear:    input.vehicleYear     ?? null,
+        vehicleFuel:    (input.vehicleFuel    as schema.NewFinancingSimulation['vehicleFuel'])    ?? null,
+        sellerContext:  (input.sellerContext  as schema.NewFinancingSimulation['sellerContext'])  ?? null,
+        purchaseIntent: (input.purchaseIntent as schema.NewFinancingSimulation['purchaseIntent']) ?? null,
+        hasCnh:         input.hasCnh         ?? null,
+        residenceState: input.residenceState  ?? null,
+        // Pessoal / Consignado
+        employmentType: (input.employmentType as schema.NewFinancingSimulation['employmentType']) ?? null,
+        employer:       input.employer    ?? null,
+        loanPurpose:    input.loanPurpose ?? null,
+        metadata:       input.metadata ?? {},
       })
       .returning()
 

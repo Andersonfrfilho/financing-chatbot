@@ -1,11 +1,41 @@
 import { pgEnum } from 'drizzle-orm/pg-core'
 
+export const personTypeEnum = pgEnum('person_type', ['pf', 'pj'])
+
 export const civilStatusEnum = pgEnum('civil_status', [
   'single',
   'married',
   'divorced',
   'widowed',
   'stable_union',
+])
+
+export const sellerContextEnum = pgEnum('seller_context', [
+  'dealer',        // loja / revendedora
+  'dealership',    // concessionária
+  'private',       // direto com o dono
+])
+
+export const vehicleFuelEnum = pgEnum('vehicle_fuel', [
+  'flex', 'gasoline', 'diesel', 'electric', 'hybrid',
+])
+
+export const purchaseIntentEnum = pgEnum('purchase_intent', [
+  'researching', 'buying',
+])
+
+export const realEstateObjectiveEnum = pgEnum('real_estate_objective', [
+  'financing',    // financiamento de imóvel
+  'home_equity',  // crédito com garantia
+  'portability',  // portabilidade
+])
+
+export const purchaseTimelineEnum = pgEnum('purchase_timeline', [
+  'immediate', '3m', '6m', '12m', 'researching',
+])
+
+export const employmentTypeEnum = pgEnum('employment_type', [
+  'clt', 'public_servant', 'self_employed', 'business_owner', 'retired',
 ])
 
 // Tipo principal de financiamento — o usuário escolhe no início do fluxo
@@ -75,6 +105,8 @@ export const conversationStateEnum = pgEnum('conversation_state', [
   // Início
   'greeting',
   'awaiting_financing_type',  // usuário escolhe a modalidade
+  // Tipo de pessoa
+  'awaiting_person_type',
   // Dados pessoais
   'awaiting_name',
   'awaiting_cpf',

@@ -25,4 +25,9 @@ export const LOG_EVENTS = {
   WEBHOOK_MESSAGE:         'webhook_message',
   WEBHOOK_MESSAGE_CACHED:  'webhook_message_cached',
   WEBHOOK_PROCESSED:       'webhook_processed',
+
+  // n8n forward
+  N8N_FORWARD_START:       'n8n_forward_start',
+  N8N_FORWARD_OK:          'n8n_forward_ok',
+  N8N_FORWARD_FAILED:      'n8n_forward_failed',
 } as const
