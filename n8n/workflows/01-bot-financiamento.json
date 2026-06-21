@@ -22,7 +22,7 @@
       "typeVersion": 2,
       "position": [300, 300],
       "parameters": {
-        "jsCode": "const body = $input.first().json\nconst phone     = body.phone      ?? ''\nconst text      = (body.text      ?? '').trim()\nconst messageId = body.messageId  ?? ''\nconst phoneNumberId = body.phoneNumberId ?? ''\n\nif (!phone || !messageId) return []\n\nreturn [{ json: { phone, incomingText: text.toLowerCase(), rawText: text, messageId, phoneNumberId } }]"
+        "jsCode": "const data = $input.first().json\nconst body = data.body ?? data\nconst phone     = body.phone      ?? ''\nconst text      = (body.text      ?? '').trim()\nconst messageId = body.messageId  ?? ''\nconst phoneNumberId = body.phoneNumberId ?? ''\n\nif (!phone || !messageId) return []\n\nreturn [{ json: { phone, incomingText: text.toLowerCase(), rawText: text, messageId, phoneNumberId } }]"
       }
     },
     {
