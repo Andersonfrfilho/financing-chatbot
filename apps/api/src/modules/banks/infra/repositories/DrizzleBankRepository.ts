@@ -56,13 +56,17 @@ export class DrizzleBankRepository {
   }
 
   async upsertRate(input: CreateBankRateInput): Promise<BankRate> {
-    const { modality, source, ...rest } = input
     const result = await db
       .insert(bankRates)
       .values({
-        ...rest,
-        modality: modality as BankRate['modality'],
-        source:   (source ?? 'manual') as BankRate['source'],
+        bankId:        input.bankId,
+        modality:      input.modality      as BankRate['modality'],
+        rateAnnual:    input.rateAnnual,
+        minTermMonths: input.minTermMonths ?? 1,
+        maxTermMonths: input.maxTermMonths ?? 480,
+        maxLtv:        input.maxLtv        ?? '1.0000',
+        effectiveDate: input.effectiveDate,
+        source:        (input.source ?? 'manual') as BankRate['source'],
       })
       .returning()
     return result[0]
