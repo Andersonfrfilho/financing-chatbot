@@ -1,10 +1,13 @@
 import { jwtVerify } from 'jose'
 import type { JwtPayload } from '@/shared/types'
 import { UnauthorizedError } from '@/shared/errors/AppError'
+import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
 
-export async function authenticate(authHeader: string | null): Promise<JwtPayload> {
+export async function authenticate(request: ParsedRequest, _response: ResponseHelper): Promise<void> {
+  const authHeader = request.headers['authorization'] ?? null
+
   if (!authHeader?.startsWith('Bearer ')) {
     throw new UnauthorizedError('Missing or invalid authorization header')
   }
@@ -13,7 +16,7 @@ export async function authenticate(authHeader: string | null): Promise<JwtPayloa
 
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
-    return payload as unknown as JwtPayload
+    request.user = payload as unknown as JwtPayload
   } catch {
     throw new UnauthorizedError('Invalid or expired token')
   }

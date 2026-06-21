@@ -71,6 +71,26 @@ test-msg:
 		| jq . 2>/dev/null || echo "Webhook enviado (jq não instalado para formatar)"
 
 # ──────────────────────────────────────────────
+# Teste Docker local (simula Railway)
+# ──────────────────────────────────────────────
+docker-build-api:
+	docker build -f apps/api/Dockerfile -t financiamento-api-test apps/api
+
+docker-run-api:
+	docker run --rm \
+		--env-file infra/.env \
+		-e DATABASE_URL=$$(grep DATABASE_URL infra/.env | cut -d= -f2-) \
+		-e REDIS_URL=$$(grep REDIS_URL infra/.env | cut -d= -f2-) \
+		-p 3333:3333 \
+		--network financiamento-imobiliario-bot_financiamento_net \
+		financiamento-api-test
+
+docker-build-check:
+	@echo "→ Build Docker da API..."
+	docker build -f apps/api/Dockerfile -t financiamento-api-test apps/api
+	@echo "✓ Build OK — sem erros"
+
+# ──────────────────────────────────────────────
 # URLs locais
 # ──────────────────────────────────────────────
 urls:

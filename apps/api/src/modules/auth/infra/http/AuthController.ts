@@ -3,7 +3,6 @@ import type { LoginUseCase } from '../../application/use-cases/LoginUseCase'
 import type { RefreshTokenUseCase } from '../../application/use-cases/RefreshTokenUseCase'
 import type { LogoutUseCase } from '../../application/use-cases/LogoutUseCase'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
-import { authenticate } from '@/infra/http/middlewares/authenticate'
 import { validateBody } from '@/infra/http/middlewares/validateBody'
 
 const loginSchema = z.object({
@@ -35,8 +34,7 @@ export class AuthController {
   }
 
   async logout(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    const payload = await authenticate(request.headers['authorization'] ?? null)
-    await this.logoutUseCase.execute(payload.sub)
+    await this.logoutUseCase.execute(request.user!.sub)
     response.json({ message: 'Logged out successfully' }, 200)
   }
 }

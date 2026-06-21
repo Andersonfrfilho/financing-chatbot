@@ -1,19 +1,23 @@
-import type { JwtPayload } from '@/shared/types'
-import { ForbiddenError } from '@/shared/errors/AppError'
+import { ForbiddenError, UnauthorizedError } from '@/shared/errors/AppError'
+import type { Handler } from '@/infra/http/router'
 
-export function authorize(
-  payload: JwtPayload,
-  resource: string,
-  action: string,
-): void {
-  const hasPermission = payload.permissions.some(
-    (permission) =>
-      (permission.resource === '*' && permission.action === '*') ||
-      (permission.resource === resource && permission.action === action) ||
-      (permission.resource === resource && permission.action === '*'),
-  )
+export function authorize(permissions: string[]): Handler {
+  return async (request, _response) => {
+    const payload = request.user
+    if (!payload) throw new UnauthorizedError('Not authenticated')
 
-  if (!hasPermission) {
-    throw new ForbiddenError(`Missing permission: ${resource}:${action}`)
+    const hasPermission = permissions.every((perm) => {
+      const [resource, action] = perm.split(':')
+      return payload.permissions.some(
+        (p) =>
+          (p.resource === '*' && p.action === '*') ||
+          (p.resource === resource && p.action === action) ||
+          (p.resource === resource && p.action === '*'),
+      )
+    })
+
+    if (!hasPermission) {
+      throw new ForbiddenError(`Missing permission: ${permissions.join(', ')}`)
+    }
   }
 }

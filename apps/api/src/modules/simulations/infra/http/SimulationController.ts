@@ -2,7 +2,6 @@ import { z } from 'zod'
 import type { CreateSimulationUseCase } from '../../application/use-cases/CreateSimulationUseCase'
 import type { GetSimulationUseCase } from '../../application/use-cases/GetSimulationUseCase'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
-import { authenticate } from '@/infra/http/middlewares/authenticate'
 import { validateBody } from '@/infra/http/middlewares/validateBody'
 
 const createSimulationSchema = z.object({
@@ -28,14 +27,12 @@ export class SimulationController {
   ) {}
 
   async create(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    await authenticate(request.headers['authorization'] ?? null)
     const input = validateBody(createSimulationSchema, request.body)
     const result = await this.createSimulationUseCase.execute(input)
     response.json(result, 201)
   }
 
   async get(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    await authenticate(request.headers['authorization'] ?? null)
     const simulationId = request.url.split('/').pop() ?? ''
     const result = await this.getSimulationUseCase.execute(simulationId)
     response.json(result)

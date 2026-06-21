@@ -1,7 +1,8 @@
 import type uWS from 'uWebSockets.js'
 import { AppError } from '@/shared/errors/AppError'
+import type { JwtPayload } from '@/shared/types'
 
-type Handler = (request: ParsedRequest, response: ResponseHelper) => Promise<void>
+export type Handler = (request: ParsedRequest, response: ResponseHelper) => Promise<void>
 
 export interface ParsedRequest {
   method: string
@@ -10,6 +11,7 @@ export interface ParsedRequest {
   params: Record<string, string>
   query: Record<string, string>
   body: unknown
+  user?: JwtPayload
 }
 
 export interface ResponseHelper {
@@ -73,7 +75,7 @@ async function readBody(res: uWS.HttpResponse): Promise<unknown> {
 export class Router {
   constructor(private readonly app: uWS.TemplatedApp) {}
 
-  private register(method: 'get' | 'post' | 'put' | 'patch' | 'del', path: string, handler: Handler): void {
+  private register(method: 'get' | 'post' | 'put' | 'patch' | 'del', path: string, ...handlers: Handler[]): void {
     this.app[method](path, async (res, req) => {
       res.onAborted(() => {})
 
@@ -101,16 +103,18 @@ export class Router {
       }
 
       try {
-        await handler(parsedRequest, responseHelper)
+        for (const handler of handlers) {
+          await handler(parsedRequest, responseHelper)
+        }
       } catch (error) {
         responseHelper.error(error)
       }
     })
   }
 
-  get(path: string, handler: Handler) { this.register('get', path, handler) }
-  post(path: string, handler: Handler) { this.register('post', path, handler) }
-  put(path: string, handler: Handler) { this.register('put', path, handler) }
-  patch(path: string, handler: Handler) { this.register('patch', path, handler) }
-  delete(path: string, handler: Handler) { this.register('del', path, handler) }
+  get(path: string, ...handlers: Handler[]) { this.register('get', path, ...handlers) }
+  post(path: string, ...handlers: Handler[]) { this.register('post', path, ...handlers) }
+  put(path: string, ...handlers: Handler[]) { this.register('put', path, ...handlers) }
+  patch(path: string, ...handlers: Handler[]) { this.register('patch', path, ...handlers) }
+  delete(path: string, ...handlers: Handler[]) { this.register('del', path, ...handlers) }
 }
