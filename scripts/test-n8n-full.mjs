@@ -123,13 +123,15 @@ function runComporMensagem(routerJson) {
 }
 
 // ── Run Roteador de Conversa node ─────────────────────────────────────────────
-function runRouter(text, currentState, ctx = {}) {
+function runRouter(text, currentState, ctx = {}, clientData = null) {
   const sessionRow    = currentState === 'new' ? {} : { current_state: currentState, context: JSON.stringify(ctx) }
   const extractedJson = { phone: PHONE, incomingText: text.toLowerCase().trim(), rawText: text.trim(), messageId: 'test-msg-id', phoneNumberId: PHONE_ID }
   const makeRef = (json) => ({ first: () => ({ json }), all: () => [{ json }] })
+  const makeNullRef  = () => ({ first: () => ({ json: undefined }), all: () => [] })
   const $ = (name) => {
     if (name === 'Extrair Mensagem') return makeRef(extractedJson)
     if (name === 'Buscar Sessão')    return makeRef(sessionRow)
+    if (name === 'Buscar Cliente')   return clientData ? makeRef(clientData) : makeNullRef()
     throw new Error(`Router: node desconhecido "${name}"`)
   }
   const fn = new Function('$input', '$', '$env', codes['Roteador de Conversa'])
@@ -142,9 +144,9 @@ function runRouter(text, currentState, ctx = {}) {
 let passed = 0, failed = 0, totalSteps = 0, payloadErrors = 0
 
 // ── Run one step: router + Compor Mensagem + WA validation ───────────────────
-async function step(text, state, ctx) {
+async function step(text, state, ctx, clientData) {
   totalSteps++
-  const router  = runRouter(text, state, ctx)
+  const router  = runRouter(text, state, ctx, clientData)
   const composed = await runComporMensagem(router)
 
   if (!composed || composed.length === 0) throw new Error(`Compor Mensagem retornou vazio`)
@@ -167,7 +169,7 @@ async function step(text, state, ctx) {
 }
 
 // ── Scenario runner ───────────────────────────────────────────────────────────
-async function scenario(name, steps) {
+async function scenario(name, steps, { clientData = null } = {}) {
   console.log(`\n${'═'.repeat(65)}`)
   console.log(`  ${name}`)
   console.log('═'.repeat(65))
@@ -175,7 +177,8 @@ async function scenario(name, steps) {
   let state = 'new', ctx = {}
   try {
     for (const [text, expectedState] of steps) {
-      const { router } = await step(text, state, ctx)
+      // Buscar Cliente runs once per n8n execution so clientData is always available
+      const { router } = await step(text, state, ctx, clientData)
       const gotState = router.newState
       ctx   = router.newContext ?? router.ctx ?? {}
       state = gotState
@@ -575,6 +578,83 @@ await scenario('Pós-simulação — recusar consultor', [
   ['8',               'simulation_ready'],
   ['2',               'completed'],                 // não, obrigado
 ])
+
+// ── 18. Usuário retornante — reutilizar dados existentes (PF Imobiliário) ─────
+const RETURNING_CLIENT_PF = {
+  person_type: 'pf',
+  name: 'Anderson Silva',
+  cpf_encrypted: '52998224725',
+  birth_date: '1990-06-15',
+  civil_status: 'casado',
+  phone: '16993056772',
+  email: 'anderson@email.com',
+  city: 'Ribeirão Preto',
+  state: 'SP',
+  monthly_income_encrypted: '8000',
+  has_co_participant: false,
+  co_participant_income_encrypted: null,
+  company_name: null,
+  cnpj_encrypted: null,
+  responsible_name: null,
+  company_revenue_encrypted: null,
+}
+
+await scenario(
+  'Usuário retornante — usar dados existentes PF → Imobiliário',
+  [
+    ['oi',    'awaiting_data_confirmation'],       // welcome back + obfuscated data
+    ['1',     'awaiting_financing_type'],          // usar meus dados
+    ['1',     'awaiting_co_participant'],          // imóvel → skip personal data
+    ['2',     'awaiting_re_objective'],            // sem co-participante
+    ['1',     'awaiting_purchase_timeline'],       // financiar imóvel
+    ['1',     'awaiting_fgts'],                   // imediato
+    ['1',     'awaiting_fgts_amount'],            // tem FGTS
+    ['20000', 'awaiting_down_payment'],
+    ['1',     'awaiting_down_payment_amount'],     // tem entrada
+    ['30000', 'awaiting_property_value'],
+    ['400000','awaiting_property_type'],
+    ['1',     'awaiting_property_city'],           // residencial
+    ['São Paulo', 'awaiting_property_state'],
+    ['SP',    'awaiting_include_fees'],
+    ['1',     'awaiting_term'],
+    ['10',    'simulation_ready'],
+  ],
+  { clientData: RETURNING_CLIENT_PF }
+)
+
+// ── 19. Usuário retornante — atualizar dados (fluxo normal) ──────────────────
+await scenario(
+  'Usuário retornante — atualizar dados → fluxo normal',
+  [
+    ['oi',               'awaiting_data_confirmation'],  // welcome back
+    ['2',                'awaiting_financing_type'],     // atualizar dados
+    ['2',                'awaiting_person_type'],        // veículo
+    ['1',                'awaiting_name'],               // PF
+    ['Ana Costa',        'awaiting_cpf'],
+    ['529.982.247-25',   'awaiting_birth_date'],
+    ['10/03/1988',       'awaiting_civil_status'],
+    ['1',                'awaiting_email'],              // solteira
+    ['ana@email.com',    'awaiting_phone'],
+    ['11988887777',      'awaiting_city'],
+    ['São Paulo',        'awaiting_state'],
+    ['SP',               'awaiting_monthly_income'],
+    ['5000',             'awaiting_co_participant'],
+    ['2',                'awaiting_vehicle_type'],       // sem co-participante
+    ['1',                'awaiting_vehicle_brand'],      // carro
+    ['Honda',            'awaiting_vehicle_model'],
+    ['Civic',            'awaiting_vehicle_year'],
+    ['2021',             'awaiting_vehicle_fuel'],
+    ['1',                'awaiting_seller_context'],     // flex
+    ['1',                'awaiting_purchase_intent'],    // revendedora
+    ['1',                'awaiting_cnh'],                // pronto p/ comprar
+    ['1',                'awaiting_vehicle_value'],      // tem CNH
+    ['80000',            'awaiting_vehicle_down_payment'],
+    ['1',                'awaiting_down_payment_amount'],// tem entrada
+    ['10000',            'awaiting_term'],
+    ['5',                'simulation_ready'],
+  ],
+  { clientData: RETURNING_CLIENT_PF }
+)
 
 // ── Resultado final ───────────────────────────────────────────────────────────
 console.log(`\n${'═'.repeat(65)}`)
