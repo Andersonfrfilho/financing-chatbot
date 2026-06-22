@@ -7,7 +7,7 @@ import { SacCalculatorService } from '../services/SacCalculatorService'
 import { PriceCalculatorService } from '../services/PriceCalculatorService'
 import { GetBankRatesUseCase } from '@/modules/open-finance/application/use-cases/GetBankRatesUseCase'
 import { FetchAndCacheBankRatesUseCase } from '@/modules/open-finance/application/use-cases/FetchAndCacheBankRatesUseCase'
-import { HttpOpenFinanceProviderImplementation } from '@/modules/open-finance/infra/providers/HttpOpenFinanceProviderImplementation'
+import { BcbOlindaProviderImplementation } from '@/modules/open-finance/infra/providers/BcbOlindaProviderImplementation'
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
 
@@ -94,7 +94,7 @@ export class CreateSimulationUseCase {
     }
 
     // Busca/atualiza taxas
-    const openFinanceProvider = new HttpOpenFinanceProviderImplementation()
+    const openFinanceProvider = new BcbOlindaProviderImplementation()
     const fetchRatesUseCase = new FetchAndCacheBankRatesUseCase(this.db, this.cache, openFinanceProvider)
     await fetchRatesUseCase.execute(input.financingType)
     log.debug('Taxas atualizadas')

@@ -1,4 +1,4 @@
-import type { OpenFinanceProvider, OpenFinanceRate } from '../../domain/providers/OpenFinanceProvider'
+import type { OpenFinanceProvider, OpenFinanceRate, ReferenceTaxes } from '../../domain/providers/OpenFinanceProvider'
 import type { FinancingModality } from '@/shared/types'
 
 const BANK_BASE_URLS: Record<string, string> = {
@@ -110,5 +110,9 @@ export class HttpOpenFinanceProviderImplementation implements OpenFinanceProvide
       maxTermMonths: ['SFH', 'SFI', 'FGTS', 'MCMV'].includes(modality) ? 420 : 84,
       maxLtv: ['SFH', 'SFI', 'FGTS', 'MCMV'].includes(modality) ? 0.8 : 1.0,
     }]
+  }
+
+  async fetchReferenceTaxes(): Promise<ReferenceTaxes> {
+    return { selicMeta: 10.5, cdi: 10.4, date: new Date().toLocaleDateString('pt-BR') }
   }
 }
