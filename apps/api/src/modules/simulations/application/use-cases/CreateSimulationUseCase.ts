@@ -70,6 +70,9 @@ export interface SimulationInput {
   employmentType?: string
   employer?: string
   loanPurpose?: string
+  // Renda (comprometimento de renda / capacidade de pagamento)
+  monthlyIncome?: number
+  coParticipantIncome?: number
   // Extra
   metadata?: Record<string, unknown>
 }
@@ -165,9 +168,12 @@ export class CreateSimulationUseCase {
     }
 
     // Base rate: usa BCB SGS quando disponível, senão usa taxa do banco do DB
-    // Spread de risco: idade do veículo + LTV real (calculado via FIPE)
+    // Spread de risco: idade do veículo + LTV real (FIPE) + comprometimento de renda
+    const referenceRateAnnual = marketBaseRateAnnual !== undefined
+      ? marketBaseRateAnnual / 100
+      : 0.56 // fallback: média CDC veículos ~56% a.a.
     const vehicleRiskSpread = input.financingType === 'veiculo'
-      ? this.calcVehicleRiskSpread(input, fipeLtv)
+      ? this.calcVehicleRiskSpread(input, fipeLtv, { financedAmount, referenceRateAnnual })
       : 0
 
     // Agrupa por banco: pega a menor taxa por banco, aplicando base + spread
@@ -370,7 +376,11 @@ export class CreateSimulationUseCase {
   // A média BCB SGS já embute o risco típico de carteira (carros usados, LTV alto, vários
   // perfis), então o prêmio aqui é só o EXCESSO de risco deste contrato sobre a média — mantido
   // pequeno de propósito. Calibrado p/ que o resultado fique próximo de simulações reais.
-  private calcVehicleRiskSpread(input: SimulationInput, fipeLtv?: number): number {
+  private calcVehicleRiskSpread(
+    input: SimulationInput,
+    fipeLtv?: number,
+    affordability?: { financedAmount: number; referenceRateAnnual: number },
+  ): number {
     let spread = 0
 
     // Risco por idade: veículos mais antigos têm depreciação acelerada como garantia
@@ -380,9 +390,32 @@ export class CreateSimulationUseCase {
     else if (vehicleAge >= 5) spread += 0.008   // +0.8% a.a. para 5-9 anos
     else if (vehicleAge >= 2) spread += 0.003   // +0.3% a.a. para 2-4 anos
 
-    // TODO:mensagem — integrar score de crédito (Serasa/SPC) para ajustar spread por risco do cliente
-    // APIs de bureaus (Serasa, Boa Vista, SPC) são pagas. Alternativa futura: score simplificado
-    // via renda declarada vs parcela (índice de comprometimento de renda ≤ 30%).
+    // Comprometimento de renda (DTI): proxy de capacidade de pagamento, custo zero.
+    // Estima a parcela PRICE com a taxa de referência e compara com a renda declarada.
+    // Não há circularidade: usa a taxa BASE (antes do spread) só para estimar a parcela.
+    const totalIncome = (input.monthlyIncome ?? 0) + (input.coParticipantIncome ?? 0)
+    if (totalIncome > 0 && affordability && affordability.financedAmount > 0 && input.termMonths > 0) {
+      const i = Math.pow(1 + affordability.referenceRateAnnual, 1 / 12) - 1
+      const n = input.termMonths
+      const estInstallment = i > 0
+        ? (affordability.financedAmount * i) / (1 - Math.pow(1 + i, -n))
+        : affordability.financedAmount / n
+      const dti = estInstallment / totalIncome
+      if (dti > 0.5) spread += 0.04             // > 50% da renda: risco muito alto
+      else if (dti > 0.4) spread += 0.025       // 40-50%
+      else if (dti > 0.3) spread += 0.012       // 30-40% (acima do saudável)
+      else if (dti <= 0.15) spread -= 0.01      // folga grande: pequeno desconto de risco
+    }
+
+    // TODO:mensagem — INTEGRAÇÃO FUTURA DE SCORE DE CRÉDITO.
+    // Hoje usamos só o comprometimento de renda (acima) como proxy de capacidade, pois NÃO existe
+    // API pública gratuita de score de terceiros. Caminhos futuros, quando houver orçamento/cadastro:
+    //   • Serasa Experian / Boa Vista (Equifax) / SPC Brasil / Quod — APIs B2B pagas (contrato + CNPJ).
+    //   • Open Finance (consentido) — exige ser participante regulado pelo BCB; dá acesso a dados
+    //     financeiros reais do cliente (não um score pronto, mas insumo para calculá-lo).
+    //   • Score auto-declarado: perguntar a faixa do score Serasa (grátis no app do cliente) e
+    //     ajustar o spread por faixa (0-300 / 300-500 / 500-700 / 700-1000).
+    // Ao integrar, aplicar o ajuste aqui, somando/subtraindo do `spread` conforme a faixa de risco.
 
     // TODO:mensagem — verificar histórico do veículo (DETRAN/Renavam) para ajustar risco por
     // multas, restrições, sinistros, recall. APIs como Belissimo ou Datainfo são pagas.

@@ -17,6 +17,13 @@ const createSimulationSchema = z.object({
   propertyState: z.string().length(2).optional(),
   vehicleType: z.enum(['car', 'motorcycle', 'truck', 'other']).optional(),
   vehicleYear: z.number().int().min(1990).max(2030).optional(),
+  // Descritivos do veículo: necessários para o lookup FIPE (valor de mercado/LTV)
+  vehicleBrand: z.string().optional(),
+  vehicleModel: z.string().optional(),
+  vehicleFuel: z.string().optional(),
+  // Renda: usada no comprometimento de renda (capacidade de pagamento)
+  monthlyIncome: z.number().min(0).optional(),
+  coParticipantIncome: z.number().min(0).optional(),
   metadata: z.record(z.unknown()).optional(),
 })
 
