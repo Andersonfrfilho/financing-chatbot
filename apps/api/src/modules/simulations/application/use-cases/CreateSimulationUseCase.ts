@@ -117,16 +117,22 @@ export class CreateSimulationUseCase {
       })
     }
 
-    // Agrupa por banco: pega a menor taxa por banco
+    // Spread de risco para veículo: idade + LTV
+    const vehicleRiskSpread = input.financingType === 'veiculo'
+      ? this.calcVehicleRiskSpread(input)
+      : 0
+
+    // Agrupa por banco: pega a menor taxa por banco, aplicando spread de risco
     const bestRateByBank = new Map<string, typeof allRates[0]>()
     for (const rate of allRates) {
+      const adjustedRate = { ...rate, rateAnnual: rate.rateAnnual + vehicleRiskSpread }
       const existing = bestRateByBank.get(rate.bankCode)
-      if (!existing || rate.rateAnnual < existing.rateAnnual) {
-        bestRateByBank.set(rate.bankCode, rate)
+      if (!existing || adjustedRate.rateAnnual < existing.rateAnnual) {
+        bestRateByBank.set(rate.bankCode, adjustedRate)
       }
     }
 
-    log.info('Bancos agrupados', { banksCount: bestRateByBank.size })
+    log.info('Bancos agrupados', { banksCount: bestRateByBank.size, vehicleRiskSpread })
 
     // Persiste simulação
     const [simulation] = await this.db
@@ -232,7 +238,13 @@ export class CreateSimulationUseCase {
     // Ordena por menor parcela SAC
     results.sort((a, b) => a.sac.firstInstallment - b.sac.firstInstallment)
 
-    log.info('Simulação concluída', { simulationId: simulation.id, resultsCount: results.length })
+    log.info('Simulação concluída', {
+      simulationId: simulation.id,
+      resultsCount: results.length,
+      vehicleRiskSpread: input.financingType === 'veiculo'
+        ? this.calcVehicleRiskSpread(input)
+        : undefined,
+    })
 
     if (this.wsHub) {
       await this.wsHub.publishBroadcast('global', WS_EVENTS.SIMULATION_COMPLETED, {
@@ -243,5 +255,27 @@ export class CreateSimulationUseCase {
     }
 
     return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results }
+  }
+
+  // Spread adicional baseado em risco do veículo (em decimal, ex: 0.05 = +5% a.a.)
+  // Bancos ajustam a taxa conforme: idade do veículo e LTV (% financiado sem entrada)
+  private calcVehicleRiskSpread(input: SimulationInput): number {
+    let spread = 0
+
+    // Risco por idade: veículos mais antigos têm depreciação acelerada como garantia
+    const currentYear = new Date().getFullYear()
+    const vehicleAge = input.vehicleYear ? currentYear - input.vehicleYear : 0
+    if (vehicleAge >= 10) spread += 0.08        // +8% a.a. para 10+ anos
+    else if (vehicleAge >= 5) spread += 0.04    // +4% a.a. para 5-9 anos
+    else if (vehicleAge >= 2) spread += 0.02    // +2% a.a. para 2-4 anos
+
+    // Risco por LTV: sem entrada = 100% financiado = maior risco de default
+    const ltv = input.requestedAmount > 0
+      ? (input.requestedAmount - input.downPaymentAmount) / input.requestedAmount
+      : 1
+    if (ltv >= 1.0) spread += 0.06             // +6% a.a. sem entrada alguma
+    else if (ltv >= 0.8) spread += 0.03        // +3% a.a. com entrada < 20%
+
+    return spread
   }
 }
