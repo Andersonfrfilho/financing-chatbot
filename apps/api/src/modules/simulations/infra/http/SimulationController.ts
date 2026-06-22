@@ -34,7 +34,11 @@ export class SimulationController {
   ) {}
 
   async create(request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    const input = validateBody(createSimulationSchema, request.body)
+    // n8n envia null para campos ausentes (JSON.stringify mantém null, só descarta undefined).
+    // Zod .optional() aceita undefined mas não null — removemos as chaves null antes de validar.
+    const raw = (request.body ?? {}) as Record<string, unknown>
+    const cleaned = Object.fromEntries(Object.entries(raw).filter(([, v]) => v !== null))
+    const input = validateBody(createSimulationSchema, cleaned)
     const result = await this.createSimulationUseCase.execute({
       ...input,
       whatsappNumber:    input.whatsappNumber    ?? 'internal',
