@@ -97,7 +97,6 @@ export function ClientsPage() {
   }
 
   const isVisible = (clientId: string) => showAllData || visibleClients.has(clientId)
-  const toggleAllVisible = () => setShowAllData(!showAllData)
 
   return (
     <div className="space-y-6">
