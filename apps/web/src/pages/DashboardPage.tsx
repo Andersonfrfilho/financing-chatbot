@@ -85,7 +85,7 @@ export function DashboardPage() {
           ) : (
             <p className="text-gray-400 text-sm text-center py-8">Sem dados ainda</p>
           )}
-        </div>
+        </Card>
       </div>
     </div>
   )
