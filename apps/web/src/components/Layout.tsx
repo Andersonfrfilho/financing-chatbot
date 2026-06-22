@@ -3,13 +3,13 @@ import { useAuthStore } from '@/store/authStore'
 import { api } from '@/lib/api'
 
 const navItems = [
-  { href: '/', label: 'Dashboard', icon: '📊' },
-  { href: '/leads', label: 'Leads', icon: '🎯' },
-  { href: '/clients', label: 'Clientes', icon: '👥' },
-  { href: '/simulations', label: 'Simulações', icon: '🏦' },
-  { href: '/sessions', label: 'Sessões', icon: '💬' },
-  { href: '/conversations', label: 'Conversas', icon: '🗨️' },
-  { href: '/users', label: 'Usuários', icon: '👤' },
+  { href: '/', label: 'Dashboard', icon: '📊', tooltip: 'Visão consolidada com estatísticas em tempo real' },
+  { href: '/leads', label: 'Leads', icon: '🎯', tooltip: 'Gerenciamento de potenciais clientes e suas simulações' },
+  { href: '/clients', label: 'Clientes', icon: '👥', tooltip: 'Cadastro e edição de clientes com histórico' },
+  { href: '/simulations', label: 'Simulações', icon: '🏦', tooltip: 'Histórico de todas as simulações de financiamento' },
+  { href: '/sessions', label: 'Sessões', icon: '💬', tooltip: 'Monitoramento em tempo real das sessões do bot' },
+  { href: '/conversations', label: 'Conversas', icon: '🗨️', tooltip: 'Histórico de conversas e atendimento ao cliente' },
+  { href: '/users', label: 'Usuários', icon: '👤', tooltip: 'Gerenciamento de usuários e permissões' },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -34,6 +34,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <a
               key={item.href}
               href={item.href}
+              title={item.tooltip}
               className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                 location === item.href
                   ? 'bg-primary-50 text-primary-700'
