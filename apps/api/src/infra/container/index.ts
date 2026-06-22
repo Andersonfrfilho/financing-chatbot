@@ -32,6 +32,7 @@ import { ListClientsUseCase } from '@/modules/clients/application/use-cases/List
 import { GetClientUseCase } from '@/modules/clients/application/use-cases/GetClientUseCase'
 import { UpdateClientUseCase } from '@/modules/clients/application/use-cases/UpdateClientUseCase'
 import { DeleteClientUseCase } from '@/modules/clients/application/use-cases/DeleteClientUseCase'
+import { FindClientByDocumentUseCase } from '@/modules/clients/application/use-cases/FindClientByDocumentUseCase'
 import { ClientController } from '@/modules/clients/infra/http/ClientController'
 
 // Leads
@@ -107,6 +108,7 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
     new GetClientUseCase(clientRepository),
     new UpdateClientUseCase(clientRepository),
     new DeleteClientUseCase(clientRepository),
+    new FindClientByDocumentUseCase(clientRepository),
   )
 
   // Leads

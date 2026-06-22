@@ -24,6 +24,28 @@ export class DrizzleClientRepository implements ClientRepository {
     return result[0] ?? null
   }
 
+  async findByCpf(cpf: string): Promise<FinancingClient | null> {
+    const result = await db
+      .select()
+      .from(financingClients)
+      .where(and(eq(financingClients.cpfEncrypted, cpf), isNull(financingClients.deletedAt)))
+      .limit(1)
+    return result[0] ?? null
+  }
+
+  async reassignWhatsapp(cpf: string, newWhatsapp: string): Promise<boolean> {
+    try {
+      await db
+        .update(financingClients)
+        .set({ whatsappNumber: newWhatsapp, updatedAt: new Date() })
+        .where(eq(financingClients.cpfEncrypted, cpf))
+      return true
+    } catch {
+      // viola unique: o novo número já pertence a outro cadastro — mantém o número antigo
+      return false
+    }
+  }
+
   async findAll(filters: ClientFilters): Promise<{ data: FinancingClient[]; total: number }> {
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20

@@ -39,6 +39,9 @@ export type ClientFilters = {
 export interface ClientRepository {
   findById(id: string): Promise<FinancingClient | null>
   findByWhatsappNumber(whatsappNumber: string): Promise<FinancingClient | null>
+  findByCpf(cpf: string): Promise<FinancingClient | null>
+  /** Reatribui o número de WhatsApp do cadastro com este CPF. Retorna false se o número já está em uso. */
+  reassignWhatsapp(cpf: string, newWhatsapp: string): Promise<boolean>
   findAll(filters: ClientFilters): Promise<{ data: FinancingClient[]; total: number }>
   upsert(input: CreateClientInput): Promise<FinancingClient>
   update(id: string, input: UpdateClientInput): Promise<FinancingClient>

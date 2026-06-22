@@ -4,6 +4,8 @@ import type { ListClientsUseCase } from '../../application/use-cases/ListClients
 import type { GetClientUseCase } from '../../application/use-cases/GetClientUseCase'
 import type { UpdateClientUseCase } from '../../application/use-cases/UpdateClientUseCase'
 import type { DeleteClientUseCase } from '../../application/use-cases/DeleteClientUseCase'
+import type { FindClientByDocumentUseCase } from '../../application/use-cases/FindClientByDocumentUseCase'
+import { validateBody } from '@/infra/http/middlewares/validateBody'
 
 const updateSchema = z.object({
   name:        z.string().min(3).optional(),
@@ -13,13 +15,25 @@ const updateSchema = z.object({
   civilStatus: z.string().optional(),
 })
 
+const byDocumentSchema = z.object({
+  cpf:      z.string().min(11),
+  whatsapp: z.string().min(1),
+})
+
 export class ClientController {
   constructor(
     private readonly listClients:  ListClientsUseCase,
     private readonly getClient:    GetClientUseCase,
     private readonly updateClient: UpdateClientUseCase,
     private readonly deleteClient: DeleteClientUseCase,
+    private readonly findClientByDocument: FindClientByDocumentUseCase,
   ) {}
+
+  async byDocument(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const { cpf, whatsapp } = validateBody(byDocumentSchema, request.query)
+    const result = await this.findClientByDocument.execute(cpf, whatsapp)
+    response.json(result)
+  }
 
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const q = request.query
