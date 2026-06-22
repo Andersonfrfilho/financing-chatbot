@@ -56,7 +56,7 @@ export function UsersPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       setShowCreate(false)
-      setForm({ name: '', email: '', password: '', roleId: '' })
+      setForm({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
     },
   })
 
