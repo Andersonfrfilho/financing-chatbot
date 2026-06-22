@@ -26,8 +26,6 @@ export class GetBankRatesUseCase {
     const cached = await this.cache.get(cacheKey)
     if (cached) return JSON.parse(cached) as BankRateResult[]
 
-    const today = new Date().toISOString().slice(0, 10)
-
     const rates = await this.db
       .select({
         bankId: schema.banks.id,
@@ -44,7 +42,6 @@ export class GetBankRatesUseCase {
       .where(
         and(
           eq(schema.bankRates.modality, modality as schema.BankRate['modality']),
-          eq(schema.bankRates.effectiveDate, today),
           eq(schema.banks.active, true),
         ),
       )
