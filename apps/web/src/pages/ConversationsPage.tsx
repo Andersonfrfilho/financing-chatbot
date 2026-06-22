@@ -1,6 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
+import { useAuthStore } from '@/store/authStore'
+
+const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
 type ConversationItem = {
   whatsappNumber: string
@@ -83,6 +86,19 @@ export function ConversationsPage() {
 
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history?.messages?.length, selected])
+
+  // SSE ao vivo (Fase C): refetch imediato ao chegar mensagem. Aditivo — se cair, o polling cobre.
+  useEffect(() => {
+    if (!selected) return
+    const token = useAuthStore.getState().token
+    if (!token) return
+    const es = new EventSource(`${SSE_BASE}/conversations/${encodeURIComponent(selected)}/stream?token=${encodeURIComponent(token)}`)
+    es.addEventListener('message', () => {
+      qc.invalidateQueries({ queryKey: ['conversation', selected] })
+      qc.invalidateQueries({ queryKey: ['conversations'] })
+    })
+    return () => es.close()
+  }, [selected, qc])
 
   const conversations = list?.conversations ?? []
   const messages = history?.messages ?? []

@@ -1,8 +1,10 @@
 import uWS from 'uWebSockets.js'
+import { jwtVerify } from 'jose'
 import { Router } from './router'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
 import { WebSocketHub } from '@/infra/websocket/WebSocketHub'
+import { SseHub } from '@/infra/sse/SseHub'
 import { buildContainer } from '@/infra/container'
 import { checkDatabaseConnection, runMigrations, ensureN8nDatabase } from '@/infra/database/connection'
 import { checkRedisConnection } from '@/infra/redis/connection'
@@ -33,7 +35,51 @@ export async function createServer() {
   const app = uWS.App()
   const router = new Router(app)
   const wsHub = new WebSocketHub(app, new RedisProvider())
-  const container = buildContainer(wsHub)
+  const sseHub = new SseHub()
+  const container = buildContainer(wsHub, sseHub)
+
+  // SSE: stream ao vivo de uma conversa (Fase C). Aditivo — o painel também faz polling.
+  // EventSource não envia header Authorization, então o JWT vem por query (?token=).
+  const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+  app.get('/api/conversations/:whatsapp/stream', (res, req) => {
+    let aborted = false
+    let unregister: (() => void) | null = null
+    let heartbeat: ReturnType<typeof setInterval> | null = null
+    res.onAborted(() => {
+      aborted = true
+      if (heartbeat) clearInterval(heartbeat)
+      if (unregister) unregister()
+    })
+
+    // Ler tudo do req de forma síncrona ANTES de qualquer await (regra do uWS)
+    const whatsapp = req.getParameter(0) ?? ''
+    const origin = req.getHeader('origin')
+    const token = new URLSearchParams(req.getQuery()).get('token') ?? ''
+    const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+
+    jwtVerify(token, JWT_SECRET)
+      .then(() => {
+        if (aborted) return
+        res.cork(() => {
+          res.writeStatus('200 OK')
+            .writeHeader('Content-Type', 'text/event-stream')
+            .writeHeader('Cache-Control', 'no-cache')
+            .writeHeader('Connection', 'keep-alive')
+            .writeHeader('Access-Control-Allow-Origin', allowOrigin)
+            .write(': connected\n\n')
+        })
+        const conn = {
+          write: (chunk: string) => { if (!aborted) res.cork(() => res.write(chunk)) },
+          isAlive: () => !aborted,
+        }
+        unregister = sseHub.register(`conv:${whatsapp}`, conn)
+        heartbeat = setInterval(() => { if (!aborted) conn.write(': keep-alive\n\n') }, 25_000)
+      })
+      .catch(() => {
+        if (aborted) return
+        res.cork(() => res.writeStatus('401 Unauthorized').writeHeader('Access-Control-Allow-Origin', allowOrigin).end())
+      })
+  })
 
   // CORS pre-flight
   app.options('/*', (res, req) => {

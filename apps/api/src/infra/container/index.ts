@@ -1,6 +1,7 @@
 import { db } from '@/infra/database/connection'
 import { RedisProvider } from '@/infra/redis/RedisProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
+import type { SseHub } from '@/infra/sse/SseHub'
 
 // Fipe
 import { FipeCatalogService } from '@/modules/fipe/infra/FipeCatalogService'
@@ -93,7 +94,7 @@ export interface AppContainer {
   conversationController: ConversationController
 }
 
-export function buildContainer(wsHub: WebSocketHub): AppContainer {
+export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContainer {
   const cache = new RedisProvider()
   const userRepository = new DrizzleUserRepository(db)
 
@@ -165,11 +166,11 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
   const conversationRepository = new DrizzleConversationRepository()
   const whatsAppSender = new WhatsAppSender()
   const conversationController = new ConversationController(
-    new LogMessageUseCase(conversationRepository),
+    new LogMessageUseCase(conversationRepository, sseHub),
     new GetConversationHistoryUseCase(conversationRepository),
     new ListConversationsUseCase(conversationRepository),
     new ManageTakeoverUseCase(conversationRepository),
-    new SendAgentMessageUseCase(conversationRepository, whatsAppSender),
+    new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
   )
 
   // Fipe

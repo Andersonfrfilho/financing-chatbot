@@ -1,5 +1,6 @@
 import type { DrizzleConversationRepository } from '../../infra/repositories/DrizzleConversationRepository'
 import type { WhatsAppSender } from '../../infra/WhatsAppSender'
+import type { SseHub } from '@/infra/sse/SseHub'
 import { ValidationError } from '@/shared/errors/AppError'
 
 // Atendente envia uma mensagem ao cliente: dispara no WhatsApp (Graph) e registra no transcript.
@@ -7,6 +8,7 @@ export class SendAgentMessageUseCase {
   constructor(
     private readonly repo: DrizzleConversationRepository,
     private readonly sender: WhatsAppSender,
+    private readonly sse?: SseHub,
   ) {}
 
   async execute(whatsapp: string, text: string, agentUserId: string) {
@@ -30,7 +32,9 @@ export class SendAgentMessageUseCase {
       waMessageId,
       status: 'sent',
     })
-    // TODO (Fase C): emitir SSE para os streams abertos desta conversa.
+    if (row && this.sse) {
+      this.sse.emit(`conv:${whatsapp}`, 'message', { id: row.id, direction: 'outbound', sender: 'agent' })
+    }
     return { id: row?.id ?? null, waMessageId }
   }
 }
