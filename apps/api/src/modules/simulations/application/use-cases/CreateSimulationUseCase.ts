@@ -110,7 +110,11 @@ export class CreateSimulationUseCase {
     log.info('Taxas obtidas', { modalitiesCount: modalities.length, ratesFound: allRates.length })
 
     if (allRates.length === 0) {
-      log.warn('Nenhuma taxa encontrada para as modalidades', { modalities })
+      log.error('Nenhuma taxa encontrada para as modalidades', {
+        modalities,
+        financingType: input.financingType,
+        reason: 'Nenhum banco tem taxa para estas modalidades no banco de dados. Executar seed ou aguardar atualização de taxas.',
+      })
     }
 
     // Agrupa por banco: pega a menor taxa por banco
