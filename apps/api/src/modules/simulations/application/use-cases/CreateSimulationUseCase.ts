@@ -13,16 +13,18 @@ import { BcbOlindaProviderImplementation } from '@/modules/open-finance/infra/pr
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
 
-// Diferenciais de mercado por banco para CDC veículos (em decimal, relativo à média BCB SGS)
-// Fonte: observação histórica de posicionamento competitivo — atualizar quando BCB OLINDA tiver dados por banco
+// Diferenciais por banco para CDC veículos (decimal, relativo à média BCB SGS 25466).
+// Calibrado contra simulação real do Santander Financiamentos (R$ 3.052,94 em 48x = ~53% a.a. CET
+// para ASX 2014, sem entrada). Bancos especializados em veículos (Santander Fin., BB) batem a média;
+// Caixa é fraca em CDC de usado particular (foco em imóvel/veículo novo), logo fica acima.
 // TODO: substituir por diferenciais calculados a partir das taxas reais do BCB OLINDA por banco (já implementado no BcbOlindaProviderImplementation)
 const BANK_MARKET_DIFFERENTIAL: Record<string, number> = {
-  'BB':        -0.03,   // Banco do Brasil: 3% abaixo da média (produto CDC veículo competitivo)
-  'CAIXA':     -0.05,   // Caixa: 5% abaixo (taxa subsidiada / convênios)
-  'CEF':       -0.05,   // alias Caixa
-  'BRADESCO':  +0.02,   // 2% acima da média
-  'SANTANDER': +0.01,   // 1% acima da média
-  'ITAU':      +0.03,   // 3% acima (mais conservador em CDC veículo usado)
+  'SANTANDER': -0.04,   // Santander Financiamentos: líder em veículos, agressivo
+  'BB':        -0.03,   // Banco do Brasil: competitivo em CDC veículo
+  'ITAU':      -0.01,   // Itaú: próximo da média
+  'BRADESCO':  +0.01,   // Bradesco: levemente acima
+  'CAIXA':     +0.03,   // Caixa: fraca em CDC de usado particular
+  'CEF':       +0.03,   // alias Caixa
 }
 
 // Taxa mínima realista para CDC veículo PF — abaixo disso, a taxa do DB é provavelmente fallback inválido
@@ -327,49 +329,56 @@ export class CreateSimulationUseCase {
       log.info('FIPE modelos encontrados', { count: models.length, first: models[0]?.nome })
       if (models.length === 0) return null
 
-      const modelCode = String(models[0]!.codigo)
       const fuelCode = input.vehicleFuel?.toLowerCase().includes('diesel') ? 'D'
         : input.vehicleFuel?.toLowerCase().includes('etanol') ? 'E'
         : 'G'
+      const targetFuelPart = fuelCode === 'G' ? '1' : fuelCode === 'E' ? '2' : '3'
+      const targetYear = String(input.vehicleYear)
 
-      // Lista os anos disponíveis para encontrar o código exato (ex: "2014-1")
-      const availableYears = await this.fipe.listYears(brandCode, modelCode)
-      log.info('FIPE anos disponíveis', { count: availableYears.length, years: availableYears.slice(0, 5).map((y) => y.codigo) })
+      // Vários modelos podem casar com o texto (ex: "ASX 2.0" casa com versões blindadas,
+      // 4x4, etc.). Itera os candidatos e escolhe o primeiro que tenha o ANO solicitado —
+      // evita pegar uma variante que não cobre o ano do veículo do cliente.
+      for (const model of models) {
+        const modelCode = String(model.codigo)
+        const availableYears = await this.fipe.listYears(brandCode, modelCode)
+        const yearEntry = availableYears.find((y) => {
+          const [yearPart, fuelPart] = y.codigo.split('-')
+          return yearPart === targetYear && fuelPart === targetFuelPart
+        }) ?? availableYears.find((y) => y.codigo.startsWith(targetYear))
 
-      // Procura o ano exato com o combustível correto
-      const yearEntry = availableYears.find((y) => {
-        const [yearPart, fuelPart] = y.codigo.split('-')
-        const yearMatch = yearPart === String(input.vehicleYear)
-        const fuelMatch = fuelCode === 'G' ? fuelPart === '1'
-          : fuelCode === 'E' ? fuelPart === '2'
-          : fuelPart === '3'
-        return yearMatch && fuelMatch
-      }) ?? availableYears.find((y) => y.codigo.startsWith(String(input.vehicleYear)))
+        if (!yearEntry) continue
 
-      if (!yearEntry) {
-        log.warn('FIPE ano não encontrado para o veículo', { year: input.vehicleYear, fuelCode, available: availableYears.map((y) => y.codigo) })
-        return null
+        const result = await this.fipe.getVehicleValueByYearCode(brandCode, modelCode, yearEntry.codigo)
+        if (result?.value) {
+          log.info('FIPE valor obtido', { fipeValue: result.value, model: result.model, yearCode: yearEntry.codigo })
+          return result.value
+        }
       }
 
-      const result = await this.fipe.getVehicleValueByYearCode(brandCode, modelCode, yearEntry.codigo)
-      log.info('FIPE valor obtido', { fipeValue: result?.value, model: result?.model })
-      return result?.value ?? null
+      log.warn('FIPE: nenhum modelo candidato cobre o ano solicitado', {
+        year: targetYear,
+        candidates: models.slice(0, 5).map((m) => m.nome),
+      })
+      return null
     } catch (err) {
       logger.warn('Falha ao consultar FIPE', { err })
       return null
     }
   }
 
-  // Spread adicional sobre a taxa base de mercado (em decimal, ex: 0.05 = +5% a.a.)
+  // Prêmio de risco sobre a taxa base de mercado (decimal, ex: 0.02 = +2% a.a.).
+  // A média BCB SGS já embute o risco típico de carteira (carros usados, LTV alto, vários
+  // perfis), então o prêmio aqui é só o EXCESSO de risco deste contrato sobre a média — mantido
+  // pequeno de propósito. Calibrado p/ que o resultado fique próximo de simulações reais.
   private calcVehicleRiskSpread(input: SimulationInput, fipeLtv?: number): number {
     let spread = 0
 
     // Risco por idade: veículos mais antigos têm depreciação acelerada como garantia
     const currentYear = new Date().getFullYear()
     const vehicleAge = input.vehicleYear ? currentYear - input.vehicleYear : 0
-    if (vehicleAge >= 10) spread += 0.05        // +5% a.a. para 10+ anos
-    else if (vehicleAge >= 5) spread += 0.025   // +2.5% a.a. para 5-9 anos
-    else if (vehicleAge >= 2) spread += 0.01    // +1% a.a. para 2-4 anos
+    if (vehicleAge >= 10) spread += 0.015       // +1.5% a.a. para 10+ anos
+    else if (vehicleAge >= 5) spread += 0.008   // +0.8% a.a. para 5-9 anos
+    else if (vehicleAge >= 2) spread += 0.003   // +0.3% a.a. para 2-4 anos
 
     // TODO:mensagem — integrar score de crédito (Serasa/SPC) para ajustar spread por risco do cliente
     // APIs de bureaus (Serasa, Boa Vista, SPC) são pagas. Alternativa futura: score simplificado
@@ -385,9 +394,9 @@ export class CreateSimulationUseCase {
         ? (input.requestedAmount - input.downPaymentAmount) / input.requestedAmount
         : 1
 
-    if (ltv > 1.0) spread += 0.08              // +8% a.a. acima do valor FIPE (alto risco)
-    else if (ltv >= 0.9) spread += 0.04        // +4% a.a. LTV 90-100%
-    else if (ltv >= 0.8) spread += 0.02        // +2% a.a. LTV 80-90%
+    if (ltv > 1.0) spread += 0.03              // +3% a.a. acima do valor FIPE (alto risco)
+    else if (ltv >= 0.9) spread += 0.015       // +1.5% a.a. LTV 90-100%
+    else if (ltv >= 0.8) spread += 0.005       // +0.5% a.a. LTV 80-90%
 
     // TODO:mensagem — bancos têm políticas de LTV máximo por ano de fabricação do veículo.
     // Ex: veículo 2014 pode ter LTV máximo de 80% em alguns bancos. Sem acesso à API de cada

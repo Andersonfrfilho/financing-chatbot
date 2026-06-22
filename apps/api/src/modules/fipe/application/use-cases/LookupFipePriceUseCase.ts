@@ -77,24 +77,30 @@ export class LookupFipePriceUseCase {
     const brand = await this.findBrand(fipeType, input.brand)
     if (!brand) return null
 
-    const model = await this.findModel(fipeType, brand.code, input.model)
-    if (!model) return null
+    // Vários modelos podem casar com o texto (ex: "Asx 2.0" casa com versões blindadas/4x4
+    // que não cobrem todos os anos). Tenta cada candidato e usa o primeiro que tenha o ano.
+    const models = await this.findModels(fipeType, brand.code, input.model)
+    if (models.length === 0) return null
 
-    const yearInfo = await this.findYear(fipeType, brand.code, model.code, input.year, input.fuel)
-    if (!yearInfo) return null
+    for (const model of models) {
+      const yearInfo = await this.findYear(fipeType, brand.code, model.code, input.year, input.fuel)
+      if (!yearInfo) continue
 
-    const detail = await this.fetchDetail(fipeType, brand.code, model.code, yearInfo.code)
-    if (!detail) return null
+      const detail = await this.fetchDetail(fipeType, brand.code, model.code, yearInfo.code)
+      if (!detail) continue
 
-    return {
-      codigoFipe: detail.codeFipe,
-      marca: detail.brand,
-      modelo: detail.model,
-      anoModelo: detail.modelYear,
-      combustivel: detail.fuel,
-      preco: detail.price,
-      mesReferencia: detail.referenceMonth,
+      return {
+        codigoFipe: detail.codeFipe,
+        marca: detail.brand,
+        modelo: detail.model,
+        anoModelo: detail.modelYear,
+        combustivel: detail.fuel,
+        preco: detail.price,
+        mesReferencia: detail.referenceMonth,
+      }
     }
+
+    return null
   }
 
   private async fetchBrands(fipeType: string): Promise<Array<{ code: string; name: string }>> {
@@ -133,6 +139,15 @@ export class LookupFipePriceUseCase {
     const models = await this.fetchModels(fipeType, brandCode)
     const match = models.find(m => matchText(modelInput, m.name))
     return match ?? null
+  }
+
+  // Retorna TODOS os modelos que casam com o texto, ordenando os nomes mais curtos
+  // primeiro (versões "padrão" como "ASX 2.0 16V 160cv Aut." antes de variantes blindadas).
+  private async findModels(fipeType: string, brandCode: string, modelInput: string): Promise<Array<{ code: number; name: string }>> {
+    const models = await this.fetchModels(fipeType, brandCode)
+    return models
+      .filter(m => matchText(modelInput, m.name))
+      .sort((a, b) => a.name.length - b.name.length)
   }
 
   private async fetchYears(fipeType: string, brandCode: string, modelCode: number): Promise<Array<{ code: string; name: string }>> {

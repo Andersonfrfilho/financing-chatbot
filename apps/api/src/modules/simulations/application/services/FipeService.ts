@@ -55,7 +55,11 @@ export class FipeService {
     if (!resp.ok) return []
     const data = await resp.json() as { modelos: FipeModel[] }
     const upper = partialName.toUpperCase()
-    return data.modelos.filter((m) => m.nome.toUpperCase().includes(upper))
+    // Ordena nomes mais curtos primeiro: versões "padrão" (ex: "ASX 2.0 16V 160cv Aut.")
+    // vêm antes de variantes blindadas/4x4 que podem não cobrir o ano solicitado.
+    return data.modelos
+      .filter((m) => m.nome.toUpperCase().includes(upper))
+      .sort((a, b) => a.nome.length - b.nome.length)
   }
 
   // Lista os anos-combustível disponíveis para um modelo (necessário antes de buscar valor)
