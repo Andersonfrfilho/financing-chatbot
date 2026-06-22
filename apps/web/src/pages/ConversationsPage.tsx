@@ -59,9 +59,10 @@ export function ConversationsPage() {
     markRead.mutate(n)
   }
 
+  const [before, setBefore] = useState<string | null>(null)
   const { data: history } = useQuery<{ messages: Message[] }>({
-    queryKey: ['conversation', selected],
-    queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50 } }).then((r) => r.data),
+    queryKey: ['conversation', selected, before],
+    queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50, before } }).then((r) => r.data),
     enabled: !!selected,
     refetchInterval: selected ? 10_000 : false,
   })
@@ -85,7 +86,20 @@ export function ConversationsPage() {
   })
 
   const bottomRef = useRef<HTMLDivElement>(null)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history?.messages?.length, selected])
+
+  // Scroll infinito: carregar antigas quando chega no topo
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const container = e.currentTarget
+    if (container.scrollTop < 100 && (history?.messages?.length ?? 0) >= 50) {
+      const oldestMessage = history?.messages?.[0]
+      if (oldestMessage && !before) {
+        setBefore(oldestMessage.createdAt)
+      }
+    }
+  }
 
   // SSE ao vivo (Fase C): refetch imediato ao chegar mensagem. Aditivo — se cair, o polling cobre.
   useEffect(() => {
@@ -183,16 +197,23 @@ export function ConversationsPage() {
                 )}
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((m) => {
                   const mine = m.direction === 'outbound'
                   const color = m.sender === 'agent' ? 'bg-green-100' : m.sender === 'bot' ? 'bg-blue-100' : 'bg-white'
                   const statusIcon = m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : m.status === 'sent' ? '✓' : ''
+                  const isMedia = m.type !== 'text' && m.payload
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} group`}>
                       <div className={`max-w-[75%] rounded-lg px-3 py-2 shadow-sm ${color} relative`}>
                         <div className="text-[10px] text-gray-400 mb-0.5">{SENDER_LABEL[m.sender] ?? m.sender} · {fmtTime(m.createdAt)}</div>
-                        <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{m.content}</p>
+                        {isMedia ? (
+                          <div className="text-xs text-gray-500 bg-gray-200 rounded px-2 py-1">
+                            📎 {m.type} — {m.content || 'Mídia'}
+                          </div>
+                        ) : (
+                          <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{m.content}</p>
+                        )}
                         {mine && statusIcon && <div className="text-[10px] text-gray-400 mt-1 text-right">{statusIcon}</div>}
 
                         {/* Ações ao hover */}
