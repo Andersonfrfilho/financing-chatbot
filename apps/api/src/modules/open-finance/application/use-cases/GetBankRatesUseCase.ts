@@ -1,4 +1,4 @@
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import { logger } from '@/shared/logger'
@@ -14,6 +14,9 @@ export interface BankRateResult {
   minTermMonths: number
   maxTermMonths: number
   maxLtv: number
+  source: string
+  effectiveDate: string
+  queryTimestamp: string
 }
 
 export class GetBankRatesUseCase {
@@ -45,6 +48,9 @@ export class GetBankRatesUseCase {
       return []
     }
 
+    const queryTimestamp = new Date().toISOString()
+
+    // Prefere open_finance sobre manual; dentro de cada fonte, pega a mais recente
     const rates = await this.db
       .select({
         bankId: schema.banks.id,
@@ -55,6 +61,8 @@ export class GetBankRatesUseCase {
         minTermMonths: schema.bankRates.minTermMonths,
         maxTermMonths: schema.bankRates.maxTermMonths,
         maxLtv: schema.bankRates.maxLtv,
+        source: schema.bankRates.source,
+        effectiveDate: schema.bankRates.effectiveDate,
       })
       .from(schema.bankRates)
       .innerJoin(schema.banks, eq(schema.bankRates.bankId, schema.banks.id))
@@ -64,11 +72,21 @@ export class GetBankRatesUseCase {
           eq(schema.banks.active, true),
         ),
       )
-      .orderBy(desc(schema.bankRates.effectiveDate))
+      .orderBy(
+        // open_finance < manual alphabetically, so DESC puts open_finance first
+        sql`CASE ${schema.bankRates.source} WHEN 'open_finance' THEN 0 ELSE 1 END ASC`,
+        desc(schema.bankRates.effectiveDate),
+      )
 
     log.debug('Taxas encontradas no DB', { count: rates.length, modality })
 
-    const result: BankRateResult[] = rates.map((r) => ({
+    // Deduplica por banco: pega apenas a melhor entrada de cada banco
+    const bestByBank = new Map<string, typeof rates[0]>()
+    for (const r of rates) {
+      if (!bestByBank.has(r.bankId)) bestByBank.set(r.bankId, r)
+    }
+
+    const result: BankRateResult[] = Array.from(bestByBank.values()).map((r) => ({
       bankId: r.bankId,
       bankCode: r.bankCode,
       bankName: r.bankName,
@@ -77,6 +95,9 @@ export class GetBankRatesUseCase {
       minTermMonths: r.minTermMonths,
       maxTermMonths: r.maxTermMonths,
       maxLtv: parseFloat(r.maxLtv),
+      source: r.source ?? 'manual',
+      effectiveDate: r.effectiveDate,
+      queryTimestamp,
     }))
 
     if (result.length > 0) {

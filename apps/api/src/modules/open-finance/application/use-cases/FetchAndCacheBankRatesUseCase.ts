@@ -2,11 +2,38 @@ import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import { logger } from '@/shared/logger'
-import type { OpenFinanceProvider } from '../../domain/providers/OpenFinanceProvider'
+import type { OpenFinanceProvider, OpenFinanceRate } from '../../domain/providers/OpenFinanceProvider'
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
 
 const CACHE_TTL_SECONDS = 24 * 60 * 60 // 24h
+
+const RETRY_CONFIG = {
+  maxAttempts: 3,
+  initialDelayMs: 1000,
+  backoffMultiplier: 2,
+}
+
+async function withRetry<T>(
+  fn: () => Promise<T>,
+  label: string,
+): Promise<T> {
+  let lastErr: unknown
+  let delayMs = RETRY_CONFIG.initialDelayMs
+  for (let attempt = 1; attempt <= RETRY_CONFIG.maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (err) {
+      lastErr = err
+      logger.warn(`${label} falhou (tentativa ${attempt}/${RETRY_CONFIG.maxAttempts})`, { err: String(err) })
+      if (attempt < RETRY_CONFIG.maxAttempts) {
+        await new Promise((r) => setTimeout(r, delayMs))
+        delayMs *= RETRY_CONFIG.backoffMultiplier
+      }
+    }
+  }
+  throw lastErr
+}
 
 const MODALITIES_BY_FINANCING_TYPE: Record<string, FinancingModality[]> = {
   imobiliario: ['SFH', 'SFI', 'FGTS', 'MCMV'],
@@ -52,9 +79,18 @@ export class FetchAndCacheBankRatesUseCase {
           continue
         }
 
-        const rates = await this.openFinanceProvider.fetchRates(bank.code, modality)
+        let rates: OpenFinanceRate[] = []
+        try {
+          rates = await withRetry(
+            () => this.openFinanceProvider.fetchRates(bank.code, modality),
+            `fetchRates(${bank.code},${modality})`,
+          )
+        } catch {
+          log.warn('Todas as tentativas falharam, ignorando banco/modalidade', { bank: bank.code, modality })
+        }
+
         if (rates.length === 0) {
-          log.debug('Nenhuma taxa retornada da API, usando fallback', { bank: bank.code, modality })
+          log.debug('Nenhuma taxa retornada da API', { bank: bank.code, modality })
           continue
         }
 

@@ -5,7 +5,7 @@ import {
   MODALITY_MAPPING,
   BANK_MAPPING,
   getBcbNamesForModality,
-  getSegmentForModality,
+  type BcbEndpointType,
 } from '../../domain/mappers/ModalityMapper'
 
 const OLINDA_BASE = 'https://olinda.bcb.gov.br/olinda/servico/taxaJuros/versao/v2/odata'
@@ -32,16 +32,22 @@ function memSet(key: string, value: unknown, ttlSeconds: number): void {
   memCache.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })
 }
 
+export function clearBcbOlindaCache(): void {
+  memCache.clear()
+}
+
 interface OlindaTaxaJuros {
-  Segmento: string
+  Segmento?: string
   Modalidade: string
+  Mes?: string
+  anoMes?: string
   InstituicaoFinanceira: string
   TaxaJurosAoMes: number
   TaxaJurosAoAno: number
   cnpj8: string
   Posicao: number
-  InicioPeriodo: string
-  FimPeriodo: string
+  InicioPeriodo?: string
+  FimPeriodo?: string
 }
 
 interface OlindaResponse {
@@ -57,8 +63,8 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
   private readonly log = logger.child('BcbOlindaProvider')
 
   async fetchRates(bankCode: string, modality: FinancingModality): Promise<OpenFinanceRate[]> {
-    const segment = getSegmentForModality(modality)
     const bcbNames = getBcbNamesForModality(modality)
+    const endpoint: BcbEndpointType = MODALITY_MAPPING[modality]?.bcbEndpoint ?? 'daily'
 
     if (bcbNames.length === 0) {
       this.log.warn('Sem mapeamento BCB para modalidade', { modality })
@@ -72,19 +78,13 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
       return cached
     }
 
-    // Try 3 business days back to account for publication delay
-    const dates = this.getRecentBusinessDates(3)
-
-    for (const date of dates) {
-      const rates = await this.fetchOlindaForDate(bankCode, modality, segment, bcbNames, date)
-      if (rates.length > 0) {
-        memSet(cacheKey, rates, 6 * 60 * 60) // 6h
-        return rates
-      }
+    const rates = await this.fetchOlinda(bankCode, modality, bcbNames, endpoint)
+    if (rates.length > 0) {
+      memSet(cacheKey, rates, 6 * 60 * 60) // 6h
+    } else {
+      this.log.warn('Nenhuma taxa encontrada no OLINDA', { bankCode, modality, endpoint })
     }
-
-    this.log.warn('Nenhuma taxa encontrada no OLINDA', { bankCode, modality })
-    return []
+    return rates
   }
 
   async fetchReferenceTaxes(): Promise<ReferenceTaxes> {
@@ -112,33 +112,35 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
     }
   }
 
-  private async fetchOlindaForDate(
+  private async fetchOlinda(
     bankCode: string,
     modality: FinancingModality,
-    segment: string,
     bcbNames: string[],
-    date: string,
+    endpoint: BcbEndpointType,
   ): Promise<OpenFinanceRate[]> {
     const mapping = MODALITY_MAPPING[modality]
     const bankInfo = BANK_MAPPING[bankCode]
 
-    const url = new URL(`${OLINDA_BASE}/TaxasJurosDiariaPorInicio(InicioPeriodo=@InicioPeriodo)`)
-    url.searchParams.set('@InicioPeriodo', `'${date}'`)
+    const collection = endpoint === 'monthly'
+      ? 'TaxasJurosMensalPorMes'
+      : 'TaxasJurosDiariaPorInicioPeriodo'
+
+    const url = new URL(`${OLINDA_BASE}/${collection}`)
     url.searchParams.set('$format', 'json')
-    url.searchParams.set('$top', '100')
+    url.searchParams.set('$top', '50')
     url.searchParams.set(
       '$select',
-      'Segmento,Modalidade,InstituicaoFinanceira,TaxaJurosAoMes,TaxaJurosAoAno,cnpj8,Posicao,InicioPeriodo,FimPeriodo',
+      endpoint === 'monthly'
+        ? 'Modalidade,InstituicaoFinanceira,TaxaJurosAoMes,TaxaJurosAoAno,cnpj8,anoMes'
+        : 'Segmento,Modalidade,InstituicaoFinanceira,TaxaJurosAoMes,TaxaJurosAoAno,cnpj8,Posicao,InicioPeriodo,FimPeriodo',
     )
 
-    const filterClauses: string[] = [`Segmento eq '${segment}'`]
+    const filterClauses: string[] = []
 
-    // Filter by bank if we have its CNPJ8
     if (bankInfo) {
       filterClauses.push(`cnpj8 eq '${bankInfo.cnpj8}'`)
     }
 
-    // Filter by modality names (OR between possible BCB names)
     const modalityFilter = bcbNames
       .map((n) => `Modalidade eq '${n}'`)
       .join(' or ')
@@ -157,7 +159,7 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
       this.log.info('OLINDA chamada', {
         bankCode,
         modality,
-        date,
+        endpoint,
         status: resp.status,
         duration_ms: durationMs,
       })
@@ -167,7 +169,7 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
       const body = await resp.json() as OlindaResponse
       return this.parseOlindaResponse(body, bankCode, modality, mapping)
     } catch {
-      this.log.warn('Falha ao chamar OLINDA', { bankCode, modality, date, duration_ms: Date.now() - startMs })
+      this.log.warn('Falha ao chamar OLINDA', { bankCode, modality, endpoint, duration_ms: Date.now() - startMs })
       return []
     }
   }
@@ -216,17 +218,4 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
     }
   }
 
-  // Returns last N business dates as ISO strings (yyyy-MM-dd)
-  private getRecentBusinessDates(n: number): string[] {
-    const dates: string[] = []
-    const d = new Date()
-    while (dates.length < n) {
-      d.setDate(d.getDate() - 1)
-      const day = d.getDay()
-      if (day !== 0 && day !== 6) { // skip weekends
-        dates.push(d.toISOString().slice(0, 10))
-      }
-    }
-    return dates
-  }
 }
