@@ -11,6 +11,8 @@ type ConversationItem = {
   currentState: string | null
   mode: string | null
   assignedUserId: string | null
+  waitingHuman: boolean
+  unread: number
 }
 
 type Message = {
@@ -35,13 +37,24 @@ function fmtTime(iso: string) {
 export function ConversationsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [text, setText] = useState('')
+  const [waitingOnly, setWaitingOnly] = useState(false)
   const qc = useQueryClient()
 
   const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
-    queryKey: ['conversations'],
-    queryFn: () => api.get('/conversations', { params: { limit: 50 } }).then((r) => r.data),
+    queryKey: ['conversations', waitingOnly],
+    queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r) => r.data),
     refetchInterval: 20_000,
   })
+
+  const markRead = useMutation({
+    mutationFn: (n: string) => api.post(`/conversations/${encodeURIComponent(n)}/read`),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['conversations'] }),
+  })
+
+  const openConversation = (n: string) => {
+    setSelected(n)
+    markRead.mutate(n)
+  }
 
   const { data: history } = useQuery<{ messages: Message[] }>({
     queryKey: ['conversation', selected],
@@ -75,6 +88,13 @@ export function ConversationsPage() {
   const messages = history?.messages ?? []
   const current = conversations.find((c) => c.whatsappNumber === selected)
   const isHuman = current?.mode === 'human'
+  const waitingCount = conversations.filter((c) => c.waitingHuman).length
+
+  // Mantém a conversa aberta como lida ao chegar mensagem nova (polling)
+  useEffect(() => {
+    if (selected && (history?.messages?.length ?? 0) > 0) markRead.mutate(selected)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [history?.messages?.length])
 
   const submit = () => {
     const body = text.trim()
@@ -83,9 +103,17 @@ export function ConversationsPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-2xl font-bold text-gray-900">Conversas</h2>
-        <p className="text-gray-500 text-sm mt-1">Histórico e atendimento via WhatsApp (atualiza a cada 20s)</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Conversas</h2>
+          <p className="text-gray-500 text-sm mt-1">Histórico e atendimento via WhatsApp (atualiza a cada 20s)</p>
+        </div>
+        <button
+          onClick={() => setWaitingOnly((v) => !v)}
+          className={`text-sm px-3 py-1.5 rounded-lg border ${waitingOnly ? 'bg-yellow-100 border-yellow-300 text-yellow-800' : 'bg-white border-gray-200 text-gray-600'}`}
+        >
+          ⏳ Aguardando atendimento{waitingCount > 0 ? ` (${waitingCount})` : ''}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
@@ -95,14 +123,18 @@ export function ConversationsPage() {
           {conversations.map((c) => (
             <button
               key={c.whatsappNumber}
-              onClick={() => setSelected(c.whatsappNumber)}
-              className={`w-full text-left p-3 border-b hover:bg-gray-50 ${selected === c.whatsappNumber ? 'bg-blue-50' : ''}`}
+              onClick={() => openConversation(c.whatsappNumber)}
+              className={`w-full text-left p-3 border-b hover:bg-gray-50 ${selected === c.whatsappNumber ? 'bg-blue-50' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
             >
               <div className="flex justify-between items-baseline">
                 <span className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</span>
-                <span className="text-[10px] text-gray-400 shrink-0 ml-2">{fmtTime(c.lastAt)}</span>
+                <div className="flex items-center gap-1 shrink-0 ml-2">
+                  {c.unread > 0 && <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none">{c.unread}</span>}
+                  <span className="text-[10px] text-gray-400">{fmtTime(c.lastAt)}</span>
+                </div>
               </div>
               <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
+              {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium">⏳ aguardando atendimento</span>}
               {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
             </button>
           ))}

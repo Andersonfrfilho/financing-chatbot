@@ -72,11 +72,26 @@ export class ConversationController {
     response.json(result)
   }
 
-  // GET /api/conversations?page=&limit=
+  // GET /api/conversations?page=&limit=&waitingHuman=true
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const page = request.query['page'] ? Number(request.query['page']) : 1
     const limit = request.query['limit'] ? Number(request.query['limit']) : 30
-    const result = await this.listConvs.execute(page, limit)
+    const waitingOnly = request.query['waitingHuman'] === 'true'
+    const result = await this.listConvs.execute(page, limit, waitingOnly)
     response.json(result)
+  }
+
+  // POST /api/conversations/:whatsapp/read  (zera o contador de não-lidas)
+  async read(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    await this.takeover.markRead(whatsapp)
+    response.json({ ok: true })
+  }
+
+  // POST /api/conversations/:whatsapp/request-human  (interno, n8n) — cliente pediu consultor
+  async requestHuman(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    await this.takeover.requestHuman(whatsapp)
+    response.json({ ok: true }, 201)
   }
 }

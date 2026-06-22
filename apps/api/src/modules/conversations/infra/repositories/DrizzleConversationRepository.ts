@@ -30,6 +30,8 @@ export interface ConversationListItem {
   currentState: string | null
   mode: string | null
   assignedUserId: string | null
+  waitingHuman: boolean
+  unread: number
 }
 
 export class DrizzleConversationRepository {
@@ -101,8 +103,11 @@ export class DrizzleConversationRepository {
     return updated.length > 0
   }
 
-  // Lista de conversas: última mensagem por número + nome do cliente + estado da sessão.
-  async listConversations(limit: number, offset: number): Promise<ConversationListItem[]> {
+  // Lista de conversas: última mensagem por número + cliente + estado + não-lidas + fila.
+  async listConversations(limit: number, offset: number, waitingOnly: boolean): Promise<ConversationListItem[]> {
+    const waitingFilter = waitingOnly
+      ? sql`WHERE s.human_requested_at IS NOT NULL AND s.assigned_user_id IS NULL`
+      : sql``
     const result = await db.execute(sql`
       SELECT t.whatsapp_number   AS "whatsappNumber",
              t.content           AS "lastContent",
@@ -111,7 +116,13 @@ export class DrizzleConversationRepository {
              c.name              AS "clientName",
              s.current_state     AS "currentState",
              s.mode              AS "mode",
-             s.assigned_user_id  AS "assignedUserId"
+             s.assigned_user_id  AS "assignedUserId",
+             (s.human_requested_at IS NOT NULL AND s.assigned_user_id IS NULL) AS "waitingHuman",
+             COALESCE((
+               SELECT count(*)::int FROM conversation_messages u
+               WHERE u.whatsapp_number = t.whatsapp_number AND u.direction = 'inbound'
+                 AND (s.last_agent_read_at IS NULL OR u.created_at > s.last_agent_read_at)
+             ), 0) AS "unread"
       FROM (
         SELECT DISTINCT ON (m.whatsapp_number)
                m.whatsapp_number, m.content, m.direction, m.created_at
@@ -122,9 +133,25 @@ export class DrizzleConversationRepository {
         ON c.whatsapp_number = t.whatsapp_number AND c.deleted_at IS NULL
       LEFT JOIN conversation_sessions s
         ON s.whatsapp_number = t.whatsapp_number
+      ${waitingFilter}
       ORDER BY t.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `)
     return (result.rows ?? []) as unknown as ConversationListItem[]
+  }
+
+  async markRead(whatsappNumber: string): Promise<void> {
+    await db
+      .update(conversationSessions)
+      .set({ lastAgentReadAt: new Date(), updatedAt: new Date() })
+      .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
+  }
+
+  // Marca a conversa como "aguardando humano" (cliente pediu consultor). Não sobrescreve se já assumida.
+  async requestHuman(whatsappNumber: string): Promise<void> {
+    await db
+      .update(conversationSessions)
+      .set({ humanRequestedAt: new Date(), updatedAt: new Date() })
+      .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
   }
 }

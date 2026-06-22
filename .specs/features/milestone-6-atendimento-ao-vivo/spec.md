@@ -1,6 +1,6 @@
 # Spec: Milestone 6 — Atendimento ao Vivo (Histórico + Chat Humano)
 
-**Status:** Fases A, B e D implementadas (transcript + histórico + takeover/envio pelo painel). Falta C (SSE ao vivo) e E (fila).
+**Status:** Fases A, B, D e E implementadas (transcript, histórico, takeover/envio, fila+não-lidas). Falta só C (SSE ao vivo — hoje coberto por polling).
 **Escopo:** F-030, F-031, F-032, F-033, F-034
 
 ### Decisões travadas
