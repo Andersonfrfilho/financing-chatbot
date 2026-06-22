@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 import { api } from '@/lib/api'
@@ -12,6 +12,14 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false)
   const setAuth = useAuthStore((s) => s.setAuth)
 
+  useEffect(() => {
+    const savedEmail = localStorage.getItem('rememberMe_email')
+    if (savedEmail) {
+      setEmail(savedEmail)
+      setRememberMe(true)
+    }
+  }, [])
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
@@ -19,6 +27,14 @@ export function LoginPage() {
     try {
       const res = await api.post('/auth/login', { email, password })
       setAuth(res.data.accessToken, res.data.refreshToken, res.data.user)
+
+      // Salvar ou remover email do localStorage baseado em rememberMe
+      if (rememberMe) {
+        localStorage.setItem('rememberMe_email', email)
+      } else {
+        localStorage.removeItem('rememberMe_email')
+      }
+
       window.location.href = '/'
     } catch {
       setError('E-mail ou senha inválidos.')
