@@ -6,6 +6,12 @@ export const conversationSessions = pgTable('conversation_sessions', {
   // varchar (não enum): a máquina de estados evolui com frequência; enum bloqueava novos estados
   currentState: varchar('current_state', { length: 64 }).default('greeting').notNull(),
   context: jsonb('context').$type<Record<string, unknown>>().default({}).notNull(),
+  // Takeover humano (Milestone 6 / Fase D)
+  mode: varchar('mode', { length: 12 }).default('bot').notNull(), // bot | human
+  assignedUserId: uuid('assigned_user_id'),
+  humanRequestedAt: timestamp('human_requested_at', { withTimezone: true }),
+  lastInboundAt: timestamp('last_inbound_at', { withTimezone: true }),
+  lastAgentReadAt: timestamp('last_agent_read_at', { withTimezone: true }),
   lastActivity: timestamp('last_activity', { withTimezone: true }).defaultNow().notNull(),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

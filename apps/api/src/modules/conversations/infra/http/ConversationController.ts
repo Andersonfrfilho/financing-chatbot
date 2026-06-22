@@ -4,6 +4,10 @@ import { validateBody } from '@/infra/http/middlewares/validateBody'
 import type { LogMessageUseCase } from '../../application/use-cases/LogMessageUseCase'
 import type { GetConversationHistoryUseCase } from '../../application/use-cases/GetConversationHistoryUseCase'
 import type { ListConversationsUseCase } from '../../application/use-cases/ListConversationsUseCase'
+import type { ManageTakeoverUseCase } from '../../application/use-cases/ManageTakeoverUseCase'
+import type { SendAgentMessageUseCase } from '../../application/use-cases/SendAgentMessageUseCase'
+
+const sendSchema = z.object({ text: z.string().min(1) })
 
 const logSchema = z.object({
   direction:   z.enum(['inbound', 'outbound']),
@@ -21,7 +25,33 @@ export class ConversationController {
     private readonly logMessage:  LogMessageUseCase,
     private readonly getHistory:  GetConversationHistoryUseCase,
     private readonly listConvs:   ListConversationsUseCase,
+    private readonly takeover:    ManageTakeoverUseCase,
+    private readonly sendAgent:   SendAgentMessageUseCase,
   ) {}
+
+  // POST /api/conversations/:whatsapp/takeover  (assume a conversa, pausa o bot)
+  async assume(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const userId = request.user?.sub ?? ''
+    const result = await this.takeover.takeover(whatsapp, userId)
+    response.json(result)
+  }
+
+  // POST /api/conversations/:whatsapp/release  (devolve ao bot)
+  async release(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const result = await this.takeover.release(whatsapp)
+    response.json(result)
+  }
+
+  // POST /api/conversations/:whatsapp/send  { text }  (atendente → cliente)
+  async send(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const userId = request.user?.sub ?? ''
+    const { text } = validateBody(sendSchema, request.body)
+    const result = await this.sendAgent.execute(whatsapp, text, userId)
+    response.json(result, 201)
+  }
 
   // POST /api/conversations/:whatsapp/messages  (interno, token de serviço) — log do n8n
   async log(request: ParsedRequest, response: ResponseHelper): Promise<void> {

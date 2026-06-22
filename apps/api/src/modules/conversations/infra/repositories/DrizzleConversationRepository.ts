@@ -1,7 +1,13 @@
 import { and, eq, lt, desc, sql } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
-import { conversationMessages } from '@/infra/database/schema'
+import { conversationMessages, conversationSessions } from '@/infra/database/schema'
 import type { ConversationMessage } from '@/infra/database/schema'
+
+export interface SessionMode {
+  whatsappNumber: string
+  mode: string
+  assignedUserId: string | null
+}
 
 export interface LogMessageInput {
   whatsappNumber: string
@@ -22,6 +28,8 @@ export interface ConversationListItem {
   lastAt: string
   clientName: string | null
   currentState: string | null
+  mode: string | null
+  assignedUserId: string | null
 }
 
 export class DrizzleConversationRepository {
@@ -66,6 +74,33 @@ export class DrizzleConversationRepository {
     return rows.reverse()
   }
 
+  async getSessionMode(whatsappNumber: string): Promise<SessionMode | null> {
+    const rows = await db
+      .select({
+        whatsappNumber: conversationSessions.whatsappNumber,
+        mode: conversationSessions.mode,
+        assignedUserId: conversationSessions.assignedUserId,
+      })
+      .from(conversationSessions)
+      .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
+      .limit(1)
+    return rows[0] ?? null
+  }
+
+  async setMode(whatsappNumber: string, mode: 'bot' | 'human', assignedUserId: string | null): Promise<boolean> {
+    const updated = await db
+      .update(conversationSessions)
+      .set({
+        mode,
+        assignedUserId,
+        humanRequestedAt: mode === 'human' ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
+      .returning({ id: conversationSessions.id })
+    return updated.length > 0
+  }
+
   // Lista de conversas: última mensagem por número + nome do cliente + estado da sessão.
   async listConversations(limit: number, offset: number): Promise<ConversationListItem[]> {
     const result = await db.execute(sql`
@@ -74,7 +109,9 @@ export class DrizzleConversationRepository {
              t.direction         AS "lastDirection",
              t.created_at        AS "lastAt",
              c.name              AS "clientName",
-             s.current_state     AS "currentState"
+             s.current_state     AS "currentState",
+             s.mode              AS "mode",
+             s.assigned_user_id  AS "assignedUserId"
       FROM (
         SELECT DISTINCT ON (m.whatsapp_number)
                m.whatsapp_number, m.content, m.direction, m.created_at

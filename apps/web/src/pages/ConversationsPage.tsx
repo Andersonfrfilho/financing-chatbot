@@ -1,4 +1,4 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 
@@ -9,6 +9,8 @@ type ConversationItem = {
   lastAt: string
   clientName: string | null
   currentState: string | null
+  mode: string | null
+  assignedUserId: string | null
 }
 
 type Message = {
@@ -32,15 +34,15 @@ function fmtTime(iso: string) {
 
 export function ConversationsPage() {
   const [selected, setSelected] = useState<string | null>(null)
+  const [text, setText] = useState('')
+  const qc = useQueryClient()
 
-  // Lista de conversas — polling 20s (sem conexão persistente; barato no Railway)
   const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations'],
     queryFn: () => api.get('/conversations', { params: { limit: 50 } }).then((r) => r.data),
     refetchInterval: 20_000,
   })
 
-  // Histórico da conversa aberta — polling 10s só enquanto há uma selecionada
   const { data: history } = useQuery<{ messages: Message[] }>({
     queryKey: ['conversation', selected],
     queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50 } }).then((r) => r.data),
@@ -48,25 +50,48 @@ export function ConversationsPage() {
     refetchInterval: selected ? 10_000 : false,
   })
 
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['conversations'] })
+    qc.invalidateQueries({ queryKey: ['conversation', selected] })
+  }
+
+  const takeover = useMutation({
+    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/takeover`),
+    onSuccess: refresh,
+  })
+  const release = useMutation({
+    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/release`),
+    onSuccess: refresh,
+  })
+  const send = useMutation({
+    mutationFn: (body: string) => api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: body }),
+    onSuccess: () => { setText(''); refresh() },
+  })
+
   const bottomRef = useRef<HTMLDivElement>(null)
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [history?.messages?.length, selected])
 
   const conversations = list?.conversations ?? []
   const messages = history?.messages ?? []
+  const current = conversations.find((c) => c.whatsappNumber === selected)
+  const isHuman = current?.mode === 'human'
+
+  const submit = () => {
+    const body = text.trim()
+    if (body && !send.isPending) send.mutate(body)
+  }
 
   return (
     <div className="space-y-4">
       <div>
         <h2 className="text-2xl font-bold text-gray-900">Conversas</h2>
-        <p className="text-gray-500 text-sm mt-1">Histórico das conversas do WhatsApp (atualiza a cada 20s)</p>
+        <p className="text-gray-500 text-sm mt-1">Histórico e atendimento via WhatsApp (atualiza a cada 20s)</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-        {/* Lista de conversas */}
+        {/* Lista */}
         <div className="border rounded-lg overflow-y-auto bg-white">
-          {conversations.length === 0 && (
-            <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>
-          )}
+          {conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
           {conversations.map((c) => (
             <button
               key={c.whatsappNumber}
@@ -77,23 +102,38 @@ export function ConversationsPage() {
                 <span className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</span>
                 <span className="text-[10px] text-gray-400 shrink-0 ml-2">{fmtTime(c.lastAt)}</span>
               </div>
-              <p className="text-xs text-gray-500 truncate mt-0.5">
-                {c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}
-              </p>
-              {c.currentState && <span className="text-[10px] text-gray-400">{c.currentState}</span>}
+              <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
+              {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
             </button>
           ))}
         </div>
 
-        {/* Histórico da conversa */}
+        {/* Conversa */}
         <div className="lg:col-span-2 border rounded-lg flex flex-col bg-gray-50">
           {!selected ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-              Selecione uma conversa para ver o histórico
-            </div>
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Selecione uma conversa</div>
           ) : (
             <>
-              <div className="px-4 py-2 border-b bg-white text-sm font-medium text-gray-700">{selected}</div>
+              <div className="px-4 py-2 border-b bg-white flex items-center justify-between">
+                <div className="text-sm font-medium text-gray-700">
+                  {current?.clientName ?? selected}
+                  <span className={`ml-2 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {isHuman ? 'atendimento humano' : 'bot ativo'}
+                  </span>
+                </div>
+                {isHuman ? (
+                  <button onClick={() => release.mutate()} disabled={release.isPending}
+                    className="text-xs px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+                    Devolver ao bot
+                  </button>
+                ) : (
+                  <button onClick={() => takeover.mutate()} disabled={takeover.isPending}
+                    className="text-xs px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white">
+                    Assumir conversa
+                  </button>
+                )}
+              </div>
+
               <div className="flex-1 overflow-y-auto p-4 space-y-2">
                 {messages.map((m) => {
                   const mine = m.direction === 'outbound'
@@ -109,7 +149,23 @@ export function ConversationsPage() {
                 })}
                 <div ref={bottomRef} />
               </div>
-              {/* Fase D: caixa de envio do atendente (takeover) entra aqui */}
+
+              {/* Caixa de envio (assume a conversa automaticamente ao enviar) */}
+              <div className="border-t bg-white p-2 flex gap-2">
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
+                  placeholder={isHuman ? 'Escreva uma mensagem...' : 'Escreva (assume a conversa ao enviar)...'}
+                  rows={1}
+                  className="flex-1 resize-none border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                />
+                <button onClick={submit} disabled={send.isPending || !text.trim()}
+                  className="px-4 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50">
+                  {send.isPending ? '...' : 'Enviar'}
+                </button>
+              </div>
+              {send.isError && <p className="px-3 pb-2 text-xs text-red-500">Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).</p>}
             </>
           )}
         </div>

@@ -22,6 +22,13 @@
       "when": 1750896600000,
       "tag": "0005_conversation_messages",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1750897000000,
+      "tag": "0006_session_human_mode",
+      "breakpoints": true
     }
   ]
 }

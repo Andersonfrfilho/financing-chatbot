@@ -15,6 +15,9 @@ import { DrizzleConversationRepository } from '@/modules/conversations/infra/rep
 import { LogMessageUseCase } from '@/modules/conversations/application/use-cases/LogMessageUseCase'
 import { GetConversationHistoryUseCase } from '@/modules/conversations/application/use-cases/GetConversationHistoryUseCase'
 import { ListConversationsUseCase } from '@/modules/conversations/application/use-cases/ListConversationsUseCase'
+import { ManageTakeoverUseCase } from '@/modules/conversations/application/use-cases/ManageTakeoverUseCase'
+import { SendAgentMessageUseCase } from '@/modules/conversations/application/use-cases/SendAgentMessageUseCase'
+import { WhatsAppSender } from '@/modules/conversations/infra/WhatsAppSender'
 import { ConversationController } from '@/modules/conversations/infra/http/ConversationController'
 
 // Auth
@@ -160,10 +163,13 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
 
   // Conversations
   const conversationRepository = new DrizzleConversationRepository()
+  const whatsAppSender = new WhatsAppSender()
   const conversationController = new ConversationController(
     new LogMessageUseCase(conversationRepository),
     new GetConversationHistoryUseCase(conversationRepository),
     new ListConversationsUseCase(conversationRepository),
+    new ManageTakeoverUseCase(conversationRepository),
+    new SendAgentMessageUseCase(conversationRepository, whatsAppSender),
   )
 
   // Fipe
