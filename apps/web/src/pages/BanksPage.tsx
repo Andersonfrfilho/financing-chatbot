@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { Badge } from '@/components/ui'
 import { api } from '@/lib/api'
 
 type Bank = {
@@ -12,7 +13,7 @@ type Bank = {
 export function BanksPage() {
   const { data: banks } = useQuery<Bank[]>({
     queryKey: ['banks'],
-    queryFn: () => api.get('/banks').then((r) => r.data),
+    queryFn: () => api.get('/banks').then((r: any) => r.data),
   })
 
   return (

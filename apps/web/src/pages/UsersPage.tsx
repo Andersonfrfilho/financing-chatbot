@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Card } from '@/components/ui'
 import { api } from '@/lib/api'
 
 type User = {
@@ -20,12 +21,12 @@ export function UsersPage() {
 
   const { data } = useQuery<{ data: User[]; total: number }>({
     queryKey: ['users'],
-    queryFn: () => api.get('/users').then((r) => r.data),
+    queryFn: () => api.get('/users').then((r: any) => r.data),
   })
 
   const { data: roles } = useQuery<Role[]>({
     queryKey: ['roles'],
-    queryFn: () => api.get('/roles').then((r) => r.data),
+    queryFn: () => api.get('/roles').then((r: any) => r.data),
   })
 
   const createUser = useMutation({

@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
+import { Copy, LogOut, Power } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
+import { Button } from '@/components/ui'
+import { Textarea } from '@/components/ui'
 
 const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
@@ -45,7 +48,7 @@ export function ConversationsPage() {
 
   const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
-    queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r) => r.data),
+    queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
     refetchInterval: 20_000,
   })
 
@@ -62,7 +65,7 @@ export function ConversationsPage() {
   const [before, setBefore] = useState<string | null>(null)
   const { data: history } = useQuery<{ messages: Message[] }>({
     queryKey: ['conversation', selected, before],
-    queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50, before } }).then((r) => r.data),
+    queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50, before } }).then((r: any) => r.data),
     enabled: !!selected,
     refetchInterval: selected ? 10_000 : false,
   })
@@ -146,12 +149,12 @@ export function ConversationsPage() {
           <h2 className="text-2xl font-bold text-gray-900">Conversas</h2>
           <p className="text-gray-500 text-sm mt-1">Histórico e atendimento via WhatsApp (atualiza a cada 20s)</p>
         </div>
-        <button
+        <Button
+          variant={waitingOnly ? 'default' : 'outline'}
           onClick={() => setWaitingOnly((v) => !v)}
-          className={`text-sm px-3 py-1.5 rounded-lg border ${waitingOnly ? 'bg-yellow-100 border-yellow-300 text-yellow-800' : 'bg-white border-gray-200 text-gray-600'}`}
         >
           ⏳ Aguardando atendimento{waitingCount > 0 ? ` (${waitingCount})` : ''}
-        </button>
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
@@ -194,20 +197,33 @@ export function ConversationsPage() {
                 </div>
                 <div className="flex gap-2">
                   {isHuman ? (
-                    <button onClick={() => release.mutate()} disabled={release.isPending}
-                      className="text-xs px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => release.mutate()}
+                      disabled={release.isPending}
+                    >
+                      <LogOut size={14} />
                       Devolver ao bot
-                    </button>
+                    </Button>
                   ) : (
-                    <button onClick={() => takeover.mutate()} disabled={takeover.isPending}
-                      className="text-xs px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white">
+                    <Button
+                      size="sm"
+                      onClick={() => takeover.mutate()}
+                      disabled={takeover.isPending}
+                    >
+                      <Power size={14} />
                       Assumir conversa
-                    </button>
+                    </Button>
                   )}
-                  <button onClick={() => finalize.mutate()} disabled={finalize.isPending}
-                    className="text-xs px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white">
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={() => finalize.mutate()}
+                    disabled={finalize.isPending}
+                  >
                     Finalizar
-                  </button>
+                  </Button>
                 </div>
               </div>
 
@@ -233,13 +249,14 @@ export function ConversationsPage() {
 
                         {/* Ações ao hover */}
                         <div className="absolute -top-8 right-0 hidden group-hover:flex gap-1 bg-white border rounded shadow-md p-1">
-                          <button
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => navigator.clipboard.writeText(m.content || '')}
-                            className="text-xs px-2 py-1 hover:bg-gray-100 rounded"
                             title="Copiar"
                           >
-                            📋
-                          </button>
+                            <Copy size={14} />
+                          </Button>
                         </div>
                       </div>
                     </div>
@@ -250,18 +267,20 @@ export function ConversationsPage() {
 
               {/* Caixa de envio (assume a conversa automaticamente ao enviar) */}
               <div className="border-t bg-white p-2 flex gap-2">
-                <textarea
+                <Textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
                   onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
                   placeholder={isHuman ? 'Escreva uma mensagem...' : 'Escreva (assume a conversa ao enviar)...'}
                   rows={1}
-                  className="flex-1 resize-none border rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+                  className="flex-1"
                 />
-                <button onClick={submit} disabled={send.isPending || !text.trim()}
-                  className="px-4 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm disabled:opacity-50">
+                <Button
+                  onClick={submit}
+                  disabled={send.isPending || !text.trim()}
+                >
                   {send.isPending ? '...' : 'Enviar'}
-                </button>
+                </Button>
               </div>
               {send.isError && <p className="px-3 pb-2 text-xs text-red-500">Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).</p>}
             </>

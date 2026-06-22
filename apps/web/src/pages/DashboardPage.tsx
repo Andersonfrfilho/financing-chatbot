@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
+import { Card } from '@/components/ui'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }
@@ -24,7 +25,7 @@ const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'
 export function DashboardPage() {
   const { data: stats } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
-    queryFn: () => api.get('/dashboard/stats').then((r) => r.data),
+    queryFn: () => api.get('/dashboard/stats').then((r: any) => r.data),
     refetchInterval: 30_000,
   })
 
@@ -53,7 +54,7 @@ export function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="card">
+        <Card className="p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Leads por Status</h3>
           {statusChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>
@@ -68,9 +69,9 @@ export function DashboardPage() {
           ) : (
             <p className="text-gray-400 text-sm text-center py-8">Sem dados ainda</p>
           )}
-        </div>
+        </Card>
 
-        <div className="card">
+        <Card className="p-6">
           <h3 className="font-semibold text-gray-900 mb-4">Simulações por Modalidade</h3>
           {financingChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={220}>

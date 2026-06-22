@@ -1,5 +1,8 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { api } from '@/lib/api'
 
 type Simulation = {
@@ -24,7 +27,7 @@ export function SimulationsPage() {
 
   const { data } = useQuery<{ data: Simulation[]; total: number }>({
     queryKey: ['simulations', page],
-    queryFn: () => api.get('/simulations', { params: { page, limit: 20 } }).then((r) => r.data),
+    queryFn: () => api.get('/simulations', { params: { page, limit: 20 } }).then((r: any) => r.data),
   })
 
   return (
@@ -34,41 +37,49 @@ export function SimulationsPage() {
         <p className="text-gray-500 text-sm mt-1">{data?.total ?? 0} simulações realizadas</p>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Modalidade', 'Valor Solicitado', 'Prazo', 'Data', 'Resultados'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Modalidade</TableHead>
+              <TableHead>Valor Solicitado</TableHead>
+              <TableHead>Prazo</TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Resultados</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data?.data.map((sim) => (
-              <tr key={sim.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <span className="badge bg-blue-100 text-blue-700">
+              <TableRow key={sim.id}>
+                <TableCell>
+                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700">
                     {FINANCING_LABELS[sim.financingType] ?? sim.financingType}
-                  </span>
-                </td>
-                <td className="px-4 py-3 font-medium text-gray-900">{formatBRL(sim.requestedAmount)}</td>
-                <td className="px-4 py-3 text-gray-600">{sim.termMonths} meses</td>
-                <td className="px-4 py-3 text-gray-500">{new Date(sim.createdAt).toLocaleDateString('pt-BR')}</td>
-                <td className="px-4 py-3 text-gray-500">{sim.results?.length ?? 0} bancos</td>
-              </tr>
+                  </div>
+                </TableCell>
+                <TableCell className="font-medium">{formatBRL(sim.requestedAmount)}</TableCell>
+                <TableCell>{sim.termMonths} meses</TableCell>
+                <TableCell>{new Date(sim.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell>{sim.results?.length ?? 0} bancos</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!data?.data.length && (
           <p className="text-center text-gray-400 py-8">Nenhuma simulação encontrada</p>
         )}
       </div>
 
       {data && data.total > 20 && (
-        <div className="flex justify-center gap-2">
-          <button className="btn-secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
+        <div className="flex justify-center items-center gap-2">
+          <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <ChevronLeft size={16} />
+            Anterior
+          </Button>
           <span className="px-4 py-2 text-sm text-gray-600">Página {page}</span>
-          <button className="btn-secondary" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>Próxima</button>
+          <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
+            Próxima
+            <ChevronRight size={16} />
+          </Button>
         </div>
       )}
     </div>
