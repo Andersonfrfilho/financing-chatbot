@@ -2,6 +2,7 @@ import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
 import { WS_EVENTS } from '@/infra/websocket/WebSocketEvents'
+import { logger } from '@/shared/logger'
 import { SacCalculatorService } from '../services/SacCalculatorService'
 import { PriceCalculatorService } from '../services/PriceCalculatorService'
 import { GetBankRatesUseCase } from '@/modules/open-finance/application/use-cases/GetBankRatesUseCase'
@@ -82,8 +83,11 @@ export class CreateSimulationUseCase {
   ) {}
 
   async execute(input: SimulationInput): Promise<SimulationOutput> {
+    const log = logger.child('CreateSimulation', input.financingType)
     const whatsappNumber = input.whatsappNumber ?? 'internal'
     const financedAmount = input.requestedAmount - input.downPaymentAmount - (input.fgtsAmount ?? 0)
+
+    log.info('Iniciando simulação', { whatsappNumber, requestedAmount: input.requestedAmount, financedAmount })
 
     if (financedAmount <= 0) {
       throw new Error('Valor financiado deve ser maior que zero')
@@ -93,6 +97,7 @@ export class CreateSimulationUseCase {
     const openFinanceProvider = new HttpOpenFinanceProviderImplementation()
     const fetchRatesUseCase = new FetchAndCacheBankRatesUseCase(this.db, this.cache, openFinanceProvider)
     await fetchRatesUseCase.execute(input.financingType)
+    log.debug('Taxas atualizadas')
 
     // Obtém taxas por modalidade
     const modalities = MODALITY_BY_TYPE[input.financingType] ?? ['SFH']
@@ -102,6 +107,12 @@ export class CreateSimulationUseCase {
       await Promise.all(modalities.map((m) => getRatesUseCase.execute(m)))
     ).flat()
 
+    log.info('Taxas obtidas', { modalitiesCount: modalities.length, ratesFound: allRates.length })
+
+    if (allRates.length === 0) {
+      log.warn('Nenhuma taxa encontrada para as modalidades', { modalities })
+    }
+
     // Agrupa por banco: pega a menor taxa por banco
     const bestRateByBank = new Map<string, typeof allRates[0]>()
     for (const rate of allRates) {
@@ -110,6 +121,8 @@ export class CreateSimulationUseCase {
         bestRateByBank.set(rate.bankCode, rate)
       }
     }
+
+    log.info('Bancos agrupados', { banksCount: bestRateByBank.size })
 
     // Persiste simulação
     const [simulation] = await this.db
@@ -214,6 +227,8 @@ export class CreateSimulationUseCase {
 
     // Ordena por menor parcela SAC
     results.sort((a, b) => a.sac.firstInstallment - b.sac.firstInstallment)
+
+    log.info('Simulação concluída', { simulationId: simulation.id, resultsCount: results.length })
 
     if (this.wsHub) {
       await this.wsHub.publishBroadcast('global', WS_EVENTS.SIMULATION_COMPLETED, {
