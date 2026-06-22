@@ -1,5 +1,4 @@
 import { useQuery } from '@tanstack/react-query'
-import { Badge } from '@/components/ui'
 import { api } from '@/lib/api'
 
 type Bank = {
