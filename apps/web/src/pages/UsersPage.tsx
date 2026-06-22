@@ -1,7 +1,26 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Edit2 } from 'lucide-react'
-import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import {
+  Button,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui'
 import { api } from '@/lib/api'
 
 type User = {
@@ -18,8 +37,8 @@ type Role = { id: string; name: string }
 export function UsersPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [form, setForm] = useState({ name: '', email: '', password: '', roleId: '' })
-  const [editForm, setEditForm] = useState({ name: '', email: '', roleId: '' })
+  const [form, setForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
   const qc = useQueryClient()
 
   const { data } = useQuery<{ data: User[]; total: number }>({
@@ -42,8 +61,11 @@ export function UsersPage() {
   })
 
   const updateUser = useMutation({
-    mutationFn: ({ id, ...payload }: { id: string; name: string; email: string; roleId: string }) =>
-      api.put(`/users/${id}`, payload),
+    mutationFn: ({ id, name, email, password, roleId }: { id: string; name: string; email: string; password?: string; roleId: string }) => {
+      const payload: any = { name, email, roleId }
+      if (password) payload.password = password
+      return api.put(`/users/${id}`, payload)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['users'] })
       setEditingId(null)
@@ -56,7 +78,7 @@ export function UsersPage() {
   })
 
   const startEdit = (user: User) => {
-    setEditForm({ name: user.name, email: user.email, roleId: user.role.id })
+    setEditForm({ name: user.name, email: user.email, password: '', passwordConfirm: '', roleId: user.role.id })
     setEditingId(user.id)
   }
 
@@ -76,31 +98,53 @@ export function UsersPage() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
-              <input className="w-full border rounded px-3 py-2 text-sm" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
-              <input type="email" className="w-full border rounded px-3 py-2 text-sm" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Senha</label>
-              <input type="password" className="w-full border rounded px-3 py-2 text-sm" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Confirmar Senha</label>
+              <Input type="password" value={form.passwordConfirm} onChange={(e) => setForm({ ...form, passwordConfirm: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Perfil</label>
-              <select className="w-full border rounded px-3 py-2 text-sm" value={form.roleId} onChange={(e) => setForm({ ...form, roleId: e.target.value })}>
-                <option value="">Selecione...</option>
-                {roles?.map((r) => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
+              <Select value={form.roleId} onValueChange={(value: string) => setForm({ ...form, roleId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles?.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button className="btn-primary" onClick={() => createUser.mutate()} disabled={createUser.isPending}>
+            <Button
+              onClick={() => {
+                if (form.password !== form.passwordConfirm) {
+                  alert('As senhas não coincidem!')
+                  return
+                }
+                createUser.mutate()
+              }}
+              disabled={createUser.isPending || form.password !== form.passwordConfirm}
+            >
               {createUser.isPending ? 'Criando...' : 'Criar'}
-            </button>
-            <button className="btn-secondary" onClick={() => setShowCreate(false)}>Cancelar</button>
+            </Button>
+            <Button variant="outline" onClick={() => setShowCreate(false)}>Cancelar</Button>
           </div>
           {createUser.isError && <p className="text-red-600 text-sm mt-2">Erro ao criar usuário.</p>}
+          {form.password && form.passwordConfirm && form.password !== form.passwordConfirm && (
+            <p className="text-red-600 text-sm mt-2">As senhas não coincidem!</p>
+          )}
         </div>
       )}
 
@@ -180,6 +224,24 @@ export function UsersPage() {
               />
             </div>
             <div>
+              <label className="text-sm font-medium">Nova Senha (deixar em branco para manter)</label>
+              <Input
+                type="password"
+                value={editForm.password}
+                onChange={(e) => setEditForm({ ...editForm, password: e.target.value })}
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Confirmar Senha</label>
+              <Input
+                type="password"
+                value={editForm.passwordConfirm}
+                onChange={(e) => setEditForm({ ...editForm, passwordConfirm: e.target.value })}
+                placeholder="••••••••"
+              />
+            </div>
+            <div>
               <label className="text-sm font-medium">Perfil</label>
               <Select value={editForm.roleId} onValueChange={(value: string) => setEditForm({ ...editForm, roleId: value })}>
                 <SelectTrigger>
@@ -192,6 +254,9 @@ export function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
+            {editForm.password && editForm.passwordConfirm && editForm.password !== editForm.passwordConfirm && (
+              <p className="text-red-600 text-sm">⚠️ As senhas não coincidem!</p>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingId(null)}>
@@ -200,10 +265,14 @@ export function UsersPage() {
             <Button
               onClick={() => {
                 if (editingId) {
+                  if (editForm.password && editForm.password !== editForm.passwordConfirm) {
+                    alert('As senhas não coincidem!')
+                    return
+                  }
                   updateUser.mutate({ id: editingId, ...editForm })
                 }
               }}
-              disabled={updateUser.isPending}
+              disabled={updateUser.isPending || (editForm.password !== editForm.passwordConfirm && editForm.password !== '')}
             >
               {updateUser.isPending ? '...' : 'Salvar'}
             </Button>
