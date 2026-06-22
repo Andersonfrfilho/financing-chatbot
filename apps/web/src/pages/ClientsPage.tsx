@@ -255,9 +255,12 @@ export function ClientsPage() {
               <label className="text-sm font-medium">WhatsApp</label>
               <Input
                 type="tel"
-                value={editForm.whatsappNumber}
-                onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
-                placeholder="55169990000000"
+                value={formatPhone(editForm.whatsappNumber)}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '')
+                  setEditForm({ ...editForm, whatsappNumber: raw })
+                }}
+                placeholder="(55) 16991-042201"
                 className="font-mono"
               />
             </div>
