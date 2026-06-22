@@ -202,6 +202,7 @@ export function ConversationsPage() {
                   const mine = m.direction === 'outbound'
                   const color = m.sender === 'agent' ? 'bg-green-100' : m.sender === 'bot' ? 'bg-blue-100' : 'bg-white'
                   const statusIcon = m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : m.status === 'sent' ? '✓' : ''
+                  const statusColor = m.status === 'read' ? 'text-blue-600' : m.status === 'delivered' ? 'text-blue-400' : 'text-gray-400'
                   const isMedia = m.type !== 'text' && m.payload
                   return (
                     <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} group`}>
@@ -214,7 +215,7 @@ export function ConversationsPage() {
                         ) : (
                           <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{m.content}</p>
                         )}
-                        {mine && statusIcon && <div className="text-[10px] text-gray-400 mt-1 text-right">{statusIcon}</div>}
+                        {mine && statusIcon && <div className={`text-[10px] ${statusColor} mt-1 text-right font-bold`}>{statusIcon}</div>}
 
                         {/* Ações ao hover */}
                         <div className="absolute -top-8 right-0 hidden group-hover:flex gap-1 bg-white border rounded shadow-md p-1">
