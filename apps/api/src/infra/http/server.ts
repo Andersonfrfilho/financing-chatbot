@@ -9,6 +9,7 @@ import { buildContainer } from '@/infra/container'
 import { checkDatabaseConnection, runMigrations, ensureN8nDatabase } from '@/infra/database/connection'
 import { checkRedisConnection } from '@/infra/redis/connection'
 import { RedisProvider } from '@/infra/redis/RedisProvider'
+import { seedDatabase } from '@/infra/database/seeds'
 import { registerAuthRoutes } from '@/modules/auth/infra/http/AuthRoutes'
 import { registerSimulationRoutes } from '@/modules/simulations/infra/http/SimulationRoutes'
 import { registerWebhookRoutes } from '@/modules/webhook/infra/http/WebhookRoutes'
@@ -30,6 +31,7 @@ export async function createServer() {
   await checkDatabaseConnection()
   await ensureN8nDatabase()
   await runMigrations()
+  await seedDatabase()
   await checkRedisConnection()
 
   const app = uWS.App()

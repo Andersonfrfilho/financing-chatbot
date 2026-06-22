@@ -2,7 +2,7 @@ import { db } from '../connection'
 import * as schema from '../schema'
 import { hash } from '@node-rs/argon2'
 
-async function seed() {
+export async function seedDatabase() {
   console.log('[Seed] Starting...')
 
   // Roles
@@ -87,10 +87,14 @@ async function seed() {
   ]).onConflictDoNothing()
 
   console.log('[Seed] Done.')
-  process.exit(0)
 }
 
-seed().catch((error) => {
-  console.error('[Seed] Failed:', error)
-  process.exit(1)
-})
+// Executar diretamente se chamado como script
+if (process.argv[1]?.endsWith('seeds/index.ts')) {
+  seedDatabase()
+    .catch((error) => {
+      console.error('[Seed] Failed:', error)
+      process.exit(1)
+    })
+    .finally(() => process.exit(0))
+}
