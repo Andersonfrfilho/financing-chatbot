@@ -32,6 +32,11 @@ interface FipeApiValue {
   SiglaCombustivel: string
 }
 
+export interface FipeYear {
+  codigo: string  // ex: "2014-1" (ano-combustível: 1=gasolina, 2=álcool, 3=diesel)
+  nome: string    // ex: "2014 Gasolina"
+}
+
 export class FipeService {
   async searchBrands(partialName: string): Promise<FipeBrand[]> {
     const resp = await fetch(`${FIPE_BASE}/carros/marcas`, {
@@ -53,6 +58,36 @@ export class FipeService {
     return data.modelos.filter((m) => m.nome.toUpperCase().includes(upper))
   }
 
+  // Lista os anos-combustível disponíveis para um modelo (necessário antes de buscar valor)
+  async listYears(brandCode: string, modelCode: string): Promise<FipeYear[]> {
+    try {
+      const resp = await fetch(`${FIPE_BASE}/carros/marcas/${brandCode}/modelos/${modelCode}/anos`, {
+        signal: AbortSignal.timeout(5000),
+      })
+      if (!resp.ok) return []
+      return await resp.json() as FipeYear[]
+    } catch {
+      return []
+    }
+  }
+
+  // Busca valor FIPE pelo código exato do ano (ex: "2014-1")
+  async getVehicleValueByYearCode(
+    brandCode: string,
+    modelCode: string,
+    yearCode: string,
+  ): Promise<FipeVehicleValue | null> {
+    const url = `${FIPE_BASE}/carros/marcas/${brandCode}/modelos/${modelCode}/anos/${yearCode}`
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
+      if (!resp.ok) return null
+      const data = await resp.json() as FipeApiValue
+      return this.parseApiValue(data)
+    } catch {
+      return null
+    }
+  }
+
   async getVehicleValue(
     brandCode: string,
     modelCode: string,
@@ -66,30 +101,25 @@ export class FipeService {
       const resp = await fetch(url, { signal: AbortSignal.timeout(5000) })
       if (!resp.ok) return null
       const data = await resp.json() as FipeApiValue
-
-      const valueStr = data.Valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()
-      const value = parseFloat(valueStr)
-      if (isNaN(value)) return null
-
-      return {
-        fipeCode: data.CodigoFipe,
-        brand: data.Marca,
-        model: data.Modelo,
-        yearModel: data.AnoModelo,
-        fuel: data.Combustivel,
-        referenceMonth: data.MesReferencia,
-        value,
-      }
+      return this.parseApiValue(data)
     } catch {
       return null
     }
   }
 
-  // Busca o valor FIPE diretamente por código FIPE (mais rápido quando já conhecido)
-  async getValueByFipeCode(fipeCode: string, year: number, fuel = 'G'): Promise<number | null> {
-    // A API FIPE pública não suporta busca por código diretamente sem brand+model
-    // Então retornamos null e usamos o fluxo brand+model
-    return null
+  private parseApiValue(data: FipeApiValue): FipeVehicleValue | null {
+    const valueStr = data.Valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()
+    const value = parseFloat(valueStr)
+    if (isNaN(value)) return null
+    return {
+      fipeCode: data.CodigoFipe,
+      brand: data.Marca,
+      model: data.Modelo,
+      yearModel: data.AnoModelo,
+      fuel: data.Combustivel,
+      referenceMonth: data.MesReferencia,
+      value,
+    }
   }
 
   // Calcula o LTV (Loan-to-Value) = valor financiado / valor FIPE

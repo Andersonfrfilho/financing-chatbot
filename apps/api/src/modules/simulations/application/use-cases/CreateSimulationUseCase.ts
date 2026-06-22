@@ -13,6 +13,21 @@ import { BcbOlindaProviderImplementation } from '@/modules/open-finance/infra/pr
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
 
+// Diferenciais de mercado por banco para CDC veículos (em decimal, relativo à média BCB SGS)
+// Fonte: observação histórica de posicionamento competitivo — atualizar quando BCB OLINDA tiver dados por banco
+// TODO: substituir por diferenciais calculados a partir das taxas reais do BCB OLINDA por banco (já implementado no BcbOlindaProviderImplementation)
+const BANK_MARKET_DIFFERENTIAL: Record<string, number> = {
+  'BB':        -0.03,   // Banco do Brasil: 3% abaixo da média (produto CDC veículo competitivo)
+  'CAIXA':     -0.05,   // Caixa: 5% abaixo (taxa subsidiada / convênios)
+  'CEF':       -0.05,   // alias Caixa
+  'BRADESCO':  +0.02,   // 2% acima da média
+  'SANTANDER': +0.01,   // 1% acima da média
+  'ITAU':      +0.03,   // 3% acima (mais conservador em CDC veículo usado)
+}
+
+// Taxa mínima realista para CDC veículo PF — abaixo disso, a taxa do DB é provavelmente fallback inválido
+const MIN_REALISTIC_VEHICLE_RATE = 0.20 // 20% a.a.
+
 const MODALITY_BY_TYPE: Record<string, FinancingModality[]> = {
   imobiliario: ['SFH', 'SFI', 'FGTS', 'MCMV'],
   veiculo: ['CDC'],
@@ -156,10 +171,15 @@ export class CreateSimulationUseCase {
     // Agrupa por banco: pega a menor taxa por banco, aplicando base + spread
     const bestRateByBank = new Map<string, typeof allRates[0]>()
     for (const rate of allRates) {
-      // Se temos taxa de mercado real, substitui a taxa do banco pelo mercado + spread
-      const effectiveRate = marketBaseRateAnnual !== undefined
-        ? (marketBaseRateAnnual / 100) + vehicleRiskSpread
-        : rate.rateAnnual + vehicleRiskSpread
+      // Usa a taxa real do banco do DB se for realista (BCB OLINDA já corrigido),
+      // caso contrário usa mercado BCB SGS ± diferencial por banco
+      const bankDiff = BANK_MARKET_DIFFERENTIAL[rate.bankCode] ?? 0
+      const isVehicle = input.financingType === 'veiculo'
+      const rateIsRealistic = !isVehicle || rate.rateAnnual >= MIN_REALISTIC_VEHICLE_RATE
+      const effectiveBase = (rateIsRealistic || marketBaseRateAnnual === undefined)
+        ? rate.rateAnnual
+        : (marketBaseRateAnnual / 100) + bankDiff
+      const effectiveRate = effectiveBase + vehicleRiskSpread
 
       const adjustedRate = { ...rate, rateAnnual: effectiveRate }
       const existing = bestRateByBank.get(rate.bankCode)
@@ -296,12 +316,15 @@ export class CreateSimulationUseCase {
   // Lookup FIPE: tenta encontrar o valor de mercado do veículo
   private async lookupFipe(input: SimulationInput): Promise<number | null> {
     if (!input.vehicleBrand || !input.vehicleModel || !input.vehicleYear) return null
+    const log = logger.child('lookupFipe')
     try {
       const brands = await this.fipe.searchBrands(input.vehicleBrand)
+      log.info('FIPE marcas encontradas', { count: brands.length, first: brands[0]?.nome })
       if (brands.length === 0) return null
 
       const brandCode = brands[0]!.codigo
       const models = await this.fipe.searchModels(brandCode, input.vehicleModel)
+      log.info('FIPE modelos encontrados', { count: models.length, first: models[0]?.nome })
       if (models.length === 0) return null
 
       const modelCode = String(models[0]!.codigo)
@@ -309,9 +332,30 @@ export class CreateSimulationUseCase {
         : input.vehicleFuel?.toLowerCase().includes('etanol') ? 'E'
         : 'G'
 
-      const result = await this.fipe.getVehicleValue(brandCode, modelCode, input.vehicleYear, fuelCode)
+      // Lista os anos disponíveis para encontrar o código exato (ex: "2014-1")
+      const availableYears = await this.fipe.listYears(brandCode, modelCode)
+      log.info('FIPE anos disponíveis', { count: availableYears.length, years: availableYears.slice(0, 5).map((y) => y.codigo) })
+
+      // Procura o ano exato com o combustível correto
+      const yearEntry = availableYears.find((y) => {
+        const [yearPart, fuelPart] = y.codigo.split('-')
+        const yearMatch = yearPart === String(input.vehicleYear)
+        const fuelMatch = fuelCode === 'G' ? fuelPart === '1'
+          : fuelCode === 'E' ? fuelPart === '2'
+          : fuelPart === '3'
+        return yearMatch && fuelMatch
+      }) ?? availableYears.find((y) => y.codigo.startsWith(String(input.vehicleYear)))
+
+      if (!yearEntry) {
+        log.warn('FIPE ano não encontrado para o veículo', { year: input.vehicleYear, fuelCode, available: availableYears.map((y) => y.codigo) })
+        return null
+      }
+
+      const result = await this.fipe.getVehicleValueByYearCode(brandCode, modelCode, yearEntry.codigo)
+      log.info('FIPE valor obtido', { fipeValue: result?.value, model: result?.model })
       return result?.value ?? null
-    } catch {
+    } catch (err) {
+      logger.warn('Falha ao consultar FIPE', { err })
       return null
     }
   }
@@ -327,6 +371,13 @@ export class CreateSimulationUseCase {
     else if (vehicleAge >= 5) spread += 0.025   // +2.5% a.a. para 5-9 anos
     else if (vehicleAge >= 2) spread += 0.01    // +1% a.a. para 2-4 anos
 
+    // TODO:mensagem — integrar score de crédito (Serasa/SPC) para ajustar spread por risco do cliente
+    // APIs de bureaus (Serasa, Boa Vista, SPC) são pagas. Alternativa futura: score simplificado
+    // via renda declarada vs parcela (índice de comprometimento de renda ≤ 30%).
+
+    // TODO:mensagem — verificar histórico do veículo (DETRAN/Renavam) para ajustar risco por
+    // multas, restrições, sinistros, recall. APIs como Belissimo ou Datainfo são pagas.
+
     // LTV via FIPE (mais preciso) ou via entrada declarada
     const ltv = fipeLtv !== undefined
       ? fipeLtv
@@ -337,6 +388,15 @@ export class CreateSimulationUseCase {
     if (ltv > 1.0) spread += 0.08              // +8% a.a. acima do valor FIPE (alto risco)
     else if (ltv >= 0.9) spread += 0.04        // +4% a.a. LTV 90-100%
     else if (ltv >= 0.8) spread += 0.02        // +2% a.a. LTV 80-90%
+
+    // TODO:mensagem — bancos têm políticas de LTV máximo por ano de fabricação do veículo.
+    // Ex: veículo 2014 pode ter LTV máximo de 80% em alguns bancos. Sem acesso à API de cada
+    // banco, não conseguimos refletir isso. A CAIXA, por exemplo, não atua fortemente em CDC
+    // de veículos usados particulares — seu foco é veículos novos e convênios.
+
+    // TODO:mensagem — desconto por relacionamento (ex: Santander deu R$ 1.199 de isenção de
+    // cadastro para cliente existente). Impossível calcular sem acesso às APIs proprietárias
+    // de cada banco. Informar ao usuário que a taxa real pode ser menor se já for correntista.
 
     return spread
   }
