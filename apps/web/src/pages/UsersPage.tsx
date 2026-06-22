@@ -1,5 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Edit2 } from 'lucide-react'
+import { Button, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { api } from '@/lib/api'
 
 type User = {
@@ -15,7 +17,9 @@ type Role = { id: string; name: string }
 
 export function UsersPage() {
   const [showCreate, setShowCreate] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '', roleId: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', roleId: '' })
   const qc = useQueryClient()
 
   const { data } = useQuery<{ data: User[]; total: number }>({
@@ -37,10 +41,24 @@ export function UsersPage() {
     },
   })
 
+  const updateUser = useMutation({
+    mutationFn: ({ id, ...payload }: { id: string; name: string; email: string; roleId: string }) =>
+      api.put(`/users/${id}`, payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['users'] })
+      setEditingId(null)
+    },
+  })
+
   const toggleActive = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.put(`/users/${id}`, { active }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
   })
+
+  const startEdit = (user: User) => {
+    setEditForm({ name: user.name, email: user.email, roleId: user.role.id })
+    setEditingId(user.id)
+  }
 
   return (
     <div className="space-y-6">
@@ -86,39 +104,112 @@ export function UsersPage() {
         </div>
       )}
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['Nome', 'E-mail', 'Perfil', 'Status', 'Cadastro', 'Ações'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nome</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Perfil</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Cadastro</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data?.data.map((user) => (
-              <tr key={user.id} className="hover:bg-gray-50">
-                <td className="px-4 py-3 font-medium text-gray-900">{user.name}</td>
-                <td className="px-4 py-3 text-gray-600">{user.email}</td>
-                <td className="px-4 py-3"><span className="badge bg-blue-100 text-blue-700">{user.role?.name}</span></td>
-                <td className="px-4 py-3"><span className={`badge ${user.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>{user.active ? 'Ativo' : 'Inativo'}</span></td>
-                <td className="px-4 py-3 text-gray-500">{new Date(user.createdAt).toLocaleDateString('pt-BR')}</td>
-                <td className="px-4 py-3">
-                  <button
-                    onClick={() => toggleActive.mutate({ id: user.id, active: !user.active })}
-                    className={`text-xs font-medium ${user.active ? 'text-red-600 hover:text-red-800' : 'text-green-600 hover:text-green-800'}`}
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell>{user.email}</TableCell>
+                <TableCell>
+                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700">
+                    {user.role?.name}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${user.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {user.active ? 'Ativo' : 'Inativo'}
+                  </div>
+                </TableCell>
+                <TableCell>{new Date(user.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell className="flex gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => startEdit(user)}
+                    title="Editar usuário"
                   >
-                    {user.active ? 'Desativar' : 'Ativar'}
-                  </button>
-                </td>
-              </tr>
+                    <Edit2 size={14} />
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => toggleActive.mutate({ id: user.id, active: !user.active })}
+                  >
+                    {user.active ? '🔴' : '🟢'}
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!data?.data.length && (
           <p className="text-center text-gray-400 py-8">Nenhum usuário encontrado</p>
         )}
       </div>
+
+      <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Usuário</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Nome</label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">E-mail</label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Perfil</label>
+              <Select value={editForm.roleId} onValueChange={(value: string) => setEditForm({ ...editForm, roleId: value })}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {roles?.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (editingId) {
+                  updateUser.mutate({ id: editingId, ...editForm })
+                }
+              }}
+              disabled={updateUser.isPending}
+            >
+              {updateUser.isPending ? '...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
