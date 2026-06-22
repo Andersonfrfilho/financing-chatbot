@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import { db } from '../connection'
 import * as schema from '../schema'
 import { hash } from '@node-rs/argon2'
@@ -6,7 +7,7 @@ export async function seedDatabase() {
   console.log('[Seed] Starting...')
 
   // Roles
-  const [adminRole] = await db
+  await db
     .insert(schema.roles)
     .values({
       name: 'admin',
@@ -16,7 +17,6 @@ export async function seedDatabase() {
       ],
     })
     .onConflictDoNothing()
-    .returning()
 
   await db.insert(schema.roles).values([
     {
@@ -40,7 +40,10 @@ export async function seedDatabase() {
     },
   ]).onConflictDoNothing()
 
-  // Admin user
+  // Admin user (busca role criado/existente)
+  const adminRole = await db.query.roles.findFirst({
+    where: eq(schema.roles.name, 'admin'),
+  })
   if (adminRole) {
     const passwordHash = await hash('admin@123')
     const [created] = await db.insert(schema.users).values({
@@ -52,6 +55,8 @@ export async function seedDatabase() {
       passwordMustChange: true,
     }).onConflictDoNothing().returning()
     console.log(`[Seed] Admin user: ${created ? 'created' : 'already exists'}`)
+  } else {
+    console.log('[Seed] Admin role not found!')
   }
 
   // Banks
