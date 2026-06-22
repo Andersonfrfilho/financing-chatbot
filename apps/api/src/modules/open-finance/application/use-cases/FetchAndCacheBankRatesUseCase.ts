@@ -117,7 +117,7 @@ export class FetchAndCacheBankRatesUseCase {
           maxTermMonths: ['SFH', 'SFI', 'FGTS', 'MCMV'].includes(modality) ? 420 : 84,
           maxLtv: ['SFH', 'SFI', 'FGTS', 'MCMV'].includes(modality) ? '0.8000' : '1.0000',
           effectiveDate: today,
-          source: 'fallback',
+          source: 'manual',
         })
       }
     }
