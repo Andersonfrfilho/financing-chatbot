@@ -193,7 +193,7 @@ export function LeadsPage() {
                   value={editForm.assignedTo}
                   onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}
                   placeholder="Nome do vendedor"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
               <div>
@@ -203,7 +203,7 @@ export function LeadsPage() {
                   onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
                   placeholder="Anotações sobre o lead..."
                   rows={4}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
                 />
               </div>
             </div>
