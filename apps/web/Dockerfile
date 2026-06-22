@@ -11,6 +11,9 @@ RUN npm run build
 
 FROM nginx:1.27-alpine AS runner
 COPY --from=builder /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Template: o entrypoint do nginx faz envsubst de ${PORT} (e só das envs definidas,
+# preservando as variáveis do nginx como $uri) ao iniciar. Railway injeta PORT.
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+ENV PORT=80
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
