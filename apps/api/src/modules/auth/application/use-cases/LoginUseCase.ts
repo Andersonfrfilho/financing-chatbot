@@ -27,11 +27,20 @@ export class LoginUseCase {
   ) {}
 
   async execute(input: LoginInput): Promise<LoginOutput> {
+    console.log(`[Login] Tentativa: ${input.email}`)
     const user = await this.userRepository.findByEmail(input.email)
-    if (!user || !user.active) throw new UnauthorizedError('Invalid credentials')
+    console.log(`[Login] Usuário encontrado: ${user ? 'sim' : 'não'}`)
+    if (!user || !user.active) {
+      console.log(`[Login] Falha: usuário não encontrado ou inativo`)
+      throw new UnauthorizedError('Invalid credentials')
+    }
 
     const passwordValid = await verify(user.passwordHash, input.password)
-    if (!passwordValid) throw new UnauthorizedError('Invalid credentials')
+    console.log(`[Login] Senha válida: ${passwordValid}`)
+    if (!passwordValid) {
+      console.log(`[Login] Falha: senha inválida`)
+      throw new UnauthorizedError('Invalid credentials')
+    }
 
     const payload = {
       sub: user.id,
