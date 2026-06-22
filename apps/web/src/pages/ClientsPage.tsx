@@ -249,7 +249,7 @@ export function ClientsPage() {
                   const raw = e.target.value.replace(/\D/g, '')
                   setEditForm({ ...editForm, whatsappNumber: raw })
                 }}
-                placeholder="+55 (16) 9 9123-1234"
+                placeholder="🇧🇷 +55 (16) 9 9123-1234"
                 className="font-mono"
               />
             </div>
