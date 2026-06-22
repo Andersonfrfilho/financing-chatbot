@@ -1,7 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useState } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Trash2 } from 'lucide-react'
+import { Button } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Badge } from '@/components/ui'
 
 type Session = {
   id: string
@@ -70,55 +73,69 @@ export function SessionsPage() {
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           {Object.entries(stats).map(([s, count]) => {
             const info = stateLabels[s] ?? { label: s, color: 'bg-gray-100 text-gray-600' }
+            const isSelected = state === s
             return (
-              <div key={s} className={`rounded-lg p-3 ${info.color} cursor-pointer border-2 ${state === s ? 'border-current' : 'border-transparent'}`} onClick={() => setState(state === s ? '' : s)}>
+              <button
+                key={s}
+                onClick={() => setState(isSelected ? '' : s)}
+                className={`rounded-lg p-3 cursor-pointer border-2 transition-all ${
+                  info.color
+                } ${isSelected ? 'border-current ring-2 ring-offset-2' : 'border-transparent'}`}
+              >
                 <p className="text-2xl font-bold">{count}</p>
                 <p className="text-xs mt-0.5 opacity-75">{info.label}</p>
-              </div>
+              </button>
             )
           })}
         </div>
       )}
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['WhatsApp', 'Estado', 'Última atividade', 'Ações'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>WhatsApp</TableHead>
+              <TableHead>Estado</TableHead>
+              <TableHead>Última atividade</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data?.data.map((session) => {
               const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
               return (
-                <tr key={session.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs">
+                <TableRow key={session.id}>
+                  <TableCell className="font-mono text-sm">
                     {isVisible(session.id) ? formatPhone(session.whatsappNumber) : obfuscatePhone(session.whatsappNumber)}
-                  </td>
-                  <td className="px-4 py-3"><span className={`badge ${info.color}`}>{info.label}</span></td>
-                  <td className="px-4 py-3 text-gray-500">{new Date(session.lastActivity).toLocaleString('pt-BR')}</td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
+                  </TableCell>
+                  <TableCell>
+                    <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${info.color}`}>
+                      {info.label}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">{new Date(session.lastActivity).toLocaleString('pt-BR')}</TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => toggleVisible(session.id)}
-                      className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1"
                       title={isVisible(session.id) ? 'Esconder' : 'Mostrar'}
                     >
-                      {isVisible(session.id) ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                    <button
+                      {isVisible(session.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => { if (confirm('Resetar sessão?')) resetSession.mutate(session.whatsappNumber) }}
-                      className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
                     >
-                      🗑️
-                    </button>
-                  </td>
-                </tr>
+                      <Trash2 size={16} className="text-red-600" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!data?.data.length && (
           <p className="text-center text-gray-400 py-8">Nenhuma sessão ativa</p>
         )}

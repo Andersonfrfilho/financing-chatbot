@@ -1,7 +1,19 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
+import { Button } from '@/components/ui'
+import { Input } from '@/components/ui'
+import { Textarea } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui'
 
 type Lead = {
   id: string
@@ -94,140 +106,149 @@ export function LeadsPage() {
           <p className="text-gray-500 text-sm mt-1">{data?.total ?? 0} leads encontrados</p>
         </div>
         <div className="flex gap-2">
-          <input
+          <Input
             type="search"
             placeholder="Buscar WhatsApp/Cliente..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-64"
           />
-          <select
-            value={status}
-            onChange={(e) => { setStatus(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="">Todos os status</option>
-            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>{v.label}</option>
-            ))}
-          </select>
+          <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1) }}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Todos os status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todos os status</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              {['WhatsApp', 'Cliente', 'Status', 'Vendedor', 'Criado', 'Atualizado', 'Ações'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>WhatsApp</TableHead>
+              <TableHead>Cliente</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Vendedor</TableHead>
+              <TableHead>Criado</TableHead>
+              <TableHead>Atualizado</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data?.data.map((lead) => {
               const statusInfo = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
               return (
-                <tr key={lead.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-mono text-xs">
+                <TableRow key={lead.id}>
+                  <TableCell className="font-mono text-xs">
                     {isVisible(lead.id) ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
-                  </td>
-                  <td className="px-4 py-3 text-gray-900">{lead.clientName || '—'}</td>
-                  <td className="px-4 py-3">
-                    <select
+                  </TableCell>
+                  <TableCell>{lead.clientName || '—'}</TableCell>
+                  <TableCell>
+                    <Select
                       value={lead.status}
-                      onChange={(e) => updateStatus.mutate({ id: lead.id, newStatus: e.target.value })}
-                      className={`border border-gray-200 rounded px-2 py-1 text-xs font-medium ${statusInfo.color} cursor-pointer`}
+                      onValueChange={(value) => updateStatus.mutate({ id: lead.id, newStatus: value })}
                     >
-                      {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                        <option key={k} value={k}>{v.label}</option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className="px-4 py-3 text-gray-600 text-xs">{lead.assignedTo ? lead.assignedTo.split('@')[0] : '—'}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{getDaysAgo(lead.createdAt)}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</td>
-                  <td className="px-4 py-3 flex gap-2">
-                    <button
+                      <SelectTrigger className={`w-32 text-xs ${statusInfo.color}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-xs">{lead.assignedTo ? lead.assignedTo.split('@')[0] : '—'}</TableCell>
+                  <TableCell className="text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
+                  <TableCell className="text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
+                  <TableCell className="flex gap-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => toggleVisible(lead.id)}
-                      className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1"
                       title={isVisible(lead.id) ? 'Esconder' : 'Mostrar'}
                     >
                       {isVisible(lead.id) ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </button>
-                    <button
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
                       onClick={() => startEdit(lead)}
-                      className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                       title="Editar notas"
                     >
-                      📝
-                    </button>
-                  </td>
-                </tr>
+                      <Edit2 size={14} />
+                    </Button>
+                  </TableCell>
+                </TableRow>
               )
             })}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!data?.data.length && (
           <p className="text-center text-gray-400 py-8">Nenhum lead encontrado</p>
         )}
       </div>
 
       {data && data.total > 20 && (
-        <div className="flex justify-center gap-2">
-          <button className="btn-secondary" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
+        <div className="flex justify-center items-center gap-2">
+          <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <ChevronLeft size={16} />
+            Anterior
+          </Button>
           <span className="px-4 py-2 text-sm text-gray-600">Página {page}</span>
-          <button className="btn-secondary" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>Próxima</button>
+          <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
+            Próxima
+            <ChevronRight size={16} />
+          </Button>
         </div>
       )}
 
-      {/* Modal de edição */}
-      {editingId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="text-lg font-bold mb-4">Editar Lead</h3>
-            <div className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Vendedor/Atribuído a</label>
-                <input
-                  type="text"
-                  value={editForm.assignedTo}
-                  onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}
-                  placeholder="Nome do vendedor"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Notas</label>
-                <textarea
-                  value={editForm.notes}
-                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                  placeholder="Anotações sobre o lead..."
-                  rows={4}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                />
-              </div>
+      <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Lead</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Vendedor/Atribuído a</label>
+              <Input
+                value={editForm.assignedTo}
+                onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}
+                placeholder="Nome do vendedor"
+              />
             </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={() => setEditingId(null)}
-                className="flex-1 px-4 py-2 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={() => {
-                  if (!editingId) return
-                  updateLead.mutate({ id: editingId, ...editForm })
-                }}
-                disabled={updateLead.isPending}
-                className="flex-1 px-4 py-2 text-sm rounded bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
-              >
-                {updateLead.isPending ? '...' : 'Salvar'}
-              </button>
+            <div>
+              <label className="text-sm font-medium">Notas</label>
+              <Textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                placeholder="Anotações sobre o lead..."
+                rows={4}
+              />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingId(null)}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={() => {
+                if (!editingId) return
+                updateLead.mutate({ id: editingId, ...editForm })
+              }}
+              disabled={updateLead.isPending}
+            >
+              {updateLead.isPending ? '...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

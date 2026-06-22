@@ -1,7 +1,12 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { Button } from '@/components/ui'
+import { Input } from '@/components/ui'
+import { Textarea } from '@/components/ui'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 
 type Client = {
   id: string
@@ -106,41 +111,42 @@ export function ClientsPage() {
           <p className="text-gray-500 text-sm mt-1">{data?.total ?? 0} clientes cadastrados</p>
         </div>
         <div className="flex gap-2">
-          <input
+          <Input
             type="search"
             placeholder="Buscar por nome..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="border border-gray-300 rounded-md px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className="w-64"
           />
-          <button
+          <Button
+            variant={showAllData ? 'default' : 'outline'}
             onClick={() => setShowAllData(!showAllData)}
-            className="px-3 py-2 text-sm rounded bg-blue-100 text-blue-700 hover:bg-blue-200 flex items-center gap-1"
           >
             {showAllData ? <EyeOff size={16} /> : <Eye size={16} />}
             {showAllData ? 'Esconder tudo' : 'Mostrar tudo'}
-          </button>
+          </Button>
           {selectedClients.size > 0 && (
-            <button
+            <Button
+              variant="destructive"
               onClick={() => {
                 if (confirm(`Deletar ${selectedClients.size} cliente(s)?`)) {
                   deleteMultiple.mutate(Array.from(selectedClients))
                 }
               }}
               disabled={deleteMultiple.isPending}
-              className="px-4 py-2 text-sm rounded bg-red-600 text-white hover:bg-red-700 disabled:opacity-50"
             >
-              🗑️ Deletar {selectedClients.size}
-            </button>
+              <Trash2 size={16} />
+              Deletar {selectedClients.size}
+            </Button>
           )}
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="text-left px-4 py-3">
+      <div className="border rounded-lg overflow-hidden">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-12">
                 <input
                   type="checkbox"
                   checked={selectedClients.size === data?.data.length && (data?.data.length ?? 0) > 0}
@@ -153,16 +159,19 @@ export function ClientsPage() {
                   }}
                   className="rounded"
                 />
-              </th>
-              {['Nome', 'WhatsApp', 'E-mail', 'Cidade/UF', 'Cadastro', 'Ações'].map((h) => (
-                <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-600 uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
+              </TableHead>
+              <TableHead>Nome</TableHead>
+              <TableHead>WhatsApp</TableHead>
+              <TableHead>E-mail</TableHead>
+              <TableHead>Cidade/UF</TableHead>
+              <TableHead>Cadastro</TableHead>
+              <TableHead>Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {data?.data.map((client) => (
-              <tr key={client.id} className={`hover:bg-gray-50 ${selectedClients.has(client.id) ? 'bg-blue-50' : ''}`}>
-                <td className="px-4 py-3">
+              <TableRow key={client.id} className={selectedClients.has(client.id) ? 'bg-blue-50' : ''}>
+                <TableCell>
                   <input
                     type="checkbox"
                     checked={selectedClients.has(client.id)}
@@ -174,46 +183,49 @@ export function ClientsPage() {
                     }}
                     className="rounded"
                   />
-                </td>
-                <td className="px-4 py-3 font-medium text-gray-900">{client.name}</td>
-                <td className="px-4 py-3 text-gray-600 font-mono text-xs">
+                </TableCell>
+                <TableCell className="font-medium">{client.name}</TableCell>
+                <TableCell className="font-mono text-xs">
                   {isVisible(client.id) ? formatPhone(client.whatsappNumber) : obfuscatePhone(client.whatsappNumber)}
-                </td>
-                <td className="px-4 py-3 text-gray-500 text-xs">
+                </TableCell>
+                <TableCell className="text-xs">
                   {client.email ? (isVisible(client.id) ? client.email : obfuscateEmail(client.email)) : '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-500">{client.city && client.state ? `${client.city}/${client.state}` : '—'}</td>
-                <td className="px-4 py-3 text-gray-500">{new Date(client.createdAt).toLocaleDateString('pt-BR')}</td>
-                <td className="px-4 py-3 flex gap-2">
-                  <button
+                </TableCell>
+                <TableCell>{client.city && client.state ? `${client.city}/${client.state}` : '—'}</TableCell>
+                <TableCell>{new Date(client.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => toggleVisible(client.id)}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1"
                     title={isVisible(client.id) ? 'Esconder' : 'Mostrar'}
                   >
                     {isVisible(client.id) ? <EyeOff size={14} /> : <Eye size={14} />}
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => startEdit(client)}
-                    className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   >
-                    ✏️
-                  </button>
-                  <button
+                    <Edit2 size={14} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     onClick={() => {
                       if (confirm(`Deletar ${client.name}?`)) {
                         deleteClient.mutate(client.id)
                       }
                     }}
                     disabled={deleteClient.isPending}
-                    className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
                   >
-                    🗑️
-                  </button>
-                </td>
-              </tr>
+                    <Trash2 size={14} className="text-red-600" />
+                  </Button>
+                </TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
         {!data?.data.length && (
           <p className="text-center text-gray-400 py-8">Nenhum cliente encontrado</p>
         )}
@@ -227,90 +239,73 @@ export function ClientsPage() {
         </div>
       )}
 
-      {/* Modal de edição */}
-      {editingId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
-            <h3 className="text-lg font-bold mb-4">Editar Cliente</h3>
-            <div className="space-y-3 max-h-96 overflow-y-auto">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Nome</label>
-                <input
-                  type="text"
-                  value={editForm.name}
-                  onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">WhatsApp</label>
-                <input
-                  type="tel"
-                  value={editForm.whatsappNumber}
-                  onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
-                  placeholder="55169990000000"
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">E-mail</label>
-                <input
-                  type="email"
-                  value={editForm.email}
-                  onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700">Endereço</label>
-                <input
-                  type="text"
-                  value={editForm.address}
-                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
-                  placeholder="Rua, número, complemento"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                />
-              </div>
-              <div className="flex gap-3">
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Cidade</label>
-                  <input
-                    type="text"
-                    value={editForm.city}
-                    onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                  />
-                </div>
-                <div className="flex-1">
-                  <label className="text-sm font-medium text-gray-700">Estado</label>
-                  <input
-                    type="text"
-                    value={editForm.state}
-                    maxLength={2}
-                    onChange={(e) => setEditForm({ ...editForm, state: e.target.value.toUpperCase() })}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition"
-                  />
-                </div>
-              </div>
+      <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Cliente</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            <div>
+              <label className="text-sm font-medium">Nome</label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+              />
             </div>
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={() => setEditingId(null)}
-                className="flex-1 px-4 py-2 text-sm rounded bg-gray-200 text-gray-700 hover:bg-gray-300"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={saveEdit}
-                disabled={updateClient.isPending}
-                className="flex-1 px-4 py-2 text-sm rounded bg-primary-600 text-white hover:bg-primary-700 disabled:opacity-50"
-              >
-                {updateClient.isPending ? '...' : 'Salvar'}
-              </button>
+            <div>
+              <label className="text-sm font-medium">WhatsApp</label>
+              <Input
+                type="tel"
+                value={editForm.whatsappNumber}
+                onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+                placeholder="55169990000000"
+                className="font-mono"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">E-mail</label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Endereço</label>
+              <Input
+                value={editForm.address}
+                onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                placeholder="Rua, número, complemento"
+              />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <label className="text-sm font-medium">Cidade</label>
+                <Input
+                  value={editForm.city}
+                  onChange={(e) => setEditForm({ ...editForm, city: e.target.value })}
+                />
+              </div>
+              <div className="flex-1">
+                <label className="text-sm font-medium">Estado</label>
+                <Input
+                  value={editForm.state}
+                  maxLength={2}
+                  onChange={(e) => setEditForm({ ...editForm, state: e.target.value.toUpperCase() })}
+                />
+              </div>
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingId(null)}>
+              Cancelar
+            </Button>
+            <Button onClick={saveEdit} disabled={updateClient.isPending}>
+              {updateClient.isPending ? '...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
