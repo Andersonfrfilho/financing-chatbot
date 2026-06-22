@@ -2,8 +2,10 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+# SEM startCommand de propósito: usar o ENTRYPOINT do nginx (/docker-entrypoint.sh),
+# que faz o envsubst de ${PORT} no template antes de subir. Um startCommand pularia o
+# entrypoint → nginx ficaria em 'listen 80' → healthcheck do Railway na porta dele falharia.
 [deploy]
-startCommand = "nginx -g 'daemon off;'"
 healthcheckPath = "/"
 healthcheckTimeout = 15
 restartPolicyType = "ON_FAILURE"

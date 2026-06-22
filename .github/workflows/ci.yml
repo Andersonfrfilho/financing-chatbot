@@ -62,9 +62,16 @@ jobs:
           tags: financiamento-bot-web:${{ github.sha }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-      - name: Smoke test — nginx serve em $PORT + healthcheck "/"
+      - name: Smoke test — nginx serve em $PORT + healthcheck "/" (fiel ao Railway)
         run: |
-          docker run -d --name web -e PORT=8080 -p 8080:8080 financiamento-bot-web:${{ github.sha }}
+          # Replica como o Railway sobe: honra o startCommand do railway.toml (se houver).
+          SC=$(grep -E '^[[:space:]]*startCommand' apps/web/railway.toml 2>/dev/null | sed -E 's/.*=[[:space:]]*"(.*)"[[:space:]]*$/\1/')
+          if [ -n "$SC" ]; then
+            echo "railway.toml define startCommand: $SC — replicando"
+            docker run -d --name web -e PORT=8080 -p 8080:8080 --entrypoint sh financiamento-bot-web:${{ github.sha }} -c "$SC"
+          else
+            docker run -d --name web -e PORT=8080 -p 8080:8080 financiamento-bot-web:${{ github.sha }}
+          fi
           ok=0
           for i in $(seq 1 15); do
             code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/ || true)

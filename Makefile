@@ -101,8 +101,14 @@ verify-web:
 	@echo "▶ Build do frontend (tsc + vite build, igual ao Railway)..."
 	docker build -f apps/web/Dockerfile -t financiamento-web-verify apps/web
 	@docker rm -f financiamento-web-verify-run >/dev/null 2>&1 || true
-	@echo "▶ Smoke-test: nginx em PORT=8090 + healthcheck '/'..."
-	@docker run -d --name financiamento-web-verify-run -e PORT=8090 -p 8090:8090 financiamento-web-verify >/dev/null
+	@echo "▶ Smoke-test: nginx em PORT=8090 + healthcheck '/' (fiel ao Railway)..."
+	@SC=$$(grep -E '^[[:space:]]*startCommand' apps/web/railway.toml 2>/dev/null | sed -E 's/.*=[[:space:]]*"(.*)"[[:space:]]*$$/\1/'); \
+	  if [ -n "$$SC" ]; then \
+	    echo "  (railway.toml define startCommand: $$SC — replicando)"; \
+	    docker run -d --name financiamento-web-verify-run -e PORT=8090 -p 8090:8090 --entrypoint sh financiamento-web-verify -c "$$SC" >/dev/null; \
+	  else \
+	    docker run -d --name financiamento-web-verify-run -e PORT=8090 -p 8090:8090 financiamento-web-verify >/dev/null; \
+	  fi
 	@sleep 3
 	@code=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8090/ 2>/dev/null || true); \
 	  docker logs financiamento-web-verify-run 2>&1 | grep -iE "emerg|error" | head -3 || true; \
