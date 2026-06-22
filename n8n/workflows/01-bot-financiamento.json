@@ -273,6 +273,26 @@
           "name": "PostgreSQL Financiamento"
         }
       }
+    },
+    {
+      "id": "node-buscar-simulacoes-anteriores",
+      "name": "Buscar Simulações Anteriores",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2,
+      "position": [
+        600,
+        450
+      ],
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT financing_type, requested_amount, down_payment_amount, financed_amount, term_months, created_at FROM financing_simulations WHERE whatsapp_number = '{{ $json.phone }}' ORDER BY created_at DESC LIMIT 1"
+      },
+      "credentials": {
+        "postgres": {
+          "id": "P9HBtvSRBDMaK2yr",
+          "name": "PostgreSQL Financiamento"
+        }
+      }
     }
   ],
   "connections": {
@@ -410,6 +430,17 @@
       ]
     },
     "Buscar Cliente": {
+      "main": [
+        [
+          {
+            "node": "Buscar Simulações Anteriores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Buscar Simulações Anteriores": {
       "main": [
         [
           {
