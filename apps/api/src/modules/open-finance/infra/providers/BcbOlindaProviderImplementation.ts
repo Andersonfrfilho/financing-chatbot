@@ -185,7 +185,8 @@ export class BcbOlindaProviderImplementation implements OpenFinanceProvider {
     const rates: OpenFinanceRate[] = []
 
     for (const item of body.value) {
-      const rateAnnual = item.TaxaJurosAoAno ?? 0
+      // BCB returns percentage (e.g. 25.07 = 25.07% a.a.); internal convention is decimal (0.2507)
+      const rateAnnual = (item.TaxaJurosAoAno ?? 0) / 100
       if (rateAnnual <= 0) continue
 
       rates.push({

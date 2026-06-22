@@ -150,7 +150,8 @@ describe('BcbOlindaProviderImplementation', () => {
     assert.equal(r.length, 1)
     assert.equal(r[0]!.bankCode, 'BB')
     assert.equal(r[0]!.modality, 'CDC')
-    assert.equal(r[0]!.rateAnnual, 47.82)
+    // BCB returns percentage (47.82 = 47.82% a.a.); provider divides by 100 → 0.4782
+    assert.equal(r[0]!.rateAnnual, 0.4782)
     assert.equal(r[0]!.referentialRateIndexer, 0)
     assert.ok(r[0]!.minTermMonths > 0)
     assert.ok(r[0]!.maxTermMonths > r[0]!.minTermMonths)
@@ -177,7 +178,7 @@ describe('BcbOlindaProviderImplementation', () => {
     })
     const r = await provider.fetchRates('BB', 'CDC')
     assert.equal(r.length, 1)
-    assert.equal(r[0]!.rateAnnual, 47.82)
+    assert.equal(r[0]!.rateAnnual, 0.4782) // 47.82% / 100
     globalThis.fetch = realFetch
   })
 

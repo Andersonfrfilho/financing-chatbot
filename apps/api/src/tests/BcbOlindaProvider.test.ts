@@ -98,7 +98,7 @@ describe('BcbOlindaProviderImplementation', () => {
       expect(rates.length).toBe(1)
       expect(rates[0]!.bankCode).toBe('BB')
       expect(rates[0]!.modality).toBe('CDC')
-      expect(rates[0]!.rateAnnual).toBe(47.82)
+      expect(rates[0]!.rateAnnual).toBe(0.4782) // 47.82% / 100 (decimal convention)
       expect(rates[0]!.referentialRateIndexer).toBe(0)
       expect(rates[0]!.minTermMonths).toBeGreaterThan(0)
       expect(rates[0]!.maxTermMonths).toBeGreaterThan(rates[0]!.minTermMonths)
@@ -138,7 +138,7 @@ describe('BcbOlindaProviderImplementation', () => {
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates.length).toBe(1)
-      expect(rates[0]!.rateAnnual).toBe(47.82)
+      expect(rates[0]!.rateAnnual).toBe(0.4782) // menor taxa (47.82% / 100)
 
       globalThis.fetch = originalFetch
     })
