@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useState } from 'react'
+import { Eye, EyeOff } from 'lucide-react'
 
 type Session = {
   id: string
@@ -12,9 +13,29 @@ type Session = {
 
 type StateLabel = { label: string; color: string }
 
+const formatPhone = (phone: string) => {
+  const cleaned = phone.replace(/\D/g, '').slice(-11)
+  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
+}
+
+const obfuscatePhone = (phone: string) => {
+  const formatted = formatPhone(phone)
+  return formatted.replace(/\d{4}$/, '****')
+}
+
 export function SessionsPage() {
   const [state, setState] = useState('')
+  const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
+
+  const toggleVisible = (sessionId: string) => {
+    const newSet = new Set(visibleSessions)
+    if (newSet.has(sessionId)) newSet.delete(sessionId)
+    else newSet.add(sessionId)
+    setVisibleSessions(newSet)
+  }
+
+  const isVisible = (sessionId: string) => visibleSessions.has(sessionId)
 
   const { data: stateLabels } = useQuery<Record<string, StateLabel>>({
     queryKey: ['state-labels'],
@@ -73,15 +94,24 @@ export function SessionsPage() {
               const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
               return (
                 <tr key={session.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-3 font-medium text-gray-900">{session.whatsappNumber}</td>
+                  <td className="px-4 py-3 font-mono text-xs">
+                    {isVisible(session.id) ? formatPhone(session.whatsappNumber) : obfuscatePhone(session.whatsappNumber)}
+                  </td>
                   <td className="px-4 py-3"><span className={`badge ${info.color}`}>{info.label}</span></td>
                   <td className="px-4 py-3 text-gray-500">{new Date(session.lastActivity).toLocaleString('pt-BR')}</td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3 flex gap-2">
+                    <button
+                      onClick={() => toggleVisible(session.id)}
+                      className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1"
+                      title={isVisible(session.id) ? 'Esconder' : 'Mostrar'}
+                    >
+                      {isVisible(session.id) ? <EyeOff size={14} /> : <Eye size={14} />}
+                    </button>
                     <button
                       onClick={() => { if (confirm('Resetar sessão?')) resetSession.mutate(session.whatsappNumber) }}
-                      className="text-xs text-red-600 hover:text-red-800 font-medium"
+                      className="text-xs px-2 py-1 bg-red-100 text-red-700 rounded hover:bg-red-200"
                     >
-                      Resetar
+                      🗑️
                     </button>
                   </td>
                 </tr>
