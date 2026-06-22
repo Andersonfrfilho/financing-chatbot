@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Eye, EyeOff, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
+import { formatPhone, obfuscatePhone } from '@/lib/phone'
 
 type Session = {
   id: string
@@ -14,16 +15,6 @@ type Session = {
 }
 
 type StateLabel = { label: string; color: string }
-
-const formatPhone = (phone: string) => {
-  const cleaned = phone.replace(/\D/g, '').slice(-11)
-  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
-}
-
-const obfuscatePhone = (phone: string) => {
-  const formatted = formatPhone(phone)
-  return formatted.replace(/\d{4}$/, '****')
-}
 
 export function SessionsPage() {
   const [state, setState] = useState('')

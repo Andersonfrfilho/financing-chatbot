@@ -14,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui'
+import { formatPhone, obfuscatePhone } from '@/lib/phone'
 
 type Lead = {
   id: string
@@ -35,16 +36,6 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   reprovado: { label: 'Reprovado', color: 'bg-red-100 text-red-700' },
   cancelado: { label: 'Cancelado', color: 'bg-gray-100 text-gray-600' },
   concluido: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700' },
-}
-
-const formatPhone = (phone: string) => {
-  const cleaned = phone.replace(/\D/g, '').slice(-11)
-  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
-}
-
-const obfuscatePhone = (phone: string) => {
-  const formatted = formatPhone(phone)
-  return formatted.replace(/\d{4}$/, '****')
 }
 
 const getDaysAgo = (date: string) => {

@@ -9,7 +9,6 @@ const navItems = [
   { href: '/simulations', label: 'Simulações', icon: '🏦' },
   { href: '/sessions', label: 'Sessões', icon: '💬' },
   { href: '/conversations', label: 'Conversas', icon: '🗨️' },
-  { href: '/banks', label: 'Bancos', icon: '🏛️' },
   { href: '/users', label: 'Usuários', icon: '👤' },
 ]
 

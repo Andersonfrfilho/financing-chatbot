@@ -7,7 +7,6 @@ import { ClientsPage } from '@/pages/ClientsPage'
 import { SimulationsPage } from '@/pages/SimulationsPage'
 import { SessionsPage } from '@/pages/SessionsPage'
 import { ConversationsPage } from '@/pages/ConversationsPage'
-import { BanksPage } from '@/pages/BanksPage'
 import { UsersPage } from '@/pages/UsersPage'
 
 const ROUTES: Record<string, React.ComponentType> = {
@@ -17,7 +16,6 @@ const ROUTES: Record<string, React.ComponentType> = {
   '/simulations': SimulationsPage,
   '/sessions': SessionsPage,
   '/conversations': ConversationsPage,
-  '/banks': BanksPage,
   '/users': UsersPage,
 }
 

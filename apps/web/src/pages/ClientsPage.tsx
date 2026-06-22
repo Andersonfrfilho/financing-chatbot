@@ -6,6 +6,7 @@ import { Button } from '@/components/ui'
 import { Input } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
+import { formatPhone, obfuscatePhone } from '@/lib/phone'
 
 type Client = {
   id: string
@@ -15,18 +16,6 @@ type Client = {
   city?: string
   state?: string
   createdAt: string
-}
-
-// Formatadores
-const formatPhone = (phone: string) => {
-  const cleaned = phone.replace(/\D/g, '').slice(-11)
-  return `(${cleaned.slice(0, 2)}) ${cleaned.slice(2, 7)}-${cleaned.slice(7)}`
-}
-
-const obfuscatePhone = (phone: string) => {
-  const formatted = formatPhone(phone)
-  // Substitui os últimos 4 dígitos por ****
-  return formatted.replace(/\d{4}$/, '****')
 }
 
 const obfuscateEmail = (email: string) => {
@@ -260,7 +249,7 @@ export function ClientsPage() {
                   const raw = e.target.value.replace(/\D/g, '')
                   setEditForm({ ...editForm, whatsappNumber: raw })
                 }}
-                placeholder="(55) 16991-042201"
+                placeholder="+55 (16) 9 9123-1234"
                 className="font-mono"
               />
             </div>
