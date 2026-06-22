@@ -1,0 +1,14 @@
+{
+  "$schema": "https://ui.shadcn.com/schema.json",
+  "style": "default",
+  "rsc": false,
+  "tsx": true,
+  "baseColor": "slate",
+  "cssVariables": true,
+  "aliases": {
+    "@/*": "./src/*",
+    "@/components": "./src/components",
+    "@/lib": "./src/lib",
+    "@/ui": "./src/components/ui"
+  }
+}
