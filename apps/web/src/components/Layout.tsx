@@ -1,4 +1,4 @@
-import { Link, useLocation } from '@/hooks/useRouter'
+import { useLocation } from '@/hooks/useRouter'
 import { useAuthStore } from '@/store/authStore'
 import { api } from '@/lib/api'
 
