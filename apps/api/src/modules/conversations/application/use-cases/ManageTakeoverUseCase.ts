@@ -1,5 +1,7 @@
 import type { DrizzleConversationRepository } from '../../infra/repositories/DrizzleConversationRepository'
-import { NotFoundError, ForbiddenError } from '@/shared/errors/AppError'
+import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/errors/AppError'
+
+const MAX_ACTIVE_SESSIONS = parseInt(process.env.MAX_AGENT_SESSIONS ?? '10')
 
 // Assumir / devolver uma conversa (pausar / religar o bot).
 export class ManageTakeoverUseCase {
@@ -11,6 +13,18 @@ export class ManageTakeoverUseCase {
     if (session.mode === 'human' && session.assignedUserId && session.assignedUserId !== userId) {
       throw new ForbiddenError('Conversa já está sendo atendida por outro usuário')
     }
+
+    // Verifica se já é o atendente (não conta como nova sessão)
+    if (session.assignedUserId === userId) {
+      return { mode: 'human', assignedUserId: userId }
+    }
+
+    // Verifica limite de sessões ativas
+    const activeSessions = await this.repo.countActiveSessionsForAgent(userId)
+    if (activeSessions >= MAX_ACTIVE_SESSIONS) {
+      throw new ValidationError(`Limite de ${MAX_ACTIVE_SESSIONS} conversas simultâneas atingido. Encerre algumas antes de assumir novas.`)
+    }
+
     await this.repo.setMode(whatsapp, 'human', userId)
     return { mode: 'human', assignedUserId: userId }
   }

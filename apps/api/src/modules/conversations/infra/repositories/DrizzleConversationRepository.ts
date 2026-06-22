@@ -154,4 +154,13 @@ export class DrizzleConversationRepository {
       .set({ humanRequestedAt: new Date(), updatedAt: new Date() })
       .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
   }
+
+  // Conta conversas ativas (modo human) do atendente.
+  async countActiveSessionsForAgent(agentUserId: string): Promise<number> {
+    const result = await db
+      .select({ count: sql<number>`cast(count(*) as integer)` })
+      .from(conversationSessions)
+      .where(and(eq(conversationSessions.mode, 'human'), eq(conversationSessions.assignedUserId, agentUserId)))
+    return result[0]?.count ?? 0
+  }
 }
