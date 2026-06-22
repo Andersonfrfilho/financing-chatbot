@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
+import { logger } from '@/shared/logger'
 import type { OpenFinanceProvider } from '../../domain/providers/OpenFinanceProvider'
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
@@ -25,19 +26,34 @@ export class FetchAndCacheBankRatesUseCase {
   ) {}
 
   async execute(financingType: string): Promise<void> {
+    const log = logger.child('FetchAndCacheBankRates', financingType)
     const modalities = MODALITIES_BY_FINANCING_TYPE[financingType] ?? ['SFH']
     const banks = await this.db.select().from(schema.banks).where(eq(schema.banks.active, true))
 
+    log.info('Iniciando', { banksCount: banks.length, modalities })
+
+    if (banks.length === 0) {
+      log.warn('Nenhum banco ativo encontrado')
+      return
+    }
+
     const today = new Date().toISOString().slice(0, 10)
+    let ratesInserted = 0
 
     for (const bank of banks) {
       for (const modality of modalities) {
         const cacheKey = `rates:${bank.code}:${modality}:${today}`
         const cached = await this.cache.get(cacheKey)
-        if (cached) continue
+        if (cached) {
+          log.debug('Taxa em cache', { bank: bank.code, modality })
+          continue
+        }
 
         const rates = await this.openFinanceProvider.fetchRates(bank.code, modality)
-        if (rates.length === 0) continue
+        if (rates.length === 0) {
+          log.debug('Nenhuma taxa retornada', { bank: bank.code, modality })
+          continue
+        }
 
         const rate = rates[0]!
 
@@ -56,8 +72,13 @@ export class FetchAndCacheBankRatesUseCase {
           })
           .onConflictDoNothing()
 
+        ratesInserted++
+        log.debug('Taxa inserida', { bank: bank.code, modality, rate: rate.rateAnnual })
+
         await this.cache.set(cacheKey, JSON.stringify(rate), CACHE_TTL_SECONDS)
       }
     }
+
+    log.info('Concluído', { ratesInserted })
   }
 }

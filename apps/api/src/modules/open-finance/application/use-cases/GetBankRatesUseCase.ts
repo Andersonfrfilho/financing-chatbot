@@ -1,6 +1,7 @@
 import { eq, and, desc } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
+import { logger } from '@/shared/logger'
 import type { FinancingModality } from '@/shared/types'
 import * as schema from '@/infra/database/schema'
 
@@ -22,9 +23,14 @@ export class GetBankRatesUseCase {
   ) {}
 
   async execute(modality: FinancingModality): Promise<BankRateResult[]> {
+    const log = logger.child('GetBankRates', modality)
     const cacheKey = `rates:list:${modality}`
     const cached = await this.cache.get(cacheKey)
-    if (cached) return JSON.parse(cached) as BankRateResult[]
+    if (cached) {
+      const result = JSON.parse(cached) as BankRateResult[]
+      log.debug('Taxas do cache', { count: result.length })
+      return result
+    }
 
     const rates = await this.db
       .select({
@@ -47,6 +53,8 @@ export class GetBankRatesUseCase {
       )
       .orderBy(desc(schema.bankRates.effectiveDate))
 
+    log.debug('Taxas do banco de dados', { count: rates.length })
+
     const result: BankRateResult[] = rates.map((r) => ({
       bankId: r.bankId,
       bankCode: r.bankCode,
@@ -59,7 +67,10 @@ export class GetBankRatesUseCase {
     }))
 
     if (result.length > 0) {
+      log.debug('Cachando taxas', { count: result.length })
       await this.cache.set(cacheKey, JSON.stringify(result), 3600)
+    } else {
+      log.warn('Nenhuma taxa encontrada para modality', { modality })
     }
 
     return result
