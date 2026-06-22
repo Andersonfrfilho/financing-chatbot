@@ -11,8 +11,8 @@ import {
   BANK_MAPPING,
   getBcbNamesForModality,
   getSegmentForModality,
-} from '../modules/open-finance/domain/mappers/ModalityMapper.js'
-import type { FinancingModality } from '../shared/types.js'
+} from '../modules/open-finance/domain/mappers/ModalityMapper'
+import type { FinancingModality } from '../shared/types'
 
 const ALL_MODALITIES: FinancingModality[] = [
   'CDC', 'LEASING', 'SFH', 'SFI', 'FGTS', 'MCMV',
@@ -23,7 +23,7 @@ const ALL_MODALITIES: FinancingModality[] = [
 describe('ModalityMapper', () => {
   it('cobre todas as 14 modalidades', () => {
     for (const m of ALL_MODALITIES) {
-      assert.ok(MODALITY_MAPPING[m], `faltando: ${m}`)
+      assert.ok(MODALITY_MAPPING[m as FinancingModality], `faltando: ${m}`)
     }
   })
 
@@ -92,15 +92,15 @@ describe('ModalityMapper', () => {
 import {
   BcbOlindaProviderImplementation,
   clearBcbOlindaCache,
-} from '../modules/open-finance/infra/providers/BcbOlindaProviderImplementation.js'
+} from '../modules/open-finance/infra/providers/BcbOlindaProviderImplementation'
 
 function mockFetch(body: unknown, status = 200) {
-  globalThis.fetch = () =>
-    Promise.resolve(new Response(JSON.stringify(body), { status })) as unknown as ReturnType<typeof fetch>
+  globalThis.fetch = (() =>
+    Promise.resolve(new Response(JSON.stringify(body), { status }))) as unknown as typeof fetch
 }
 
 function failFetch(err = new Error('network')) {
-  globalThis.fetch = () => Promise.reject(err) as unknown as ReturnType<typeof fetch>
+  globalThis.fetch = (() => Promise.reject(err)) as unknown as typeof fetch
 }
 
 const realFetch = globalThis.fetch
@@ -136,8 +136,8 @@ describe('BcbOlindaProviderImplementation', () => {
 
   it('retorna [] quando JSON é inválido', async () => {
     const provider = new BcbOlindaProviderImplementation()
-    globalThis.fetch = () =>
-      Promise.resolve(new Response('INVALID{{', { status: 200 })) as unknown as ReturnType<typeof fetch>
+    globalThis.fetch = (() =>
+      Promise.resolve(new Response('INVALID{{', { status: 200 }))) as unknown as typeof fetch
     const r = await provider.fetchRates('BB', 'CDC')
     assert.deepEqual(r, [])
     globalThis.fetch = realFetch

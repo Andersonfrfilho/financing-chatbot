@@ -1,7 +1,10 @@
 import { describe, it, expect, mock, beforeEach } from 'bun:test'
 import { BcbOlindaProviderImplementation } from '../modules/open-finance/infra/providers/BcbOlindaProviderImplementation'
 
-// Helper to build a mock OLINDA response
+const setFetch = (fn: () => Promise<Response | never>) => {
+  ;(globalThis as Record<string, unknown>).fetch = fn
+}
+
 function mockOlindaResponse(overrides: Partial<{
   Segmento: string
   Modalidade: string
@@ -17,11 +20,11 @@ function mockOlindaResponse(overrides: Partial<{
     value: [
       {
         Segmento: 'PESSOA FÍSICA',
-        Modalidade: 'CRÉDITO PESSOAL',
-        InstituicaoFinanceira: 'BANCO DO BRASIL S/A',
+        Modalidade: 'Aquisição de veículos - Prefixado',
+        InstituicaoFinanceira: 'BCO DO BRASIL S.A.',
         TaxaJurosAoMes: 3.29,
         TaxaJurosAoAno: 47.82,
-        cnpj8: '00113000',
+        cnpj8: '00000000',
         Posicao: 1,
         InicioPeriodo: '2026-06-01',
         FimPeriodo: '2026-06-15',
@@ -42,11 +45,9 @@ describe('BcbOlindaProviderImplementation', () => {
 
   describe('fetchRates()', () => {
     it('retorna array vazio para modalidade sem mapeamento BCB', async () => {
-      // RURAL maps to PESSOA JURÍDICA — valid, but let's test unknown
-      // Instead test that empty OLINDA response → empty result
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(new Response(JSON.stringify({ value: [] }), { status: 200 })),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(Array.isArray(rates)).toBe(true)
@@ -55,9 +56,9 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('retorna array vazio quando API retorna HTTP 503', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(new Response('Service Unavailable', { status: 503 })),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates).toEqual([])
@@ -66,7 +67,7 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('retorna array vazio quando API lança exceção (timeout)', async () => {
-      globalThis.fetch = mock(() => Promise.reject(new Error('AbortError: timeout')))
+      setFetch(mock(() => Promise.reject(new Error('AbortError: timeout'))))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates).toEqual([])
@@ -75,9 +76,9 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('retorna array vazio quando JSON é inválido', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(new Response('NOT_JSON{{', { status: 200 })),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates).toEqual([])
@@ -86,11 +87,11 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('parseia resposta OLINDA corretamente', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(
           new Response(JSON.stringify(mockOlindaResponse({ TaxaJurosAoAno: 47.82 })), { status: 200 }),
         ),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
 
@@ -107,11 +108,11 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('ignora taxas com valor zero', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(
           new Response(JSON.stringify(mockOlindaResponse({ TaxaJurosAoAno: 0 })), { status: 200 }),
         ),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates).toEqual([])
@@ -120,7 +121,7 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('retorna apenas a menor taxa quando há múltiplas', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(
           new Response(
             JSON.stringify({
@@ -133,26 +134,26 @@ describe('BcbOlindaProviderImplementation', () => {
             { status: 200 },
           ),
         ),
-      )
+      ))
 
       const rates = await provider.fetchRates('BB', 'CDC')
       expect(rates.length).toBe(1)
-      expect(rates[0]!.rateAnnual).toBe(47.82) // menor taxa
+      expect(rates[0]!.rateAnnual).toBe(47.82)
 
       globalThis.fetch = originalFetch
     })
 
     it('usa dados do ModalityMapper para minTermMonths/maxTermMonths de SFH', async () => {
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(
           new Response(JSON.stringify(mockOlindaResponse({ TaxaJurosAoAno: 9.5 })), { status: 200 }),
         ),
-      )
+      ))
 
       const rates = await provider.fetchRates('CAIXA', 'SFH')
 
       if (rates.length > 0) {
-        expect(rates[0]!.maxTermMonths).toBe(420) // imobiliário = até 35 anos
+        expect(rates[0]!.maxTermMonths).toBe(420)
         expect(rates[0]!.maxLtv).toBe(0.8)
       }
 
@@ -162,7 +163,7 @@ describe('BcbOlindaProviderImplementation', () => {
 
   describe('fetchReferenceTaxes()', () => {
     it('retorna defaults quando SGS API falha', async () => {
-      globalThis.fetch = mock(() => Promise.reject(new Error('network error')))
+      setFetch(mock(() => Promise.reject(new Error('network error'))))
 
       const taxes = await provider.fetchReferenceTaxes()
 
@@ -178,9 +179,9 @@ describe('BcbOlindaProviderImplementation', () => {
     it('parseia resposta SGS corretamente', async () => {
       const mockSgsResponse = [{ data: '20/06/2026', valor: '10.75' }]
 
-      globalThis.fetch = mock(() =>
+      setFetch(mock(() =>
         Promise.resolve(new Response(JSON.stringify(mockSgsResponse), { status: 200 })),
-      )
+      ))
 
       const taxes = await provider.fetchReferenceTaxes()
 
@@ -190,7 +191,7 @@ describe('BcbOlindaProviderImplementation', () => {
     })
 
     it('retorna defaults sensatos (entre 0 e 30% a.a.) em caso de falha', async () => {
-      globalThis.fetch = mock(() => Promise.resolve(new Response('[]', { status: 200 })))
+      setFetch(mock(() => Promise.resolve(new Response('[]', { status: 200 }))))
 
       const taxes = await provider.fetchReferenceTaxes()
 

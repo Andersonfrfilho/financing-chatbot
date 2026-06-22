@@ -30,7 +30,7 @@ function makeCache() {
   const store = new Map<string, string>()
   return {
     get: mock((key: string) => Promise.resolve(store.get(key) ?? null)),
-    set: mock((key: string, value: string) => {
+    set: mock((key: string, value: string, _ttl?: number) => {
       store.set(key, value)
       return Promise.resolve()
     }),
