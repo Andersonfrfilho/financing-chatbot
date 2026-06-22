@@ -2,6 +2,7 @@ import { z } from 'zod'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import { validateBody } from '@/infra/http/middlewares/validateBody'
 import type { UpdateMaxAgentSessionsUseCase } from '../../application/use-cases/UpdateMaxAgentSessionsUseCase'
+import { STATE_LABELS } from './StateLabelsRepository'
 
 const updateMaxSessionsSchema = z.object({
   maxSessions: z.number().int().min(1).max(100),
@@ -19,5 +20,9 @@ export class SettingsController {
     const input = validateBody(updateMaxSessionsSchema, req.body)
     const result = await this.updateMaxAgentSessionsUseCase.execute(input.maxSessions)
     res.json(result, 200)
+  }
+
+  async getStateLabels(_req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    res.json(STATE_LABELS, 200)
   }
 }

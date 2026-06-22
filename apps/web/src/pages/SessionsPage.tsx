@@ -10,18 +10,17 @@ type Session = {
   context: Record<string, unknown>
 }
 
-const STATE_LABELS: Record<string, { label: string; color: string }> = {
-  new: { label: 'Novo', color: 'bg-gray-100 text-gray-600' },
-  awaiting_financing_type: { label: 'Aguardando tipo', color: 'bg-blue-100 text-blue-700' },
-  simulation_ready: { label: 'Simulação pronta', color: 'bg-green-100 text-green-700' },
-  human_handoff: { label: 'Handoff humano', color: 'bg-yellow-100 text-yellow-700' },
-  completed: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700' },
-  abandoned: { label: 'Abandonado', color: 'bg-red-100 text-red-700' },
-}
+type StateLabel = { label: string; color: string }
 
 export function SessionsPage() {
   const [state, setState] = useState('')
   const qc = useQueryClient()
+
+  const { data: stateLabels } = useQuery<Record<string, StateLabel>>({
+    queryKey: ['state-labels'],
+    queryFn: () => api.get('/settings/state-labels').then((r) => r.data),
+    staleTime: 1000 * 60 * 60, // 1 hour
+  })
 
   const { data: stats } = useQuery<Record<string, number>>({
     queryKey: ['session-stats'],
@@ -46,10 +45,10 @@ export function SessionsPage() {
         <p className="text-gray-500 text-sm mt-1">Monitoramento em tempo real</p>
       </div>
 
-      {stats && (
+      {stats && stateLabels && (
         <div className="grid grid-cols-3 lg:grid-cols-6 gap-3">
           {Object.entries(stats).map(([s, count]) => {
-            const info = STATE_LABELS[s] ?? { label: s, color: 'bg-gray-100 text-gray-600' }
+            const info = stateLabels[s] ?? { label: s, color: 'bg-gray-100 text-gray-600' }
             return (
               <div key={s} className={`rounded-lg p-3 ${info.color} cursor-pointer border-2 ${state === s ? 'border-current' : 'border-transparent'}`} onClick={() => setState(state === s ? '' : s)}>
                 <p className="text-2xl font-bold">{count}</p>
@@ -71,7 +70,7 @@ export function SessionsPage() {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {data?.data.map((session) => {
-              const info = STATE_LABELS[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
+              const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
               return (
                 <tr key={session.id} className="hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{session.whatsappNumber}</td>
