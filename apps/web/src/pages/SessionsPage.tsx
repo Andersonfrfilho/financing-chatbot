@@ -11,6 +11,7 @@ type Session = {
   whatsappNumber: string
   currentState: string
   lastActivity: string
+  clientName?: string | null
   context: Record<string, unknown>
 }
 
@@ -84,6 +85,7 @@ export function SessionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Cliente</TableHead>
               <TableHead>WhatsApp</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Última atividade</TableHead>
@@ -95,6 +97,7 @@ export function SessionsPage() {
               const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
               return (
                 <TableRow key={session.id}>
+                  <TableCell className="font-medium">{session.clientName || '—'}</TableCell>
                   <TableCell className="font-mono text-sm">
                     {isVisible(session.id) ? formatPhone(session.whatsappNumber) : obfuscatePhone(session.whatsappNumber)}
                   </TableCell>
