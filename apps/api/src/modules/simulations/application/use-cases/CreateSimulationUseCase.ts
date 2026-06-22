@@ -5,6 +5,8 @@ import { WS_EVENTS } from '@/infra/websocket/WebSocketEvents'
 import { logger } from '@/shared/logger'
 import { SacCalculatorService } from '../services/SacCalculatorService'
 import { PriceCalculatorService } from '../services/PriceCalculatorService'
+import { MarketRatesService } from '../services/MarketRatesService'
+import { FipeService } from '../services/FipeService'
 import { GetBankRatesUseCase } from '@/modules/open-finance/application/use-cases/GetBankRatesUseCase'
 import { FetchAndCacheBankRatesUseCase } from '@/modules/open-finance/application/use-cases/FetchAndCacheBankRatesUseCase'
 import { BcbOlindaProviderImplementation } from '@/modules/open-finance/infra/providers/BcbOlindaProviderImplementation'
@@ -70,11 +72,16 @@ export interface SimulationOutput {
   financedAmount: number
   termMonths: number
   results: BankSimulationResult[]
+  fipeValue?: number
+  fipeLtv?: number
+  marketBaseRateAnnual?: number
 }
 
 export class CreateSimulationUseCase {
   private readonly sacCalculator = new SacCalculatorService()
   private readonly priceCalculator = new PriceCalculatorService()
+  private readonly marketRates = new MarketRatesService()
+  private readonly fipe = new FipeService()
 
   constructor(
     private readonly db: NodePgDatabase<typeof schema>,
@@ -117,22 +124,51 @@ export class CreateSimulationUseCase {
       })
     }
 
-    // Spread de risco para veículo: idade + LTV
+    // Busca taxa de mercado real (BCB SGS) e valor FIPE para veículos
+    let fipeValue: number | undefined
+    let fipeLtv: number | undefined
+    let marketBaseRateAnnual: number | undefined
+
+    if (input.financingType === 'veiculo') {
+      const [mktRates, fipeResult] = await Promise.allSettled([
+        this.marketRates.getRates(),
+        this.lookupFipe(input),
+      ])
+
+      if (mktRates.status === 'fulfilled') {
+        marketBaseRateAnnual = mktRates.value.cdcVehiclePfAnnual
+        log.info('Taxa mercado CDC veículos', { baseRateAnnual: marketBaseRateAnnual })
+      }
+
+      if (fipeResult.status === 'fulfilled' && fipeResult.value) {
+        fipeValue = fipeResult.value
+        fipeLtv = this.fipe.calcLtv(financedAmount, fipeValue)
+        log.info('FIPE obtida', { fipeValue, fipeLtv, financedAmount })
+      }
+    }
+
+    // Base rate: usa BCB SGS quando disponível, senão usa taxa do banco do DB
+    // Spread de risco: idade do veículo + LTV real (calculado via FIPE)
     const vehicleRiskSpread = input.financingType === 'veiculo'
-      ? this.calcVehicleRiskSpread(input)
+      ? this.calcVehicleRiskSpread(input, fipeLtv)
       : 0
 
-    // Agrupa por banco: pega a menor taxa por banco, aplicando spread de risco
+    // Agrupa por banco: pega a menor taxa por banco, aplicando base + spread
     const bestRateByBank = new Map<string, typeof allRates[0]>()
     for (const rate of allRates) {
-      const adjustedRate = { ...rate, rateAnnual: rate.rateAnnual + vehicleRiskSpread }
+      // Se temos taxa de mercado real, substitui a taxa do banco pelo mercado + spread
+      const effectiveRate = marketBaseRateAnnual !== undefined
+        ? (marketBaseRateAnnual / 100) + vehicleRiskSpread
+        : rate.rateAnnual + vehicleRiskSpread
+
+      const adjustedRate = { ...rate, rateAnnual: effectiveRate }
       const existing = bestRateByBank.get(rate.bankCode)
       if (!existing || adjustedRate.rateAnnual < existing.rateAnnual) {
         bestRateByBank.set(rate.bankCode, adjustedRate)
       }
     }
 
-    log.info('Bancos agrupados', { banksCount: bestRateByBank.size, vehicleRiskSpread })
+    log.info('Bancos agrupados', { banksCount: bestRateByBank.size, vehicleRiskSpread, marketBaseRateAnnual })
 
     // Persiste simulação
     const [simulation] = await this.db
@@ -254,27 +290,53 @@ export class CreateSimulationUseCase {
       })
     }
 
-    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results }
+    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results, fipeValue, fipeLtv, marketBaseRateAnnual }
   }
 
-  // Spread adicional baseado em risco do veículo (em decimal, ex: 0.05 = +5% a.a.)
-  // Bancos ajustam a taxa conforme: idade do veículo e LTV (% financiado sem entrada)
-  private calcVehicleRiskSpread(input: SimulationInput): number {
+  // Lookup FIPE: tenta encontrar o valor de mercado do veículo
+  private async lookupFipe(input: SimulationInput): Promise<number | null> {
+    if (!input.vehicleBrand || !input.vehicleModel || !input.vehicleYear) return null
+    try {
+      const brands = await this.fipe.searchBrands(input.vehicleBrand)
+      if (brands.length === 0) return null
+
+      const brandCode = brands[0]!.codigo
+      const models = await this.fipe.searchModels(brandCode, input.vehicleModel)
+      if (models.length === 0) return null
+
+      const modelCode = String(models[0]!.codigo)
+      const fuelCode = input.vehicleFuel?.toLowerCase().includes('diesel') ? 'D'
+        : input.vehicleFuel?.toLowerCase().includes('etanol') ? 'E'
+        : 'G'
+
+      const result = await this.fipe.getVehicleValue(brandCode, modelCode, input.vehicleYear, fuelCode)
+      return result?.value ?? null
+    } catch {
+      return null
+    }
+  }
+
+  // Spread adicional sobre a taxa base de mercado (em decimal, ex: 0.05 = +5% a.a.)
+  private calcVehicleRiskSpread(input: SimulationInput, fipeLtv?: number): number {
     let spread = 0
 
     // Risco por idade: veículos mais antigos têm depreciação acelerada como garantia
     const currentYear = new Date().getFullYear()
     const vehicleAge = input.vehicleYear ? currentYear - input.vehicleYear : 0
-    if (vehicleAge >= 10) spread += 0.08        // +8% a.a. para 10+ anos
-    else if (vehicleAge >= 5) spread += 0.04    // +4% a.a. para 5-9 anos
-    else if (vehicleAge >= 2) spread += 0.02    // +2% a.a. para 2-4 anos
+    if (vehicleAge >= 10) spread += 0.05        // +5% a.a. para 10+ anos
+    else if (vehicleAge >= 5) spread += 0.025   // +2.5% a.a. para 5-9 anos
+    else if (vehicleAge >= 2) spread += 0.01    // +1% a.a. para 2-4 anos
 
-    // Risco por LTV: sem entrada = 100% financiado = maior risco de default
-    const ltv = input.requestedAmount > 0
-      ? (input.requestedAmount - input.downPaymentAmount) / input.requestedAmount
-      : 1
-    if (ltv >= 1.0) spread += 0.06             // +6% a.a. sem entrada alguma
-    else if (ltv >= 0.8) spread += 0.03        // +3% a.a. com entrada < 20%
+    // LTV via FIPE (mais preciso) ou via entrada declarada
+    const ltv = fipeLtv !== undefined
+      ? fipeLtv
+      : input.requestedAmount > 0
+        ? (input.requestedAmount - input.downPaymentAmount) / input.requestedAmount
+        : 1
+
+    if (ltv > 1.0) spread += 0.08              // +8% a.a. acima do valor FIPE (alto risco)
+    else if (ltv >= 0.9) spread += 0.04        // +4% a.a. LTV 90-100%
+    else if (ltv >= 0.8) spread += 0.02        // +2% a.a. LTV 80-90%
 
     return spread
   }
