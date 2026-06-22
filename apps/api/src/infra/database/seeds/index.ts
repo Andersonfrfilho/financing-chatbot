@@ -43,13 +43,15 @@ export async function seedDatabase() {
   // Admin user
   if (adminRole) {
     const passwordHash = await hash('admin@123')
-    await db.insert(schema.users).values({
+    const [created] = await db.insert(schema.users).values({
       roleId: adminRole.id,
       name: 'Administrador',
       email: 'admin@financiamento.bot',
       passwordHash,
+      active: true,
       passwordMustChange: true,
-    }).onConflictDoNothing()
+    }).onConflictDoNothing().returning()
+    console.log(`[Seed] Admin user: ${created ? 'created' : 'already exists'}`)
   }
 
   // Banks
