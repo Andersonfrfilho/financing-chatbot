@@ -4,9 +4,8 @@ import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { Button } from '@/components/ui'
 import { Input } from '@/components/ui'
-import { Textarea } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 
 type Client = {
   id: string
@@ -48,7 +47,7 @@ export function ClientsPage() {
   const { data } = useQuery<{ data: Client[]; total: number }>({
     queryKey: ['clients', search, page],
     queryFn: () =>
-      api.get('/clients', { params: { search: search || undefined, page, limit: 20 } }).then((r) => r.data),
+      api.get('/clients', { params: { search: search || undefined, page, limit: 20 } }).then((r: any) => r.data),
   })
 
   const updateClient = useMutation({

@@ -4,7 +4,6 @@ import { useState } from 'react'
 import { Eye, EyeOff, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
-import { Badge } from '@/components/ui'
 
 type Session = {
   id: string
@@ -42,19 +41,19 @@ export function SessionsPage() {
 
   const { data: stateLabels } = useQuery<Record<string, StateLabel>>({
     queryKey: ['state-labels'],
-    queryFn: () => api.get('/settings/state-labels').then((r) => r.data),
+    queryFn: () => api.get('/settings/state-labels').then((r: any) => r.data),
     staleTime: 1000 * 60 * 60, // 1 hour
   })
 
   const { data: stats } = useQuery<Record<string, number>>({
     queryKey: ['session-stats'],
-    queryFn: () => api.get('/sessions/stats').then((r) => r.data),
+    queryFn: () => api.get('/sessions/stats').then((r: any) => r.data),
     refetchInterval: 15_000,
   })
 
   const { data } = useQuery<{ data: Session[]; total: number }>({
     queryKey: ['sessions', state],
-    queryFn: () => api.get('/sessions', { params: { state: state || undefined, limit: 50 } }).then((r) => r.data),
+    queryFn: () => api.get('/sessions', { params: { state: state || undefined, limit: 50 } }).then((r: any) => r.data),
   })
 
   const resetSession = useMutation({

@@ -66,7 +66,7 @@ export function LeadsPage() {
   const { data } = useQuery<{ data: Lead[]; total: number }>({
     queryKey: ['leads', search, status, page],
     queryFn: () =>
-      api.get('/leads', { params: { search: search || undefined, status: status || undefined, page, limit: 20 } }).then((r) => r.data),
+      api.get('/leads', { params: { search: search || undefined, status: status || undefined, page, limit: 20 } }).then((r: any) => r.data),
   })
 
   const updateStatus = useMutation({
@@ -113,7 +113,7 @@ export function LeadsPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="w-64"
           />
-          <Select value={status} onValueChange={(value) => { setStatus(value); setPage(1) }}>
+          <Select value={status} onValueChange={(value: string) => { setStatus(value); setPage(1) }}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
@@ -152,7 +152,7 @@ export function LeadsPage() {
                   <TableCell>
                     <Select
                       value={lead.status}
-                      onValueChange={(value) => updateStatus.mutate({ id: lead.id, newStatus: value })}
+                      onValueChange={(value: string) => updateStatus.mutate({ id: lead.id, newStatus: value })}
                     >
                       <SelectTrigger className={`w-32 text-xs ${statusInfo.color}`}>
                         <SelectValue />
