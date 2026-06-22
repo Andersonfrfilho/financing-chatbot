@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Eye, EyeOff } from 'lucide-react'
 import { api } from '@/lib/api'
 
 type Client = {
@@ -19,7 +20,9 @@ const formatPhone = (phone: string) => {
 }
 
 const obfuscatePhone = (phone: string) => {
-  return phone.slice(0, -4) + '****'
+  const formatted = formatPhone(phone)
+  // Substitui os últimos 4 dígitos por ****
+  return formatted.replace(/\d{4}$/, '****')
 }
 
 const obfuscateEmail = (email: string) => {
@@ -30,10 +33,11 @@ const obfuscateEmail = (email: string) => {
 export function ClientsPage() {
   const [search, setSearch] = useState('')
   const [page, setPage] = useState(1)
+  const [showAllData, setShowAllData] = useState(false)
   const [visibleClients, setVisibleClients] = useState<Set<string>>(new Set())
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({ name: '', email: '', city: '', state: '' })
+  const [editForm, setEditForm] = useState({ name: '', email: '', city: '', state: '', whatsappNumber: '', address: '' })
   const qc = useQueryClient()
 
   const { data } = useQuery<{ data: Client[]; total: number }>({
@@ -76,7 +80,14 @@ export function ClientsPage() {
   }
 
   const startEdit = (client: Client) => {
-    setEditForm({ name: client.name, email: client.email || '', city: client.city || '', state: client.state || '' })
+    setEditForm({
+      name: client.name,
+      email: client.email || '',
+      city: client.city || '',
+      state: client.state || '',
+      whatsappNumber: client.whatsappNumber,
+      address: '',
+    })
     setEditingId(client.id)
   }
 
@@ -85,7 +96,8 @@ export function ClientsPage() {
     updateClient.mutate({ id: editingId, ...editForm })
   }
 
-  const isVisible = (clientId: string) => visibleClients.has(clientId)
+  const isVisible = (clientId: string) => showAllData || visibleClients.has(clientId)
+  const toggleAllVisible = () => setShowAllData(!showAllData)
 
   return (
     <div className="space-y-6">
@@ -102,6 +114,13 @@ export function ClientsPage() {
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="border border-gray-300 rounded-md px-3 py-2 text-sm w-64 focus:outline-none focus:ring-2 focus:ring-primary-500"
           />
+          <button
+            onClick={() => setShowAllData(!showAllData)}
+            className="px-3 py-2 text-sm rounded bg-blue-100 text-blue-700 hover:bg-blue-200 flex items-center gap-1"
+          >
+            {showAllData ? <EyeOff size={16} /> : <Eye size={16} />}
+            {showAllData ? 'Esconder tudo' : 'Mostrar tudo'}
+          </button>
           {selectedClients.size > 0 && (
             <button
               onClick={() => {
@@ -169,15 +188,16 @@ export function ClientsPage() {
                 <td className="px-4 py-3 flex gap-2">
                   <button
                     onClick={() => toggleVisible(client.id)}
-                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
+                    className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 flex items-center gap-1"
+                    title={isVisible(client.id) ? 'Esconder' : 'Mostrar'}
                   >
-                    {isVisible(client.id) ? '👁️ Esconder' : '🔒 Mostrar'}
+                    {isVisible(client.id) ? <EyeOff size={14} /> : <Eye size={14} />}
                   </button>
                   <button
                     onClick={() => startEdit(client)}
                     className="text-xs px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
                   >
-                    ✏️ Editar
+                    ✏️
                   </button>
                   <button
                     onClick={() => {
@@ -213,7 +233,7 @@ export function ClientsPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-96 shadow-lg">
             <h3 className="text-lg font-bold mb-4">Editar Cliente</h3>
-            <div className="space-y-3">
+            <div className="space-y-3 max-h-96 overflow-y-auto">
               <div>
                 <label className="text-sm font-medium text-gray-700">Nome</label>
                 <input
@@ -224,11 +244,31 @@ export function ClientsPage() {
                 />
               </div>
               <div>
+                <label className="text-sm font-medium text-gray-700">WhatsApp</label>
+                <input
+                  type="tel"
+                  value={editForm.whatsappNumber}
+                  onChange={(e) => setEditForm({ ...editForm, whatsappNumber: e.target.value })}
+                  placeholder="55169990000000"
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 font-mono"
+                />
+              </div>
+              <div>
                 <label className="text-sm font-medium text-gray-700">E-mail</label>
                 <input
                   type="email"
                   value={editForm.email}
                   onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">Endereço</label>
+                <input
+                  type="text"
+                  value={editForm.address}
+                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                  placeholder="Rua, número, complemento"
                   className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
                 />
               </div>
