@@ -15,6 +15,13 @@
       "when": 1750896000000,
       "tag": "0004_conversation_state_to_text",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1750896600000,
+      "tag": "0005_conversation_messages",
+      "breakpoints": true
     }
   ]
 }

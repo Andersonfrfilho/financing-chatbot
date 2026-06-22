@@ -10,6 +10,13 @@ import { ListFipeYearsUseCase } from '@/modules/fipe/application/use-cases/ListF
 import { GetFipeDetailUseCase } from '@/modules/fipe/application/use-cases/GetFipeDetailUseCase'
 import { FipeController } from '@/modules/fipe/infra/http/FipeController'
 
+// Conversations (atendimento ao vivo / histórico)
+import { DrizzleConversationRepository } from '@/modules/conversations/infra/repositories/DrizzleConversationRepository'
+import { LogMessageUseCase } from '@/modules/conversations/application/use-cases/LogMessageUseCase'
+import { GetConversationHistoryUseCase } from '@/modules/conversations/application/use-cases/GetConversationHistoryUseCase'
+import { ListConversationsUseCase } from '@/modules/conversations/application/use-cases/ListConversationsUseCase'
+import { ConversationController } from '@/modules/conversations/infra/http/ConversationController'
+
 // Auth
 import { DrizzleUserRepository } from '@/modules/auth/infra/repositories/DrizzleUserRepository'
 import { LoginUseCase } from '@/modules/auth/application/use-cases/LoginUseCase'
@@ -80,6 +87,7 @@ export interface AppContainer {
   sessionController: SessionController
   dashboardController: DashboardController
   fipeController: FipeController
+  conversationController: ConversationController
 }
 
 export function buildContainer(wsHub: WebSocketHub): AppContainer {
@@ -150,6 +158,14 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
     new GetCommercialReportUseCase(),
   )
 
+  // Conversations
+  const conversationRepository = new DrizzleConversationRepository()
+  const conversationController = new ConversationController(
+    new LogMessageUseCase(conversationRepository),
+    new GetConversationHistoryUseCase(conversationRepository),
+    new ListConversationsUseCase(conversationRepository),
+  )
+
   // Fipe
   const fipeCatalog = new FipeCatalogService(cache)
   const fipeController = new FipeController(
@@ -172,5 +188,6 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
     sessionController,
     dashboardController,
     fipeController,
+    conversationController,
   }
 }

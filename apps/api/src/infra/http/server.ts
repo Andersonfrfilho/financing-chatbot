@@ -17,6 +17,7 @@ import { registerUserRoutes } from '@/modules/users/infra/http/UserRoutes'
 import { registerSessionRoutes } from '@/modules/sessions/infra/http/SessionRoutes'
 import { registerDashboardRoutes } from '@/modules/dashboard/infra/http/DashboardRoutes'
 import { registerFipeRoutes } from '@/modules/fipe/infra/http/FipeRoutes'
+import { registerConversationRoutes } from '@/modules/conversations/infra/http/ConversationRoutes'
 
 const PORT = parseInt(process.env.PORT ?? '3333')
 const NODE_ENV = process.env.NODE_ENV ?? 'development'
@@ -68,6 +69,7 @@ export async function createServer() {
   registerSessionRoutes(router, container.sessionController)
   registerDashboardRoutes(router, container.dashboardController)
   registerFipeRoutes(router, container.fipeController)
+  registerConversationRoutes(router, container.conversationController)
 
   return {
     listen() {
