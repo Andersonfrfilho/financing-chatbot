@@ -35,6 +35,17 @@ export async function createServer() {
   await checkRedisConnection()
 
   const app = uWS.App()
+
+  // CORS middleware: adiciona headers em todas as respostas
+  app.options('/*', (res) => {
+    const origin = res.getHeader('origin') ?? ALLOWED_ORIGINS[0]
+    res.writeHeader('Access-Control-Allow-Origin', ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0])
+    res.writeHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
+    res.writeHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    res.writeHeader('Access-Control-Max-Age', '3600')
+    res.end()
+  })
+
   const router = new Router(app)
   const wsHub = new WebSocketHub(app, new RedisProvider())
   const sseHub = new SseHub()
