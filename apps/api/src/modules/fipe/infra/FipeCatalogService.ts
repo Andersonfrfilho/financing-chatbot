@@ -1,6 +1,12 @@
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 
 const FIPE_BASE = 'https://fipe.parallelum.com.br/api/v2'
+const FIPE_TIMEOUT_MS = 8000
+
+// fetch com timeout: a FIPE é externa; sem isso uma resposta lenta trava a requisição inteira.
+function fipeFetch(url: string): Promise<Response> {
+  return fetch(url, { signal: AbortSignal.timeout(FIPE_TIMEOUT_MS) })
+}
 
 export const VEHICLE_TYPE_MAP: Record<string, string> = {
   car: 'cars',
@@ -75,7 +81,7 @@ export class FipeCatalogService {
     const cacheKey = `fipe:brands:${fipeType}`
     const cached = await this.cache.get(cacheKey)
     if (cached) return JSON.parse(cached)
-    const res = await fetch(`${FIPE_BASE}/${fipeType}/brands`)
+    const res = await fipeFetch(`${FIPE_BASE}/${fipeType}/brands`)
     if (!res.ok) return []
     const data = (await res.json()) as FipeBrand[]
     await this.cache.set(cacheKey, JSON.stringify(data), 86400)
@@ -91,7 +97,7 @@ export class FipeCatalogService {
     const cacheKey = `fipe:models:${fipeType}:${brandCode}`
     const cached = await this.cache.get(cacheKey)
     if (cached) return JSON.parse(cached)
-    const res = await fetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models`)
+    const res = await fipeFetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models`)
     if (!res.ok) return []
     const data = (await res.json()) as FipeModel[]
     await this.cache.set(cacheKey, JSON.stringify(data), 86400)
@@ -110,7 +116,7 @@ export class FipeCatalogService {
     const cacheKey = `fipe:years:${fipeType}:${brandCode}:${modelCode}`
     const cached = await this.cache.get(cacheKey)
     if (cached) return JSON.parse(cached)
-    const res = await fetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models/${modelCode}/years`)
+    const res = await fipeFetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models/${modelCode}/years`)
     if (!res.ok) return []
     const data = (await res.json()) as FipeYear[]
     await this.cache.set(cacheKey, JSON.stringify(data), 86400)
@@ -130,7 +136,7 @@ export class FipeCatalogService {
   async fetchDetail(
     fipeType: string, brandCode: string, modelCode: number, yearCode: string,
   ): Promise<FipeDetail | null> {
-    const res = await fetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models/${modelCode}/years/${yearCode}`)
+    const res = await fipeFetch(`${FIPE_BASE}/${fipeType}/brands/${brandCode}/models/${modelCode}/years/${yearCode}`)
     if (!res.ok) return null
     return (await res.json()) as FipeDetail
   }
