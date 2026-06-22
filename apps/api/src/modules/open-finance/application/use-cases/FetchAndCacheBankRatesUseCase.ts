@@ -28,13 +28,15 @@ export class FetchAndCacheBankRatesUseCase {
   async execute(financingType: string): Promise<void> {
     const log = logger.child('FetchAndCacheBankRates', financingType)
     const modalities = MODALITIES_BY_FINANCING_TYPE[financingType] ?? ['SFH']
-    const banks = await this.db.select().from(schema.banks).where(eq(schema.banks.active, true))
+    let banks = await this.db.select().from(schema.banks).where(eq(schema.banks.active, true))
 
     log.info('Iniciando', { banksCount: banks.length, modalities })
 
     if (banks.length === 0) {
-      log.warn('Nenhum banco ativo encontrado')
-      return
+      log.warn('Nenhum banco ativo encontrado, criando bancos padrão')
+      await this.createDefaultBanks()
+      banks = await this.db.select().from(schema.banks).where(eq(schema.banks.active, true))
+      log.info('Bancos criados', { count: banks.length })
     }
 
     const today = new Date().toISOString().slice(0, 10)
@@ -89,6 +91,41 @@ export class FetchAndCacheBankRatesUseCase {
     }
 
     log.info('Concluído', { ratesInserted })
+  }
+
+  private async createDefaultBanks(): Promise<void> {
+    await this.db.insert(schema.banks).values([
+      {
+        name: 'Caixa Econômica Federal',
+        code: 'CAIXA',
+        openFinanceBaseUrl: 'https://opendata.api.caixa.gov.br',
+        active: true,
+      },
+      {
+        name: 'Santander',
+        code: 'SANTANDER',
+        openFinanceBaseUrl: 'https://openbanking.santander.com.br',
+        active: true,
+      },
+      {
+        name: 'Banco do Brasil',
+        code: 'BB',
+        openFinanceBaseUrl: 'https://opendata.api.bb.com.br',
+        active: true,
+      },
+      {
+        name: 'Itaú',
+        code: 'ITAU',
+        openFinanceBaseUrl: 'https://secure.api.itau/openbanking',
+        active: true,
+      },
+      {
+        name: 'Bradesco',
+        code: 'BRADESCO',
+        openFinanceBaseUrl: 'https://proxy.api.prebanco.com.br',
+        active: true,
+      },
+    ]).onConflictDoNothing()
   }
 
   private async insertFallbackRates(
