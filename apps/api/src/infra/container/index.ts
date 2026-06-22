@@ -3,7 +3,11 @@ import { RedisProvider } from '@/infra/redis/RedisProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
 
 // Fipe
+import { FipeCatalogService } from '@/modules/fipe/infra/FipeCatalogService'
 import { LookupFipePriceUseCase } from '@/modules/fipe/application/use-cases/LookupFipePriceUseCase'
+import { ListFipeModelsUseCase } from '@/modules/fipe/application/use-cases/ListFipeModelsUseCase'
+import { ListFipeYearsUseCase } from '@/modules/fipe/application/use-cases/ListFipeYearsUseCase'
+import { GetFipeDetailUseCase } from '@/modules/fipe/application/use-cases/GetFipeDetailUseCase'
 import { FipeController } from '@/modules/fipe/infra/http/FipeController'
 
 // Auth
@@ -145,8 +149,13 @@ export function buildContainer(wsHub: WebSocketHub): AppContainer {
   )
 
   // Fipe
-  const lookupFipePriceUseCase = new LookupFipePriceUseCase(cache)
-  const fipeController = new FipeController(lookupFipePriceUseCase)
+  const fipeCatalog = new FipeCatalogService(cache)
+  const fipeController = new FipeController(
+    new LookupFipePriceUseCase(fipeCatalog),
+    new ListFipeModelsUseCase(fipeCatalog),
+    new ListFipeYearsUseCase(fipeCatalog),
+    new GetFipeDetailUseCase(fipeCatalog),
+  )
 
   return {
     cache,
