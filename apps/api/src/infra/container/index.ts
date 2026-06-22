@@ -78,6 +78,11 @@ import { GetDashboardStatsUseCase } from '@/modules/dashboard/application/use-ca
 import { GetCommercialReportUseCase } from '@/modules/dashboard/application/use-cases/GetCommercialReportUseCase'
 import { DashboardController } from '@/modules/dashboard/infra/http/DashboardController'
 
+// Settings
+import { AppConfigRepository } from '@/modules/settings/infra/repositories/AppConfigRepository'
+import { UpdateMaxAgentSessionsUseCase } from '@/modules/settings/application/use-cases/UpdateMaxAgentSessionsUseCase'
+import { SettingsController } from '@/modules/settings/infra/http/SettingsController'
+
 export interface AppContainer {
   cache: RedisProvider
   wsHub: WebSocketHub
@@ -92,6 +97,7 @@ export interface AppContainer {
   dashboardController: DashboardController
   fipeController: FipeController
   conversationController: ConversationController
+  settingsController: SettingsController
 }
 
 export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContainer {
@@ -162,6 +168,9 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new GetCommercialReportUseCase(),
   )
 
+  // Settings (needed before conversations)
+  const appConfigRepository = new AppConfigRepository()
+
   // Conversations
   const conversationRepository = new DrizzleConversationRepository()
   const whatsAppSender = new WhatsAppSender()
@@ -169,7 +178,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new LogMessageUseCase(conversationRepository, sseHub),
     new GetConversationHistoryUseCase(conversationRepository),
     new ListConversationsUseCase(conversationRepository),
-    new ManageTakeoverUseCase(conversationRepository),
+    new ManageTakeoverUseCase(conversationRepository, appConfigRepository),
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
   )
 
@@ -180,6 +189,9 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new ListFipeModelsUseCase(fipeCatalog),
     new ListFipeYearsUseCase(fipeCatalog),
     new GetFipeDetailUseCase(fipeCatalog),
+  )
+  const settingsController = new SettingsController(
+    new UpdateMaxAgentSessionsUseCase(appConfigRepository),
   )
 
   return {
@@ -196,5 +208,6 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     dashboardController,
     fipeController,
     conversationController,
+    settingsController,
   }
 }
