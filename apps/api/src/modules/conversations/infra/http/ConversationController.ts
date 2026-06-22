@@ -44,6 +44,13 @@ export class ConversationController {
     response.json(result)
   }
 
+  // POST /api/conversations/:whatsapp/finalize  (encerra a conversa)
+  async finalize(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const result = await this.takeover.finalize(whatsapp)
+    response.json(result)
+  }
+
   // POST /api/conversations/:whatsapp/send  { text }  (atendente → cliente)
   async send(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const whatsapp = request.params['whatsapp'] ?? ''

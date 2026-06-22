@@ -80,6 +80,14 @@ export function ConversationsPage() {
     mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/release`),
     onSuccess: refresh,
   })
+
+  const finalize = useMutation({
+    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/finalize`),
+    onSuccess: () => {
+      setSelected(null)
+      qc.invalidateQueries({ queryKey: ['conversations'] })
+    },
+  })
   const send = useMutation({
     mutationFn: (body: string) => api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: body }),
     onSuccess: () => { setText(''); refresh() },
@@ -184,17 +192,23 @@ export function ConversationsPage() {
                     {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
                   </span>
                 </div>
-                {isHuman ? (
-                  <button onClick={() => release.mutate()} disabled={release.isPending}
-                    className="text-xs px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
-                    Devolver ao bot
+                <div className="flex gap-2">
+                  {isHuman ? (
+                    <button onClick={() => release.mutate()} disabled={release.isPending}
+                      className="text-xs px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-gray-700">
+                      Devolver ao bot
+                    </button>
+                  ) : (
+                    <button onClick={() => takeover.mutate()} disabled={takeover.isPending}
+                      className="text-xs px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white">
+                      Assumir conversa
+                    </button>
+                  )}
+                  <button onClick={() => finalize.mutate()} disabled={finalize.isPending}
+                    className="text-xs px-3 py-1 rounded bg-red-600 hover:bg-red-700 text-white">
+                    Finalizar
                   </button>
-                ) : (
-                  <button onClick={() => takeover.mutate()} disabled={takeover.isPending}
-                    className="text-xs px-3 py-1 rounded bg-green-600 hover:bg-green-700 text-white">
-                    Assumir conversa
-                  </button>
-                )}
+                </div>
               </div>
 
               <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">

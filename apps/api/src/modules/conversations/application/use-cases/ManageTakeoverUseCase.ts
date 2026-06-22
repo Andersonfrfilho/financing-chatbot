@@ -39,6 +39,14 @@ export class ManageTakeoverUseCase {
     return { mode: 'bot' }
   }
 
+  async finalize(whatsapp: string): Promise<{ status: string }> {
+    const session = await this.repo.getSessionMode(whatsapp)
+    if (!session) throw new NotFoundError('Conversa não encontrada')
+    // Encerra: volta ao bot e limpa o request de human
+    await this.repo.setMode(whatsapp, 'bot', null)
+    return { status: 'finalized' }
+  }
+
   async markRead(whatsapp: string): Promise<void> {
     await this.repo.markRead(whatsapp)
   }
