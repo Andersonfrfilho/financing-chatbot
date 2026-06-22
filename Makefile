@@ -1,4 +1,4 @@
-.PHONY: setup up down logs ps db-reset db-seed api-shell test typecheck build test-n8n
+.PHONY: setup up down logs ps db-reset db-seed api-shell test typecheck build test-n8n verify-web setup-hooks
 
 COMPOSE = docker compose -f infra/docker-compose.yml --env-file infra/.env
 
@@ -89,6 +89,25 @@ docker-build-check:
 	@echo "→ Build Docker da API..."
 	docker build -f apps/api/Dockerfile -t financiamento-api-test apps/api
 	@echo "✓ Build OK — sem erros"
+
+# ──────────────────────────────────────────────
+# Verifica o frontend igual ao Railway: build (tsc+vite) + smoke-test (nginx em $PORT → 200)
+# ──────────────────────────────────────────────
+setup-hooks:
+	@cp scripts/git-hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+	@echo "✅ git hooks instalados (pre-push)"
+
+verify-web:
+	@echo "▶ Build do frontend (tsc + vite build, igual ao Railway)..."
+	docker build -f apps/web/Dockerfile -t financiamento-web-verify apps/web
+	@docker rm -f financiamento-web-verify-run >/dev/null 2>&1 || true
+	@echo "▶ Smoke-test: nginx em PORT=8090 + healthcheck '/'..."
+	@docker run -d --name financiamento-web-verify-run -e PORT=8090 -p 8090:8090 financiamento-web-verify >/dev/null
+	@sleep 3
+	@code=$$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8090/ 2>/dev/null || true); \
+	  docker logs financiamento-web-verify-run 2>&1 | grep -iE "emerg|error" | head -3 || true; \
+	  docker rm -f financiamento-web-verify-run >/dev/null 2>&1; \
+	  if [ "$$code" = "200" ]; then echo "✅ Frontend OK (HTTP $$code)"; else echo "❌ Frontend healthcheck falhou (HTTP $$code)"; exit 1; fi
 
 # ──────────────────────────────────────────────
 # Teste completo n8n (sobe → testa → derruba)
