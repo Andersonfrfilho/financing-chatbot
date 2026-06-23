@@ -26,13 +26,22 @@ export interface ResponseHelper {
 
 const log = logger.child('Router')
 
-function buildResponseHelper(res: uWS.HttpResponse, origin: string, isAborted: () => boolean): ResponseHelper {
+function buildResponseHelper(
+  res: uWS.HttpResponse,
+  origin: string,
+  isAborted: () => boolean,
+  receivedAt: number,
+): ResponseHelper {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173').split(',')
 
   function writeHeaders(statusCode: string) {
+    const respondedAt = Date.now()
     res.writeStatus(statusCode)
     res.writeHeader('Content-Type', 'application/json; charset=utf-8')
     res.writeHeader('Connection', 'close')
+    res.writeHeader('X-Backend-Received-At', String(receivedAt))
+    res.writeHeader('X-Backend-Responded-At', String(respondedAt))
+    res.writeHeader('X-Backend-Handler-Ms', String(respondedAt - receivedAt))
     if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
     }
@@ -54,6 +63,8 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string, isAborted: (
         res.writeStatus(statusText)
         res.writeHeader('Content-Type', 'text/plain; charset=utf-8')
         res.writeHeader('Connection', 'close')
+        res.writeHeader('X-Backend-Received-At', String(receivedAt))
+        res.writeHeader('X-Backend-Responded-At', String(Date.now()))
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
         }
@@ -102,6 +113,9 @@ export class Router {
 
   private register(method: 'get' | 'post' | 'put' | 'patch' | 'del', path: string, ...handlers: Handler[]): void {
     this.app[method](path, async (res, req) => {
+      // Capture timestamp the instant uWS delivers the request — before any await
+      const receivedAt = Date.now()
+
       let aborted = false
       const setAborted = () => { aborted = true }
       const isAborted = () => aborted
@@ -139,11 +153,12 @@ export class Router {
         res.onAborted(setAborted)
       }
 
-      const responseHelper = buildResponseHelper(res, origin, isAborted)
+      const responseHelper = buildResponseHelper(res, origin, isAborted, receivedAt)
       const parsedRequest: ParsedRequest = { method: method_, url, headers, params, query, body, rawBody }
 
       await runWithContext(async () => {
-        const start = Date.now()
+        const handlerStart = Date.now()
+        const proxyDelayMs = handlerStart - receivedAt
 
         log.debug(LOG_EVENTS.REQUEST, {
           method: method_,
@@ -151,6 +166,8 @@ export class Router {
           params,
           query,
           headers: sanitizeHeaders(headers),
+          receivedAt: new Date(receivedAt).toISOString(),
+          proxyDelayMs,
           ...(method !== 'get' && { body }),
         })
 
@@ -158,12 +175,16 @@ export class Router {
           for (const handler of handlers) {
             await handler(parsedRequest, responseHelper)
           }
-          log.debug(LOG_EVENTS.RESPONSE_OK, { method: method_, url, ms: Date.now() - start })
+          const totalMs = Date.now() - receivedAt
+          const handlerMs = Date.now() - handlerStart
+          log.debug(LOG_EVENTS.RESPONSE_OK, { method: method_, url, ms: handlerMs, totalMs, proxyDelayMs })
         } catch (error) {
+          const totalMs = Date.now() - receivedAt
+          const handlerMs = Date.now() - handlerStart
           if (error instanceof AppError) {
-            log.info(LOG_EVENTS.RESPONSE_ERROR, { method: method_, url, code: error.code, status: error.statusCode, ms: Date.now() - start })
+            log.info(LOG_EVENTS.RESPONSE_ERROR, { method: method_, url, code: error.code, status: error.statusCode, ms: handlerMs, totalMs, proxyDelayMs })
           } else {
-            log.error(LOG_EVENTS.RESPONSE_UNHANDLED, { method: method_, url, error: String(error), ms: Date.now() - start })
+            log.error(LOG_EVENTS.RESPONSE_UNHANDLED, { method: method_, url, error: String(error), ms: handlerMs, totalMs, proxyDelayMs })
           }
           responseHelper.error(error)
         }
