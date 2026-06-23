@@ -66,8 +66,8 @@ export function SessionsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Sessões do Bot</h2>
-        <p className="text-gray-500 text-sm mt-1">Monitoramento em tempo real</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Sessões do Bot</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Monitoramento em tempo real</p>
       </div>
 
       {stats && stateLabels && (
@@ -142,7 +142,7 @@ export function SessionsPage() {
             })}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 py-8 text-sm">Nenhuma sessão ativa</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhuma sessão ativa</p>}
       </div>
     </div>
   )

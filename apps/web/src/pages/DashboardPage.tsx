@@ -30,18 +30,18 @@ function DashboardSkeleton() {
         <Skeleton className="h-4 w-64 mt-2" />
       </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-purple-50'].map((bg, i) => (
-          <div key={i} className={`rounded-xl border p-3 md:p-4 ${bg}`}>
-            <Skeleton className="h-3.5 w-24 bg-gray-300/60" />
-            <Skeleton className="h-9 w-16 mt-2 bg-gray-300/60" />
-            <Skeleton className="h-3 w-20 mt-1.5 bg-gray-300/60" />
+        {['bg-blue-50 dark:bg-blue-950/30', 'bg-green-50 dark:bg-green-950/30', 'bg-yellow-50 dark:bg-yellow-950/30', 'bg-purple-50 dark:bg-purple-950/30'].map((bg, i) => (
+          <div key={i} className={`rounded-xl border dark:border-gray-700 p-3 md:p-4 ${bg}`}>
+            <Skeleton className="h-3.5 w-24" />
+            <Skeleton className="h-9 w-16 mt-2" />
+            <Skeleton className="h-3 w-20 mt-1.5" />
           </div>
         ))}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {[0, 1].map((i) => (
           <Card key={i} className="p-4">
-            <Skeleton className="h-4.5 w-40 mb-4" />
+            <Skeleton className="h-5 w-40 mb-4" />
             <div className="flex items-center justify-center h-[180px]">
               <Skeleton className="h-32 w-32 rounded-full" />
             </div>
@@ -72,8 +72,8 @@ export function DashboardPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Dashboard Geral</h2>
-        <p className="text-gray-500 text-sm mt-1">Visão consolidada em tempo real</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Geral</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Visão consolidada em tempo real</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -85,7 +85,7 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 mb-3 text-sm md:text-base">Leads por Status</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">Leads por Status</h3>
           {statusChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -97,12 +97,12 @@ export function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-sm text-center py-8">Sem dados ainda</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Sem dados ainda</p>
           )}
         </Card>
 
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 mb-3 text-sm md:text-base">Simulações por Modalidade</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">Simulações por Modalidade</h3>
           {financingChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={financingChartData} margin={{ left: -20 }}>
@@ -113,7 +113,7 @@ export function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 text-sm text-center py-8">Sem dados ainda</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Sem dados ainda</p>
           )}
         </Card>
       </div>
@@ -123,10 +123,10 @@ export function DashboardPage() {
 
 function StatCard({ label, value, sub, color }: { label: string; value: number; sub: string; color: string }) {
   const colorMap: Record<string, string> = {
-    blue:   'bg-blue-50 text-blue-700 border-blue-100',
-    green:  'bg-green-50 text-green-700 border-green-100',
-    yellow: 'bg-yellow-50 text-yellow-700 border-yellow-100',
-    purple: 'bg-purple-50 text-purple-700 border-purple-100',
+    blue:   'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400 border-blue-100 dark:border-blue-900',
+    green:  'bg-green-50 dark:bg-green-950/40 text-green-700 dark:text-green-400 border-green-100 dark:border-green-900',
+    yellow: 'bg-yellow-50 dark:bg-yellow-950/40 text-yellow-700 dark:text-yellow-400 border-yellow-100 dark:border-yellow-900',
+    purple: 'bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-400 border-purple-100 dark:border-purple-900',
   }
   return (
     <div className={`rounded-xl border p-3 md:p-4 ${colorMap[color]}`}>

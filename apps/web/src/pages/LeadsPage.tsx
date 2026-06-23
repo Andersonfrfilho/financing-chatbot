@@ -88,8 +88,8 @@ export function LeadsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Leads</h2>
-          <p className="text-gray-500 text-sm mt-0.5">{data?.total ?? 0} leads encontrados</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{data?.total ?? 0} leads encontrados</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
@@ -170,7 +170,7 @@ export function LeadsPage() {
             })}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 py-8 text-sm">Nenhum lead encontrado</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhum lead encontrado</p>}
       </div>
 
       {data && data.total > 20 && (

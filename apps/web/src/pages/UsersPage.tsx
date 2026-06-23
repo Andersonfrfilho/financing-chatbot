@@ -79,8 +79,8 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Usuários</h2>
-          <p className="text-gray-500 text-sm mt-0.5">{data?.total ?? 0} usuários cadastrados</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Usuários</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{data?.total ?? 0} usuários cadastrados</p>
         </div>
         <button className="btn-primary self-start" onClick={() => setShowCreate(true)}>+ Novo Usuário</button>
       </div>
@@ -151,7 +151,7 @@ export function UsersPage() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${user.active ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
                     {user.active ? 'Ativo' : 'Inativo'}
                   </span>
                 </TableCell>
@@ -170,7 +170,7 @@ export function UsersPage() {
             ))}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 py-8 text-sm">Nenhum usuário encontrado</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhum usuário encontrado</p>}
       </div>
 
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
