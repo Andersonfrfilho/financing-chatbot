@@ -3,6 +3,7 @@
 echo "🔍 Running pre-commit checks..."
 
 cd apps/api
+bun install --frozen-lockfile 2>&1 || { echo "❌ bun install falhou — verifique o bun.lock"; exit 1; }
 bun run typecheck 2>&1
 if [ $? -ne 0 ]; then
   echo "❌ TypeScript inválido! Corrija os erros antes de commitar."
