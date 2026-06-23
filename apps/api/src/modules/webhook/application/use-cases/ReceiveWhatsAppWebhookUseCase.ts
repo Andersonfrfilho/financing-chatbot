@@ -192,16 +192,34 @@ export class ReceiveWhatsAppWebhookUseCase {
         }
 
         // Processa confirmação de envio (message_echoes)
+        // Processa confirmação de envio (message_echoes)
         for (const echo of messageEchoes) {
           echoCount++
-          log_.debug(LOG_EVENTS.WEBHOOK_MESSAGE, {
+          log_.info(LOG_EVENTS.WEBHOOK_MESSAGE, {
             id:        echo.id,
             from:      echo.from,
             type:      'echo',
             event:     'sent',
             timestamp: echo.timestamp,
           })
-          // message_echoes confirma que a mensagem foi enviada com sucesso
+          // Encaminhar ao n8n para processar confirmação de envio
+          await fetch(process.env.N8N_WEBHOOK_URL ?? '', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type:      'echo',
+              messageId: echo.id,
+              from:      echo.from,
+              timestamp: echo.timestamp,
+            }),
+            signal: AbortSignal.timeout(10_000),
+          }).catch((err) => {
+            log_.warn(LOG_EVENTS.N8N_FORWARD_FAILED, {
+              id:     echo.id,
+              type:   'echo',
+              reason: err?.message ?? 'unknown',
+            })
+          })
         }
 
         // Processa mudanças de status (sent, delivered, read, failed)
