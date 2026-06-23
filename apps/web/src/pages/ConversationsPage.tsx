@@ -60,26 +60,48 @@ function getMinutesAgo(iso: string): number {
 function contextToSelections(ctx: Record<string, unknown> | null): Record<string, any> {
   if (!ctx) return {}
   const labels: Record<string, string> = {
-    habitationType: 'Tipo de Habitação',
-    vehicleModel: 'Veículo',
+    cpf: 'CPF',
+    city: 'Cidade',
+    name: 'Nome Completo',
+    email: 'E-mail',
+    phone: 'Telefone',
+    state: 'Estado',
+    birthDate: 'Data de Nascimento',
+    personType: 'Tipo de Pessoa',
+    civilStatus: 'Estado Civil',
+    vehicleType: 'Tipo de Veículo',
+    vehicleBrand: 'Marca do Veículo',
+    vehicleModel: 'Modelo do Veículo',
     financingType: 'Tipo de Financiamento',
+    habitationType: 'Tipo de Habitação',
     installments: 'Parcelas',
     downPayment: 'Entrada',
     totalAmount: 'Valor Total',
   }
 
-  return Object.entries(ctx).reduce((acc, [key, value]) => {
+  const fieldOrder = [
+    'name', 'cpf', 'email', 'phone', 'birthDate', 'state', 'city',
+    'personType', 'civilStatus',
+    'vehicleType', 'vehicleBrand', 'vehicleModel',
+    'habitationType', 'financingType',
+    'downPayment', 'installments', 'totalAmount'
+  ]
+
+  const selections: Record<string, any> = {}
+  Object.entries(ctx).forEach(([key, value]) => {
     if (value && typeof value === 'string') {
-      acc[key] = {
+      selections[key] = {
         step: key,
         label: labels[key] || key,
         value: String(value),
         selectedAt: new Date().toISOString(),
-        status: 'completed' as const
+        status: 'completed' as const,
+        order: fieldOrder.indexOf(key)
       }
     }
-    return acc
-  }, {} as Record<string, any>)
+  })
+
+  return selections
 }
 
 export function ConversationsPage() {

@@ -115,10 +115,6 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   const getSimulationUseCase = new GetSimulationUseCase(db)
   const simulationController = new SimulationController(createSimulationUseCase, getSimulationUseCase)
 
-  // Webhook
-  const receiveWebhookUseCase = new ReceiveWhatsAppWebhookUseCase(cache)
-  const webhookController = new WebhookController(receiveWebhookUseCase)
-
   // Clients
   const clientRepository = new DrizzleClientRepository()
   const clientController = new ClientController(
@@ -171,7 +167,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   // Settings (needed before conversations)
   const appConfigRepository = new AppConfigRepository()
 
-  // Conversations
+  // Conversations (must be before webhook)
   const conversationRepository = new DrizzleConversationRepository()
   const whatsAppSender = new WhatsAppSender()
   const conversationController = new ConversationController(
@@ -181,6 +177,10 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new ManageTakeoverUseCase(conversationRepository, appConfigRepository),
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
   )
+
+  // Webhook (after conversations)
+  const receiveWebhookUseCase = new ReceiveWhatsAppWebhookUseCase(cache, conversationRepository)
+  const webhookController = new WebhookController(receiveWebhookUseCase)
 
   // Fipe
   const fipeCatalog = new FipeCatalogService(cache)

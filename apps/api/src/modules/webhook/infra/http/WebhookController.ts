@@ -40,14 +40,22 @@ export class WebhookController {
 
     log_.debug(LOG_EVENTS.WEBHOOK_RECEIVED, { nonce, signaturePresent: !!signature })
 
-    await this.receiveWebhookUseCase.execute({
-      rawBody,
-      signature,
-      nonce,
-      payload: request.body as Parameters<ReceiveWhatsAppWebhookUseCase['execute']>[0]['payload'],
-    })
+    try {
+      await this.receiveWebhookUseCase.execute({
+        rawBody,
+        signature,
+        nonce,
+        payload: request.body as Parameters<ReceiveWhatsAppWebhookUseCase['execute']>[0]['payload'],
+      })
+      log_.info(LOG_EVENTS.WEBHOOK_PROCESSED, { nonce })
+    } catch (error) {
+      log_.error(LOG_EVENTS.WEBHOOK_PROCESSED, {
+        nonce,
+        error: error instanceof Error ? error.message : String(error),
+      })
+    }
 
-    log_.info(LOG_EVENTS.WEBHOOK_PROCESSED, { nonce })
+    // Always return 200 to prevent Meta from retrying
     response.json({ status: 'ok' }, 200)
   }
 }

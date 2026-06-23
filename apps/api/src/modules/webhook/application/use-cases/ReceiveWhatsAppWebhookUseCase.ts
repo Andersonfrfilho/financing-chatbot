@@ -1,5 +1,6 @@
 import { timingSafeEqual, createHmac } from 'crypto'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
+import type { DrizzleConversationRepository } from '@/modules/conversations/infra/repositories/DrizzleConversationRepository'
 import { UnauthorizedError, ConflictError } from '@/shared/errors/AppError'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
@@ -121,7 +122,10 @@ async function forwardToN8n(
 }
 
 export class ReceiveWhatsAppWebhookUseCase {
-  constructor(private readonly cache: CacheProvider) {}
+  constructor(
+    private readonly cache: CacheProvider,
+    private readonly conversationRepository: DrizzleConversationRepository,
+  ) {}
 
   async execute(input: ReceiveInput): Promise<void> {
     const log_ = logger.child('ReceiveWhatsAppWebhookUseCase.execute')
@@ -174,6 +178,23 @@ export class ReceiveWhatsAppWebhookUseCase {
             type:      message.type,
             text:      message.text?.body,
             timestamp: message.timestamp,
+          })
+
+          // Salvar mensagem no banco de dados
+          await this.conversationRepository.insertMessage({
+            whatsappNumber: message.from,
+            direction: 'inbound',
+            sender: 'customer',
+            type: message.type,
+            content: message.text?.body ?? null,
+            waMessageId: message.id,
+            payload: message.interactive ? { interactive: message.interactive } : null,
+          }).catch((err) => {
+            log_.warn(LOG_EVENTS.WEBHOOK_MESSAGE, {
+              id: message.id,
+              reason: 'Failed to save to database',
+              error: err instanceof Error ? err.message : String(err),
+            })
           })
 
           await this.cache.set(
