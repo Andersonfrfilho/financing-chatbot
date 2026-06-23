@@ -105,7 +105,8 @@ function contextToSelections(ctx: Record<string, unknown> | null): Record<string
 }
 
 export function ConversationsPage() {
-  const [selected, setSelected] = useState<string | null>(null)
+  const deepLinkNumber = new URLSearchParams(window.location.search).get('whatsapp')
+  const [selected, setSelected] = useState<string | null>(deepLinkNumber)
   const [text, setText] = useState('')
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')

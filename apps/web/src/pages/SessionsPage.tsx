@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useState } from 'react'
-import { Eye, EyeOff, Trash2 } from 'lucide-react'
+import { Eye, EyeOff, MessageSquare, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
@@ -115,6 +115,15 @@ export function SessionsPage() {
                       title={isVisible(session.id) ? 'Esconder' : 'Mostrar'}
                     >
                       {isVisible(session.id) ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </Button>
+                    <Button
+                      variant={session.currentState === 'human_handoff' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => { window.location.href = `/conversations?whatsapp=${encodeURIComponent(session.whatsappNumber)}` }}
+                      title="Ir para conversa"
+                      className={session.currentState === 'human_handoff' ? 'bg-orange-500 hover:bg-orange-600 text-white' : ''}
+                    >
+                      <MessageSquare size={16} />
                     </Button>
                     <Button
                       variant="ghost"
