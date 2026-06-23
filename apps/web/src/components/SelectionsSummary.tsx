@@ -14,9 +14,31 @@ interface SelectionsSummaryProps {
 }
 
 const FIELD_ICONS: Record<string, string> = {
-  cpf: '🔐',
-  city: '📍',
+  // n8n context fields
+  requestedProduct: '🎯',
   name: '👤',
+  cpf: '🔐',
+  nascimento: '📅',
+  valorImovel: '🏠',
+  imovelCond: '🏘️',
+  rendaFamiliar: '💰',
+  fgts3anos: '📋',
+  dependentes: '👨‍👩‍👧',
+  jaTemImovel: '🏠',
+  construcaoTipo: '🏗️',
+  valorTerreno: '🟫',
+  valorConstrucao: '🏗️',
+  consorcioPara: '🎯',
+  valorCarta: '💳',
+  consignadoTipo: '👔',
+  valorDesejado: '💵',
+  consignadoAtivo: '📝',
+  imovelQuitado: '✅',
+  valorCredito: '💸',
+  rendaMensal: '💵',
+  cidade: '📍',
+  // legacy
+  city: '📍',
   email: '✉️',
   phone: '📱',
   state: '🏙️',
@@ -38,7 +60,9 @@ function getFieldIcon(step: string): string {
 }
 
 export function SelectionsSummary({ selections, compact = false }: SelectionsSummaryProps) {
-  const items = Object.values(selections).filter(s => s.value)
+  const items = Object.values(selections)
+    .filter(s => s.value)
+    .sort((a, b) => ((a as any).order ?? 999) - ((b as any).order ?? 999))
 
   if (!items.length) return null
 

@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
 import { SelectionsSummary } from '@/components/SelectionsSummary'
 import { Avatar } from '@/components/Avatar'
+import { formatPhone } from '@/lib/phone'
 
 const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
@@ -57,47 +58,103 @@ function getMinutesAgo(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60))
 }
 
+const HIDDEN_FIELDS = new Set(['flow', 'step'])
+
+const CTX_LABELS: Record<string, string> = {
+  // n8n context fields
+  requestedProduct: 'Produto',
+  name: 'Nome Completo',
+  cpf: 'CPF',
+  nascimento: 'Data de Nascimento',
+  valorImovel: 'Valor do Imóvel',
+  imovelCond: 'Condição do Imóvel',
+  rendaFamiliar: 'Renda Bruta Familiar',
+  fgts3anos: 'FGTS +3 anos',
+  dependentes: 'Dependentes',
+  jaTemImovel: 'Já tem imóvel',
+  construcaoTipo: 'Tipo de Construção',
+  valorTerreno: 'Valor do Terreno',
+  valorConstrucao: 'Valor da Construção',
+  consorcioPara: 'Consórcio para',
+  valorCarta: 'Valor da Carta de Crédito',
+  consignadoTipo: 'Tipo de Consignado',
+  valorDesejado: 'Valor Desejado',
+  consignadoAtivo: 'Consignado Ativo',
+  imovelQuitado: 'Imóvel Quitado',
+  valorCredito: 'Valor do Crédito',
+  rendaMensal: 'Renda Mensal',
+  cidade: 'Cidade',
+  // legacy
+  cpf2: 'CPF',
+  city: 'Cidade',
+  email: 'E-mail',
+  phone: 'Telefone',
+  state: 'Estado',
+  birthDate: 'Data de Nascimento',
+  personType: 'Tipo de Pessoa',
+  civilStatus: 'Estado Civil',
+  vehicleType: 'Tipo de Veículo',
+  vehicleBrand: 'Marca do Veículo',
+  vehicleModel: 'Modelo do Veículo',
+  financingType: 'Tipo de Financiamento',
+  habitationType: 'Tipo de Habitação',
+  installments: 'Parcelas',
+  downPayment: 'Entrada',
+  totalAmount: 'Valor Total',
+}
+
+const MONEY_FIELDS = new Set([
+  'valorImovel', 'rendaFamiliar', 'valorTerreno', 'valorConstrucao',
+  'valorCarta', 'valorDesejado', 'valorCredito', 'rendaMensal', 'downPayment', 'totalAmount',
+])
+
+const BOOL_CHOICES: Record<string, string> = {
+  sim: 'Sim', nao: 'Não', s: 'Sim', n: 'Não',
+  novo: 'Novo', usado: 'Usado',
+  true: 'Sim', false: 'Não',
+}
+
+const CTX_ORDER = [
+  'requestedProduct', 'name', 'cpf', 'nascimento', 'cidade',
+  'valorImovel', 'imovelCond', 'rendaFamiliar', 'rendaMensal',
+  'fgts3anos', 'dependentes', 'jaTemImovel',
+  'construcaoTipo', 'valorTerreno', 'valorConstrucao',
+  'consorcioPara', 'valorCarta',
+  'consignadoTipo', 'valorDesejado', 'consignadoAtivo', 'imovelQuitado', 'valorCredito',
+  // legacy
+  'email', 'phone', 'state', 'city', 'birthDate', 'personType', 'civilStatus',
+  'vehicleType', 'vehicleBrand', 'vehicleModel', 'habitationType', 'financingType',
+  'downPayment', 'installments', 'totalAmount',
+]
+
+function fmtMoney(val: string): string {
+  const num = parseFloat(String(val).replace(/[^\d.]/g, ''))
+  if (isNaN(num)) return val
+  return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function fmtValue(key: string, val: string): string {
+  if (MONEY_FIELDS.has(key)) return fmtMoney(val)
+  const lower = val.toLowerCase().trim()
+  if (BOOL_CHOICES[lower]) return BOOL_CHOICES[lower]
+  return val
+}
+
 function contextToSelections(ctx: Record<string, unknown> | null): Record<string, any> {
   if (!ctx) return {}
-  const labels: Record<string, string> = {
-    cpf: 'CPF',
-    city: 'Cidade',
-    name: 'Nome Completo',
-    email: 'E-mail',
-    phone: 'Telefone',
-    state: 'Estado',
-    birthDate: 'Data de Nascimento',
-    personType: 'Tipo de Pessoa',
-    civilStatus: 'Estado Civil',
-    vehicleType: 'Tipo de Veículo',
-    vehicleBrand: 'Marca do Veículo',
-    vehicleModel: 'Modelo do Veículo',
-    financingType: 'Tipo de Financiamento',
-    habitationType: 'Tipo de Habitação',
-    installments: 'Parcelas',
-    downPayment: 'Entrada',
-    totalAmount: 'Valor Total',
-  }
-
-  const fieldOrder = [
-    'name', 'cpf', 'email', 'phone', 'birthDate', 'state', 'city',
-    'personType', 'civilStatus',
-    'vehicleType', 'vehicleBrand', 'vehicleModel',
-    'habitationType', 'financingType',
-    'downPayment', 'installments', 'totalAmount'
-  ]
 
   const selections: Record<string, any> = {}
   Object.entries(ctx).forEach(([key, value]) => {
-    if (value && typeof value === 'string') {
-      selections[key] = {
-        step: key,
-        label: labels[key] || key,
-        value: String(value),
-        selectedAt: new Date().toISOString(),
-        status: 'completed' as const,
-        order: fieldOrder.indexOf(key)
-      }
+    if (HIDDEN_FIELDS.has(key)) return
+    const strVal = value != null && value !== '' ? String(value) : ''
+    if (!strVal) return
+    selections[key] = {
+      step: key,
+      label: CTX_LABELS[key] || key,
+      value: fmtValue(key, strVal),
+      selectedAt: new Date().toISOString(),
+      status: 'completed' as const,
+      order: CTX_ORDER.indexOf(key) >= 0 ? CTX_ORDER.indexOf(key) : 999,
     }
   })
 
@@ -393,7 +450,7 @@ export function ConversationsPage() {
                         ← Voltar
                       </button>
                       <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
-                      <div className="text-xs text-gray-500 font-mono">{selected}</div>
+                      <div className="text-xs text-gray-500">{selected ? formatPhone(selected) : ''}</div>
                       <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
                         {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
                       </span>
