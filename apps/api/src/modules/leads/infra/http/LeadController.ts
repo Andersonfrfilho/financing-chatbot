@@ -34,6 +34,7 @@ export class LeadController {
       assignedTo: q['assignedTo'],
       startDate:  q['startDate'],
       endDate:    q['endDate'],
+      search:     q['search'],
       page:       q['page']  ? Number(q['page'])  : undefined,
       limit:      q['limit'] ? Number(q['limit']) : undefined,
     })

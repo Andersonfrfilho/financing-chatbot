@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { simulations as text } from '@/locales'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button, Skeleton, TableSkeleton } from '@/components/ui'
+import { Button, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { api } from '@/lib/api'
+import { useSortableData } from '@/hooks/useSortableData'
 
 type Simulation = {
   id: string
@@ -31,6 +32,8 @@ export function SimulationsPage() {
     queryFn: () => api.get('/simulations', { params: { page, limit: 20 } }).then((r: any) => r.data),
   })
 
+  const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Simulation>(data?.data, 'createdAt')
+
   if (isLoading) return (
     <div className="space-y-4 md:space-y-6">
       <div><Skeleton className="h-7 w-32" /><Skeleton className="h-4 w-40 mt-2" /></div>
@@ -49,15 +52,15 @@ export function SimulationsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Modalidade</TableHead>
-              <TableHead>Valor</TableHead>
-              <TableHead className="hidden sm:table-cell">Prazo</TableHead>
-              <TableHead className="hidden sm:table-cell">Data</TableHead>
+              <SortableHead label="Modalidade" field="financingType" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="Valor" field="requestedAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="Prazo" field="termMonths" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label="Data" field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
               <TableHead>Bancos</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data.map((sim) => (
+            {sorted?.map((sim) => (
               <TableRow key={sim.id}>
                 <TableCell>
                   <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap">

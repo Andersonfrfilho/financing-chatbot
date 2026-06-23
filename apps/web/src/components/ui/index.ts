@@ -35,6 +35,7 @@ export {
 } from './table'
 export { Textarea } from './textarea'
 export { Skeleton, TableSkeleton } from './skeleton'
+export { SortableHead } from './SortableHead'
 export {
   Card,
   CardHeader,

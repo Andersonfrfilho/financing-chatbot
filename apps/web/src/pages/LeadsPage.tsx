@@ -1,14 +1,14 @@
-// @ts-nocheck
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
-import { leads as text, common } from '@/locales'
-import { Button, Input, Textarea, Skeleton, TableSkeleton } from '@/components/ui'
+import { leads as text } from '@/locales'
+import { Button, Input, Textarea, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
+import { useSortableData } from '@/hooks/useSortableData'
 
 type Lead = {
   id: string
@@ -23,13 +23,13 @@ type Lead = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  novo:             { label: text.status.novo,             color: 'bg-blue-100 text-blue-700' },
-  em_atendimento:   { label: text.status.em_atendimento,   color: 'bg-yellow-100 text-yellow-700' },
-  proposta_enviada: { label: text.status.proposta_enviada, color: 'bg-purple-100 text-purple-700' },
-  aprovado:         { label: text.status.aprovado,         color: 'bg-green-100 text-green-700' },
-  reprovado:        { label: text.status.reprovado,        color: 'bg-red-100 text-red-700' },
-  cancelado:        { label: text.status.cancelado,        color: 'bg-gray-100 text-gray-600' },
-  concluido:        { label: text.status.concluido,        color: 'bg-emerald-100 text-emerald-700' },
+  new:           { label: text.status.new,           color: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400' },
+  qualified:     { label: text.status.qualified,     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400' },
+  disqualified:  { label: text.status.disqualified,  color: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' },
+  negotiating:   { label: text.status.negotiating,   color: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400' },
+  proposal_sent: { label: text.status.proposal_sent, color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400' },
+  won:           { label: text.status.won,           color: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' },
+  lost:          { label: text.status.lost,          color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' },
 }
 
 const getDaysAgo = (date: string) => {
@@ -53,6 +53,8 @@ export function LeadsPage() {
     queryFn: () =>
       api.get('/leads', { params: { search: search || undefined, status: status || undefined, page, limit: 20 } }).then((r: any) => r.data),
   })
+
+  const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Lead>(data?.data, 'createdAt')
 
   const updateStatus = useMutation({
     mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) => api.patch(`/leads/${id}`, { status: newStatus }),
@@ -87,27 +89,28 @@ export function LeadsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
+          <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 max-w-lg">{text.description}</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
           <Input
             type="search"
-            placeholder="Buscar WhatsApp/Cliente..."
+            placeholder={text.search}
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
             className="w-full sm:w-56"
           />
           <Select value={status} onValueChange={(v: string) => { setStatus(v); setPage(1) }}>
             <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder="Todos os status" />
+              <SelectValue placeholder={text.allStatus} />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="">Todos os status</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v.label}</SelectItem>
+              <SelectItem value="">{text.allStatus}</SelectItem>
+              {Object.entries(STATUS_LABELS).map(([key, value]) => (
+                <SelectItem key={key} value={key}>{value.label}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -119,17 +122,17 @@ export function LeadsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>WhatsApp</TableHead>
-              <TableHead className="hidden sm:table-cell">Cliente</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden md:table-cell">Vendedor</TableHead>
-              <TableHead className="hidden md:table-cell">Criado</TableHead>
-              <TableHead className="hidden lg:table-cell">Atualizado</TableHead>
-              <TableHead>Ações</TableHead>
+              <SortableHead label={text.columns.whatsapp} field="whatsappNumber" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label={text.columns.client} field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label={text.columns.status} field="status" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label={text.columns.seller} field="assignedTo" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
+              <SortableHead label={text.columns.created} field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
+              <SortableHead label={text.columns.updated} field="updatedAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <TableHead>{text.columns.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data.map((lead) => {
+            {sorted?.map((lead) => {
               const info = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
               const visible = visibleLeads.has(lead.id)
               return (
@@ -143,17 +146,17 @@ export function LeadsPage() {
                       value={lead.status}
                       onValueChange={(v: string) => updateStatus.mutate({ id: lead.id, newStatus: v })}
                     >
-                      <SelectTrigger className={`w-28 md:w-36 text-xs ${info.color}`}>
+                      <SelectTrigger className={`w-32 md:w-40 text-xs ${info.color}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(STATUS_LABELS).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                        {Object.entries(STATUS_LABELS).map(([key, value]) => (
+                          <SelectItem key={key} value={key}>{value.label}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-xs">{lead.assignedTo ? lead.assignedTo.split('@')[0] : '—'}</TableCell>
+                  <TableCell className="hidden md:table-cell text-xs">{lead.assignedTo || '—'}</TableCell>
                   <TableCell className="hidden md:table-cell text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
                   <TableCell className="hidden lg:table-cell text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
                   <TableCell>
@@ -179,7 +182,7 @@ export function LeadsPage() {
           <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
             <ChevronLeft size={16} /> Anterior
           </Button>
-          <span className="px-3 py-1.5 text-sm text-gray-600">Pág. {page}</span>
+          <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
           <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
             Próxima <ChevronRight size={16} />
           </Button>
@@ -188,15 +191,15 @@ export function LeadsPage() {
 
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
         <DialogContent>
-          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{text.edit.title}</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Vendedor / Atribuído a</label>
-              <Input value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })} placeholder="Nome do vendedor" />
+              <label className="text-sm font-medium">{text.edit.seller}</label>
+              <Input value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })} placeholder={text.edit.sellerPlaceholder} />
             </div>
             <div>
-              <label className="text-sm font-medium">Notas</label>
-              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Anotações sobre o lead..." rows={4} />
+              <label className="text-sm font-medium">{text.edit.notes}</label>
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder={text.edit.notesPlaceholder} rows={4} />
             </div>
           </div>
           <DialogFooter>

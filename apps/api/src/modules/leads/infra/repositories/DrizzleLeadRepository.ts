@@ -1,4 +1,4 @@
-import { eq, ilike, and, sql, desc, gte, lte } from 'drizzle-orm'
+import { eq, ilike, and, or, sql, desc, gte, lte } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { leads, financingClients, financingSimulations } from '@/infra/database/schema'
 import type { Lead } from '@/infra/database/schema'
@@ -11,7 +11,7 @@ export class DrizzleLeadRepository implements LeadRepository {
     return result[0] ?? null
   }
 
-  async findAll(filters: LeadFilters): Promise<{ data: Lead[]; total: number }> {
+  async findAll(filters: LeadFilters): Promise<{ data: any[]; total: number }> {
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20
     const offset = (page - 1) * limit
@@ -21,12 +21,36 @@ export class DrizzleLeadRepository implements LeadRepository {
     if (filters.assignedTo) conditions.push(eq(leads.assignedTo, filters.assignedTo))
     if (filters.startDate) conditions.push(gte(leads.createdAt, new Date(filters.startDate)))
     if (filters.endDate) conditions.push(lte(leads.createdAt, new Date(filters.endDate)))
+    if (filters.search) {
+      const term = `%${filters.search}%`
+      conditions.push(or(ilike(leads.whatsappNumber, term), ilike(financingClients.name, term)))
+    }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
+    const baseQuery = db
+      .select({
+        id:             leads.id,
+        clientId:       leads.clientId,
+        simulationId:   leads.simulationId,
+        whatsappNumber: leads.whatsappNumber,
+        status:         leads.status,
+        assignedTo:     leads.assignedTo,
+        notes:          leads.notes,
+        createdAt:      leads.createdAt,
+        updatedAt:      leads.updatedAt,
+        clientName:     financingClients.name,
+      })
+      .from(leads)
+      .leftJoin(financingClients, eq(leads.clientId, financingClients.id))
+
     const [data, countResult] = await Promise.all([
-      db.select().from(leads).where(where).orderBy(desc(leads.createdAt)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)` }).from(leads).where(where),
+      baseQuery.where(where).orderBy(desc(leads.createdAt)).limit(limit).offset(offset),
+      db
+        .select({ count: sql<number>`count(*)` })
+        .from(leads)
+        .leftJoin(financingClients, eq(leads.clientId, financingClients.id))
+        .where(where),
     ])
 
     return { data, total: Number(countResult[0].count) }

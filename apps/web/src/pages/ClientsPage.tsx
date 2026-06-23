@@ -4,10 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
 import { api } from '@/lib/api'
 import { clients as text } from '@/locales'
-import { Button, Input, Skeleton, TableSkeleton } from '@/components/ui'
+import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
+import { useSortableData } from '@/hooks/useSortableData'
 
 type Client = {
   id: string
@@ -38,6 +39,8 @@ export function ClientsPage() {
     queryKey: ['clients', search, page],
     queryFn: () => api.get('/clients', { params: { search: search || undefined, page, limit: 20 } }).then((r: any) => r.data),
   })
+
+  const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Client>(data?.data, 'createdAt')
 
   const updateClient = useMutation({
     mutationFn: (payload: any) => api.put(`/clients/${payload.id}`, payload),
@@ -115,16 +118,16 @@ export function ClientsPage() {
                   onChange={(e) => setSelectedClients(e.target.checked ? new Set(data?.data.map((c) => c.id) ?? []) : new Set())}
                   className="rounded" />
               </TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>WhatsApp</TableHead>
-              <TableHead className="hidden md:table-cell">E-mail</TableHead>
-              <TableHead className="hidden sm:table-cell">Cidade/UF</TableHead>
-              <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
+              <SortableHead label="Nome" field="name" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="WhatsApp" field="whatsappNumber" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="E-mail" field="email" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
+              <SortableHead label="Cidade/UF" field="city" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label="Cadastro" field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data.map((client) => (
+            {sorted?.map((client) => (
               <TableRow key={client.id} className={selectedClients.has(client.id) ? 'bg-blue-50' : ''}>
                 <TableCell>
                   <input type="checkbox" checked={selectedClients.has(client.id)}

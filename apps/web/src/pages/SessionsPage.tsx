@@ -3,9 +3,10 @@ import { api } from '@/lib/api'
 import { sessions as text } from '@/locales'
 import { useState } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2 } from 'lucide-react'
-import { Button, Skeleton, TableSkeleton } from '@/components/ui'
+import { Button, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
+import { useSortableData } from '@/hooks/useSortableData'
 
 type Session = {
   id: string
@@ -48,6 +49,8 @@ export function SessionsPage() {
     mutationFn: (number: string) => api.delete(`/sessions/${number}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+
+  const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Session>(data?.data, 'lastActivity')
 
   if (isLoading) return (
     <div className="space-y-4 md:space-y-6">
@@ -94,15 +97,15 @@ export function SessionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Cliente</TableHead>
-              <TableHead className="hidden sm:table-cell">WhatsApp</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead className="hidden md:table-cell">Última atividade</TableHead>
+              <SortableHead label="Cliente" field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="WhatsApp" field="whatsappNumber" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label="Estado" field="currentState" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="Última atividade" field="lastActivity" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data.map((session) => {
+            {sorted?.map((session) => {
               const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
               const visible = visibleSessions.has(session.id)
               return (

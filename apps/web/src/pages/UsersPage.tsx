@@ -3,8 +3,9 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Edit2 } from 'lucide-react'
 import { users as text } from '@/locales'
+import { useSortableData } from '@/hooks/useSortableData'
 import {
-  Button, Input, Skeleton, TableSkeleton,
+  Button, Input, Skeleton, TableSkeleton, SortableHead,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -33,6 +34,8 @@ export function UsersPage() {
     queryKey: ['users'],
     queryFn: () => api.get('/users').then((r: any) => r.data),
   })
+
+  const { sorted, sortField, sortDirection, toggleSort } = useSortableData<User>(data?.data, 'name', 'asc')
 
   const { data: roles } = useQuery<Role[]>({
     queryKey: ['roles'],
@@ -133,16 +136,16 @@ export function UsersPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead className="hidden md:table-cell">E-mail</TableHead>
+              <SortableHead label="Nome" field="name" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="E-mail" field="email" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
               <TableHead>Perfil</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="hidden lg:table-cell">Cadastro</TableHead>
+              <SortableHead label="Status" field="active" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label="Cadastro" field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data?.data.map((user) => (
+            {sorted?.map((user) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium text-sm">{user.name}</TableCell>
                 <TableCell className="hidden md:table-cell text-sm">{user.email}</TableCell>
