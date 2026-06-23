@@ -1,10 +1,11 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
-import { Copy, LogOut, Power } from 'lucide-react'
+import { LogOut, Power } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui'
 import { Textarea } from '@/components/ui'
+import { MessageBubble } from '@/components/MessageBubble'
 
 const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
@@ -31,9 +32,8 @@ type Message = {
   payload: Record<string, unknown> | null
   status: string | null
   createdAt: string
+  readAt?: string
 }
-
-const SENDER_LABEL: Record<string, string> = { customer: 'Cliente', bot: '🤖 Bot', agent: '🧑‍💼 Atendente' }
 
 const REMINDER_MESSAGES: Record<string, string> = {
   awaiting_menu: 'Bem-vindo de volta! 👋 Qual é seu interesse?',
@@ -232,81 +232,52 @@ export function ConversationsPage() {
             <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Selecione uma conversa</div>
           ) : (
             <>
-              <div className="px-4 py-3 border-b bg-white flex items-center justify-between">
-                <div>
-                  <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
-                  <div className="text-xs text-gray-500 font-mono">{selected}</div>
-                  <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                    {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
-                  </span>
-                </div>
-                <div className="flex gap-2">
-                  {isHuman ? (
+              <div className="px-4 py-3 border-b bg-white">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
+                    <div className="text-xs text-gray-500 font-mono">{selected}</div>
+                    <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                      {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
+                    </span>
+                  </div>
+                  <div className="flex gap-2">
+                    {isHuman ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => release.mutate()}
+                        disabled={release.isPending}
+                      >
+                        <LogOut size={14} />
+                        Devolver ao bot
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => takeover.mutate()}
+                        disabled={takeover.isPending}
+                      >
+                        <Power size={14} />
+                        Assumir conversa
+                      </Button>
+                    )}
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => release.mutate()}
-                      disabled={release.isPending}
+                      variant="destructive"
+                      onClick={() => finalize.mutate()}
+                      disabled={finalize.isPending}
                     >
-                      <LogOut size={14} />
-                      Devolver ao bot
+                      Finalizar
                     </Button>
-                  ) : (
-                    <Button
-                      size="sm"
-                      onClick={() => takeover.mutate()}
-                      disabled={takeover.isPending}
-                    >
-                      <Power size={14} />
-                      Assumir conversa
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="destructive"
-                    onClick={() => finalize.mutate()}
-                    disabled={finalize.isPending}
-                  >
-                    Finalizar
-                  </Button>
+                  </div>
                 </div>
               </div>
 
               <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
-                {messages.map((m) => {
-                  const mine = m.direction === 'outbound'
-                  const color = m.sender === 'agent' ? 'bg-green-100' : m.sender === 'bot' ? 'bg-blue-100' : 'bg-white'
-                  const statusIcon = m.status === 'read' ? '✓✓' : m.status === 'delivered' ? '✓✓' : m.status === 'sent' ? '✓' : ''
-                  const statusColor = m.status === 'read' ? 'text-blue-600' : m.status === 'delivered' ? 'text-blue-400' : 'text-gray-400'
-                  const isMedia = m.type !== 'text' && m.payload
-                  return (
-                    <div key={m.id} className={`flex ${mine ? 'justify-end' : 'justify-start'} group`}>
-                      <div className={`max-w-[75%] rounded-lg px-3 py-2 shadow-sm ${color} relative`}>
-                        <div className="text-[10px] text-gray-400 mb-0.5">{SENDER_LABEL[m.sender] ?? m.sender} · {fmtTime(m.createdAt)}</div>
-                        {isMedia ? (
-                          <div className="text-xs text-gray-500 bg-gray-200 rounded px-2 py-1">
-                            📎 {m.type} — {m.content || 'Mídia'}
-                          </div>
-                        ) : (
-                          <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">{m.content}</p>
-                        )}
-                        {mine && statusIcon && <div className={`text-[10px] ${statusColor} mt-1 text-right font-bold`}>{statusIcon}</div>}
-
-                        {/* Ações ao hover */}
-                        <div className="absolute -top-8 right-0 hidden group-hover:flex gap-1 bg-white border rounded shadow-md p-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => navigator.clipboard.writeText(m.content || '')}
-                            title="Copiar"
-                          >
-                            <Copy size={14} />
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
+                {messages.map((m) => (
+                  <MessageBubble key={m.id} message={m} isMine={m.direction === 'outbound'} />
+                ))}
                 <div ref={bottomRef} />
               </div>
 

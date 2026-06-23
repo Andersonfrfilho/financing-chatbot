@@ -85,7 +85,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
             {statusDisplay && (
               <Tooltip.Provider>
                 <Tooltip.Root>
-                  <Tooltip.Trigger asChild>
+                  <Tooltip.Trigger>
                     <span
                       className={`text-[10px] font-bold cursor-help ${statusDisplay.color}`}
                     >
@@ -99,7 +99,6 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
                       sideOffset={5}
                     >
                       Lido às {fmtTime(message.readAt)}
-                      <Tooltip.Arrow className="fill-blue-50" />
                     </Tooltip.Content>
                   )}
                   {message.status === 'failed' && (
@@ -109,7 +108,6 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
                       sideOffset={5}
                     >
                       Falha: Fora da janela 24h
-                      <Tooltip.Arrow className="fill-red-50" />
                     </Tooltip.Content>
                   )}
                 </Tooltip.Root>
