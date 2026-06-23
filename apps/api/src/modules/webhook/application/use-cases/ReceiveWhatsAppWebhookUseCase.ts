@@ -21,11 +21,24 @@ function verifyHmac(rawBody: Buffer, signature: string): boolean {
   return timingSafeEqual(expected, actual)
 }
 
+interface WhatsAppMedia {
+  id: string
+  mime_type: string
+  sha256?: string
+  caption?: string
+  filename?: string
+}
+
 interface WhatsAppMessage {
   id:          string
   from:        string
   type:        string
   text?:       { body: string }
+  image?:      WhatsAppMedia
+  audio?:      WhatsAppMedia
+  video?:      WhatsAppMedia
+  document?:   WhatsAppMedia
+  sticker?:    WhatsAppMedia
   interactive?: {
     type:          string
     button_reply?: { id: string; title: string }
@@ -187,9 +200,19 @@ export class ReceiveWhatsAppWebhookUseCase {
               direction: 'inbound',
               sender: 'customer',
               type: message.type,
-              content: message.text?.body ?? null,
+              content: message.text?.body ?? message.image?.caption ?? message.document?.caption ?? null,
               waMessageId: message.id,
-              payload: message.interactive ? { interactive: message.interactive } : null,
+              payload: (() => {
+                const p = {
+                  ...(message.interactive ? { interactive: message.interactive } : {}),
+                  ...(message.image ? { image: message.image } : {}),
+                  ...(message.audio ? { audio: message.audio } : {}),
+                  ...(message.video ? { video: message.video } : {}),
+                  ...(message.document ? { document: message.document } : {}),
+                  ...(message.sticker ? { sticker: message.sticker } : {}),
+                }
+                return Object.keys(p).length > 0 ? p : null
+              })(),
             })
             log_.debug(LOG_EVENTS.WEBHOOK_MESSAGE, {
               id: message.id,

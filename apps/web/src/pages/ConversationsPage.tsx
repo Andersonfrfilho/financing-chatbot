@@ -1,10 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { LogOut, Power, Search, X } from 'lucide-react'
+import { LogOut, Paperclip, Power, Search, SendHorizonal, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui'
-import { Textarea } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
 import { SelectionsSummary } from '@/components/SelectionsSummary'
 import { Avatar } from '@/components/Avatar'
@@ -161,13 +160,18 @@ function contextToSelections(ctx: Record<string, unknown> | null): Record<string
   return selections
 }
 
+type AttachedFile = { file: File; base64: string; mimeType: string; preview?: string }
+
 export function ConversationsPage() {
   const deepLinkNumber = new URLSearchParams(window.location.search).get('whatsapp')
   const [selected, setSelected] = useState<string | null>(deepLinkNumber)
   const [text, setText] = useState('')
+  const [attached, setAttached] = useState<AttachedFile | null>(null)
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedBulk, setSelectedBulk] = useState<Set<string>>(new Set())
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const textareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
 
   const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
@@ -225,6 +229,31 @@ export function ConversationsPage() {
     mutationFn: (body: string) => api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: body }),
     onSuccess: () => { setText(''); refresh() },
   })
+
+  const sendMedia = useMutation({
+    mutationFn: (f: AttachedFile) => api.post(`/conversations/${encodeURIComponent(selected!)}/send-media`, {
+      base64: f.base64,
+      mimeType: f.mimeType,
+      filename: f.file.name,
+      caption: text.trim(),
+    }),
+    onSuccess: () => { setText(''); setAttached(null); refresh() },
+  })
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string
+      const base64 = dataUrl.split(',')[1]
+      const mimeType = file.type || 'application/octet-stream'
+      const preview = mimeType.startsWith('image/') ? dataUrl : undefined
+      setAttached({ file, base64, mimeType, preview })
+    }
+    reader.readAsDataURL(file)
+    e.target.value = ''
+  }
   const continueConversation = useMutation({
     mutationFn: (whatsapp: string) => {
       const conv = conversations.find((c) => c.whatsappNumber === whatsapp)
@@ -290,6 +319,7 @@ export function ConversationsPage() {
   }, [history?.messages?.length])
 
   const submit = () => {
+    if (attached && !sendMedia.isPending) { sendMedia.mutate(attached); return }
     const body = text.trim()
     if (body && !send.isPending) send.mutate(body)
   }
@@ -502,24 +532,66 @@ export function ConversationsPage() {
                 <div ref={bottomRef} />
               </div>
 
-              {/* Caixa de envio (assume a conversa automaticamente ao enviar) */}
-              <div className="border-t bg-white p-2 flex gap-2">
-                <Textarea
-                  value={text}
-                  onChange={(e) => setText(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-                  placeholder={isHuman ? 'Escreva uma mensagem...' : 'Escreva (assume a conversa ao enviar)...'}
-                  rows={1}
-                  className="flex-1"
-                />
-                <Button
-                  onClick={submit}
-                  disabled={send.isPending || !text.trim()}
-                >
-                  {send.isPending ? '...' : 'Enviar'}
-                </Button>
+              {/* Input moderno */}
+              <div className="border-t bg-white px-3 py-2 flex-shrink-0">
+                {/* Preview do arquivo anexado */}
+                {attached && (
+                  <div className="mb-2 flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                    {attached.preview
+                      ? <img src={attached.preview} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                      : <div className="w-10 h-10 rounded bg-blue-100 flex items-center justify-center flex-shrink-0 text-blue-600 text-lg">📎</div>
+                    }
+                    <span className="text-xs text-gray-700 flex-1 truncate">{attached.file.name}</span>
+                    <button onClick={() => setAttached(null)} className="text-gray-400 hover:text-red-500 transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+                <div className="flex items-end gap-2">
+                  {/* Anexar arquivo */}
+                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
+                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                    title="Anexar arquivo"
+                  >
+                    <Paperclip size={18} />
+                  </button>
+
+                  {/* Textarea auto-resize */}
+                  <textarea
+                    ref={textareaRef}
+                    value={text}
+                    rows={1}
+                    onChange={(e) => {
+                      setText(e.target.value)
+                      e.target.style.height = 'auto'
+                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+                    }}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
+                    placeholder={attached ? 'Legenda (opcional)...' : isHuman ? 'Escreva uma mensagem...' : 'Escreva (assume a conversa ao enviar)...'}
+                    className="flex-1 resize-none rounded-2xl border border-gray-200 bg-gray-50 px-4 py-2 text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all overflow-hidden"
+                    style={{ minHeight: '36px', maxHeight: '120px' }}
+                  />
+
+                  {/* Botão enviar */}
+                  <button
+                    onClick={submit}
+                    disabled={(send.isPending || sendMedia.isPending) || (!text.trim() && !attached)}
+                    className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                    title="Enviar"
+                  >
+                    {(send.isPending || sendMedia.isPending)
+                      ? <span className="text-xs">⏳</span>
+                      : <SendHorizonal size={16} />
+                    }
+                  </button>
+                </div>
+                {(send.isError || sendMedia.isError) && (
+                  <p className="mt-1 text-xs text-red-500">Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).</p>
+                )}
               </div>
-              {send.isError && <p className="px-3 pb-2 text-xs text-red-500">Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).</p>}
             </>
           )}
         </div>

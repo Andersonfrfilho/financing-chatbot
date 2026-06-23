@@ -6,8 +6,17 @@ import type { GetConversationHistoryUseCase } from '../../application/use-cases/
 import type { ListConversationsUseCase } from '../../application/use-cases/ListConversationsUseCase'
 import type { ManageTakeoverUseCase } from '../../application/use-cases/ManageTakeoverUseCase'
 import type { SendAgentMessageUseCase } from '../../application/use-cases/SendAgentMessageUseCase'
+import type { SendAgentMediaUseCase } from '../../application/use-cases/SendAgentMediaUseCase'
+import type { WhatsAppSender } from '../WhatsAppSender'
 
 const sendSchema = z.object({ text: z.string().min(1) })
+
+const sendMediaSchema = z.object({
+  base64:   z.string().min(1),
+  mimeType: z.string().min(1),
+  filename: z.string().min(1),
+  caption:  z.string().default(''),
+})
 
 const logSchema = z.object({
   direction:   z.enum(['inbound', 'outbound']),
@@ -27,6 +36,8 @@ export class ConversationController {
     private readonly listConvs:   ListConversationsUseCase,
     private readonly takeover:    ManageTakeoverUseCase,
     private readonly sendAgent:   SendAgentMessageUseCase,
+    private readonly sendAgentMedia?: SendAgentMediaUseCase,
+    private readonly waSender?: WhatsAppSender,
   ) {}
 
   // POST /api/conversations/:whatsapp/takeover  (assume a conversa, pausa o bot)
@@ -107,5 +118,23 @@ export class ConversationController {
     const whatsapp = request.params['whatsapp'] ?? ''
     const context = await this.takeover.getContext(whatsapp)
     response.json(context || {})
+  }
+
+  // POST /api/conversations/:whatsapp/send-media  { base64, mimeType, filename, caption }
+  async sendMedia(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    if (!this.sendAgentMedia) { response.json({ error: 'Não configurado' }, 501); return }
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const userId = request.user?.sub ?? ''
+    const { base64, mimeType, filename, caption } = validateBody(sendMediaSchema, request.body)
+    const result = await this.sendAgentMedia.execute(whatsapp, base64, mimeType, filename, caption ?? '', userId)
+    response.json(result, 201)
+  }
+
+  // GET /api/conversations/media/:mediaId  (proxy de mídia do WhatsApp → base64)
+  async mediaProxy(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }
+    const mediaId = request.params['mediaId'] ?? ''
+    const result = await this.waSender.fetchMediaAsBase64(mediaId)
+    response.json(result)
   }
 }

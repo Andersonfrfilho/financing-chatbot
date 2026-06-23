@@ -18,6 +18,7 @@ import { GetConversationHistoryUseCase } from '@/modules/conversations/applicati
 import { ListConversationsUseCase } from '@/modules/conversations/application/use-cases/ListConversationsUseCase'
 import { ManageTakeoverUseCase } from '@/modules/conversations/application/use-cases/ManageTakeoverUseCase'
 import { SendAgentMessageUseCase } from '@/modules/conversations/application/use-cases/SendAgentMessageUseCase'
+import { SendAgentMediaUseCase } from '@/modules/conversations/application/use-cases/SendAgentMediaUseCase'
 import { WhatsAppSender } from '@/modules/conversations/infra/WhatsAppSender'
 import { ConversationController } from '@/modules/conversations/infra/http/ConversationController'
 
@@ -178,6 +179,8 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new ListConversationsUseCase(conversationRepository),
     new ManageTakeoverUseCase(conversationRepository, appConfigRepository, whatsAppSender),
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
+    new SendAgentMediaUseCase(conversationRepository, whatsAppSender, sseHub),
+    whatsAppSender,
   )
 
   // Webhook (after conversations)
