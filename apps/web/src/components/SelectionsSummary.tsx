@@ -64,6 +64,8 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
     .filter(s => s.value)
     .sort((a, b) => ((a as any).order ?? 999) - ((b as any).order ?? 999))
 
+  const selectedFlow = selections['requestedProduct']?.value ?? null
+
   if (!items.length) return null
 
   if (compact) {
@@ -101,7 +103,12 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-lg">📋</span>
-            <h3 className="text-sm font-semibold text-gray-900">Suas Seleções</h3>
+            <div>
+              <h3 className="text-sm font-semibold text-gray-900 leading-tight">Suas Seleções</h3>
+              {selectedFlow && (
+                <p className="text-xs text-blue-600 font-medium leading-tight">{selectedFlow}</p>
+              )}
+            </div>
             <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium bg-blue-600 text-white rounded-full">
               {items.length}
             </span>
@@ -142,10 +149,13 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
                 : 'bg-white border-blue-200 shadow-sm'
             }`}
           >
-            {/* Icon + Status */}
-            <div className="flex items-start justify-between mb-2">
-              <span className="text-xl">{getFieldIcon(sel.step)}</span>
-              <span className={`flex-shrink-0 text-sm font-semibold ${
+            {/* Emoji + Label + Status — centered row */}
+            <div className="flex items-center justify-center gap-1.5 mb-2">
+              <span className="text-lg leading-none">{getFieldIcon(sel.step)}</span>
+              <p className="text-xs font-medium text-gray-500 uppercase tracking-wide leading-none">
+                {sel.label}
+              </p>
+              <span className={`flex-shrink-0 text-sm font-semibold leading-none ${
                 sel.status === 'completed' ? 'text-green-600' :
                 sel.status === 'pending' ? 'text-yellow-600' :
                 'text-blue-600'
@@ -156,13 +166,8 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
               </span>
             </div>
 
-            {/* Label */}
-            <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
-              {sel.label}
-            </p>
-
             {/* Value */}
-            <p className="text-sm font-semibold text-gray-900 truncate" title={sel.value}>
+            <p className="text-sm font-semibold text-gray-900 truncate text-center" title={sel.value}>
               {sel.value}
             </p>
           </div>

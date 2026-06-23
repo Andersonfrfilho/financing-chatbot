@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { LogOut, Paperclip, Power, Search, SendHorizonal, X } from 'lucide-react'
+import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui'
@@ -504,6 +504,7 @@ export function ConversationsPage() {
                         disabled={takeover.isPending}
                       >
                         <Power size={14} />
+                        <UserCheck size={14} />
                         Assumir conversa
                       </Button>
                     )}
