@@ -35,9 +35,24 @@ type Message = {
 
 const SENDER_LABEL: Record<string, string> = { customer: 'Cliente', bot: '🤖 Bot', agent: '🧑‍💼 Atendente' }
 
+const REMINDER_MESSAGES: Record<string, string> = {
+  awaiting_menu: 'Bem-vindo de volta! 👋 Qual é seu interesse?',
+  awaiting_hab_type: 'Voltamos aqui! 👋 Qual é a sua necessidade?',
+  awaiting_vehicle_model: 'Continuamos aqui! 👋 Qual veículo você está procurando?',
+  awaiting_financing_type: 'Estamos de volta! 👋 Vamos prosseguir com sua solicitação?',
+  in_flow: 'Desculpe a demora! 😊 Continuamos preenchendo os dados...',
+  simulation_ready: 'Sua simulação está pronta! 🎉 Quer revisar os resultados?',
+  new: 'Olá! 👋 Bem-vindo de volta!',
+  default: 'Estamos aqui para ajudar! 😊 Como podemos continuar?',
+}
+
 function fmtTime(iso: string) {
   const d = new Date(iso)
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+}
+
+function getMinutesAgo(iso: string): number {
+  return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60))
 }
 
 export function ConversationsPage() {
@@ -94,6 +109,14 @@ export function ConversationsPage() {
   const send = useMutation({
     mutationFn: (body: string) => api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: body }),
     onSuccess: () => { setText(''); refresh() },
+  })
+  const continueConversation = useMutation({
+    mutationFn: (whatsapp: string) => {
+      const conv = conversations.find((c) => c.whatsappNumber === whatsapp)
+      const reminderMsg = REMINDER_MESSAGES[conv?.currentState ?? 'default'] || REMINDER_MESSAGES.default
+      return api.post(`/conversations/${encodeURIComponent(whatsapp)}/send`, { text: reminderMsg })
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['conversations'] }),
   })
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -161,24 +184,46 @@ export function ConversationsPage() {
         {/* Lista */}
         <div className="border rounded-lg overflow-y-auto bg-white">
           {conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
-          {conversations.map((c) => (
-            <button
-              key={c.whatsappNumber}
-              onClick={() => openConversation(c.whatsappNumber)}
-              className={`w-full text-left p-3 border-b hover:bg-gray-50 ${selected === c.whatsappNumber ? 'bg-blue-50' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
-            >
-              <div className="flex justify-between items-baseline">
-                <span className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</span>
-                <div className="flex items-center gap-1 shrink-0 ml-2">
-                  {c.unread > 0 && <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none">{c.unread}</span>}
-                  <span className="text-[10px] text-gray-400">{fmtTime(c.lastAt)}</span>
-                </div>
+          {conversations.map((c) => {
+            const minAgo = getMinutesAgo(c.lastAt)
+            const isStalled = c.mode === 'bot' && minAgo > 30
+            return (
+              <div
+                key={c.whatsappNumber}
+                className={`border-b hover:bg-gray-50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
+              >
+                <button
+                  onClick={() => openConversation(c.whatsappNumber)}
+                  className="w-full text-left p-3"
+                >
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</span>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      {c.unread > 0 && <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none">{c.unread}</span>}
+                      <span className="text-[10px] text-gray-400">{fmtTime(c.lastAt)}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
+                  {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium">⏳ aguardando atendimento</span>}
+                  {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
+                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {minAgo}m</span>}
+                </button>
+                {isStalled && (
+                  <div className="px-3 pb-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => continueConversation.mutate(c.whatsappNumber)}
+                      disabled={continueConversation.isPending}
+                      className="w-full text-xs"
+                    >
+                      {continueConversation.isPending ? '...' : '▶️ Continuar Atendimento'}
+                    </Button>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
-              {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium">⏳ aguardando atendimento</span>}
-              {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
-            </button>
-          ))}
+            )
+          })}
         </div>
 
         {/* Conversa */}
