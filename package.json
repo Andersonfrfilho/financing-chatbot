@@ -2,7 +2,9 @@
   "name": "financiamento-imobiliario-bot",
   "version": "1.0.0",
   "private": true,
-  "workspaces": ["apps/*"],
+  "workspaces": [
+    "apps/*"
+  ],
   "scripts": {
     "api:dev": "bun run --cwd apps/api dev",
     "api:start": "bun run --cwd apps/api start",
@@ -10,6 +12,7 @@
     "web:build": "bun run --cwd apps/web build"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "typescript": "~5.7.3"
   }
 }
