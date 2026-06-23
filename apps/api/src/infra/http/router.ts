@@ -128,7 +128,7 @@ export class Router {
       })
 
       let body: unknown = {}
-      let rawBody = Buffer.alloc(0)
+      let rawBody: Buffer = Buffer.alloc(0)
 
       if (method !== 'get') {
         const result = await readBody(res, setAborted)
