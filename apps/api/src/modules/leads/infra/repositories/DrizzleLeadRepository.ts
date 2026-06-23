@@ -1,6 +1,6 @@
 import { eq, ilike, and, or, sql, desc, gte, lte } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
-import { leads, financingClients, financingSimulations } from '@/infra/database/schema'
+import { leads, financingClients, financingSimulations, conversationSessions } from '@/infra/database/schema'
 import type { Lead } from '@/infra/database/schema'
 import type { LeadRepository, CreateLeadInput, UpdateLeadInput, LeadFilters } from '../../domain/repositories/LeadRepository'
 import { NotFoundError } from '@/shared/errors/AppError'
@@ -30,19 +30,23 @@ export class DrizzleLeadRepository implements LeadRepository {
 
     const baseQuery = db
       .select({
-        id:             leads.id,
-        clientId:       leads.clientId,
-        simulationId:   leads.simulationId,
-        whatsappNumber: leads.whatsappNumber,
-        status:         leads.status,
-        assignedTo:     leads.assignedTo,
-        notes:          leads.notes,
-        createdAt:      leads.createdAt,
-        updatedAt:      leads.updatedAt,
-        clientName:     financingClients.name,
+        id:               leads.id,
+        clientId:         leads.clientId,
+        simulationId:     leads.simulationId,
+        whatsappNumber:   leads.whatsappNumber,
+        status:           leads.status,
+        assignedTo:       leads.assignedTo,
+        notes:            leads.notes,
+        createdAt:        leads.createdAt,
+        updatedAt:        leads.updatedAt,
+        clientName:       financingClients.name,
+        financingType:    financingSimulations.financingType,
+        requestedProduct: sql<string>`${conversationSessions.context}->>'requestedProduct'`,
       })
       .from(leads)
       .leftJoin(financingClients, eq(leads.clientId, financingClients.id))
+      .leftJoin(financingSimulations, eq(leads.simulationId, financingSimulations.id))
+      .leftJoin(conversationSessions, eq(leads.whatsappNumber, conversationSessions.whatsappNumber))
 
     const [data, countResult] = await Promise.all([
       baseQuery.where(where).orderBy(desc(leads.createdAt)).limit(limit).offset(offset),
@@ -50,6 +54,7 @@ export class DrizzleLeadRepository implements LeadRepository {
         .select({ count: sql<number>`count(*)` })
         .from(leads)
         .leftJoin(financingClients, eq(leads.clientId, financingClients.id))
+        .leftJoin(conversationSessions, eq(leads.whatsappNumber, conversationSessions.whatsappNumber))
         .where(where),
     ])
 

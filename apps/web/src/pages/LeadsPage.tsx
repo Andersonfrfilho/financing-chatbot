@@ -20,6 +20,28 @@ type Lead = {
   updatedAt?: string
   clientId: string
   clientName?: string
+  financingType?: string
+  requestedProduct?: string
+}
+
+const getProductLabel = (lead: Lead): string => {
+  const key = lead.requestedProduct || lead.financingType || ''
+  return (text.products as Record<string, string>)[key] ?? (key ? key.replace(/_/g, ' ') : text.noProduct)
+}
+
+const PRODUCT_COLORS: Record<string, string> = {
+  imobiliario: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
+  imovel:      'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
+  veiculo:     'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
+  carro:       'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
+  moto:        'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
+  caminhao:    'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
+  pessoal:     'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
+  consignado:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400',
+  consorcio:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
+  empresa:     'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
+  equipamento: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
+  rural:       'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-400',
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
@@ -124,10 +146,11 @@ export function LeadsPage() {
             <TableRow>
               <SortableHead label={text.columns.whatsapp} field="whatsappNumber" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
               <SortableHead label={text.columns.client} field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label={text.columns.product} field="requestedProduct" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
               <SortableHead label={text.columns.status} field="status" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
-              <SortableHead label={text.columns.seller} field="assignedTo" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
-              <SortableHead label={text.columns.created} field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
-              <SortableHead label={text.columns.updated} field="updatedAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.seller} field="assignedTo" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.created} field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.updated} field="updatedAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden xl:table-cell" />
               <TableHead>{text.columns.actions}</TableHead>
             </TableRow>
           </TableHeader>
@@ -135,12 +158,21 @@ export function LeadsPage() {
             {sorted?.map((lead) => {
               const info = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
               const visible = visibleLeads.has(lead.id)
+              const productKey = lead.requestedProduct || lead.financingType || ''
+              const productLabel = getProductLabel(lead)
+              const productColor = PRODUCT_COLORS[productKey] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
               return (
                 <TableRow key={lead.id}>
                   <TableCell className="font-mono text-xs whitespace-nowrap">
                     {visible ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
                   </TableCell>
                   <TableCell className="hidden sm:table-cell text-sm">{lead.clientName || '—'}</TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {productKey
+                      ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${productColor}`}>{productLabel}</span>
+                      : <span className="text-gray-400 dark:text-gray-600 text-xs">—</span>
+                    }
+                  </TableCell>
                   <TableCell>
                     <Select
                       value={lead.status}
@@ -156,9 +188,9 @@ export function LeadsPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="hidden md:table-cell text-xs">{lead.assignedTo || '—'}</TableCell>
-                  <TableCell className="hidden md:table-cell text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
-                  <TableCell className="hidden lg:table-cell text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs">{lead.assignedTo || '—'}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
+                  <TableCell className="hidden xl:table-cell text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
                   <TableCell>
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" onClick={() => toggleVisible(lead.id)} title={visible ? 'Esconder' : 'Mostrar'}>
