@@ -26,8 +26,22 @@
     {
       "idx": 3,
       "version": "7",
+      "when": 1750896700000,
+      "tag": "0006_add_read_at_to_messages",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
       "when": 1750897000000,
-      "tag": "0006_session_human_mode",
+      "tag": "0007_session_human_mode",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1750897200000,
+      "tag": "0008_app_config",
       "breakpoints": true
     }
   ]
