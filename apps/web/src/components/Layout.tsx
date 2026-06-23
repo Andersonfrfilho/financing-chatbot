@@ -52,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Logo */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
           <div>
-            <h1 className="text-base font-bold text-primary-700 leading-tight">Financiamento Bot</h1>
+            <h1 className="text-base font-bold text-blue-700 leading-tight">Financiamento Bot</h1>
             <p className="text-[11px] text-gray-400 mt-0.5">Painel Operacional</p>
           </div>
           <button
@@ -76,8 +76,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
                   transition-all duration-150 group
                   ${active
-                    ? 'bg-primary-50 text-primary-700'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
                   }
                 `}
               >
@@ -89,7 +89,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                   </span>
                 )}
                 {active && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-primary-500 flex-shrink-0" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
                 )}
               </a>
             )
@@ -99,7 +99,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         {/* Footer user */}
         <div className="px-4 py-4 border-t border-gray-100">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-9 h-9 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm flex-shrink-0">
+            <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
             <div className="flex-1 min-w-0">
@@ -127,7 +127,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
-          <h1 className="flex-1 text-sm font-bold text-primary-700">Financiamento Bot</h1>
+          <h1 className="flex-1 text-sm font-bold text-blue-700">Financiamento Bot</h1>
           {waitingCount > 0 && (
             <a href="/conversations" className="relative">
               <span className="text-xl">🗨️</span>
@@ -136,7 +136,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
             </a>
           )}
-          <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center text-primary-700 font-bold text-sm flex-shrink-0">
+          <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm flex-shrink-0">
             {user?.name?.charAt(0).toUpperCase()}
           </div>
         </header>
