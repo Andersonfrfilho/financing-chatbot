@@ -3,18 +3,10 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button } from '@/components/ui'
-import { Input } from '@/components/ui'
-import { Textarea } from '@/components/ui'
+import { Button, Input, Textarea } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
 
 type Lead = {
@@ -30,13 +22,13 @@ type Lead = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  novo: { label: 'Novo', color: 'bg-blue-100 text-blue-700' },
-  em_atendimento: { label: 'Em atendimento', color: 'bg-yellow-100 text-yellow-700' },
+  novo:             { label: 'Novo',             color: 'bg-blue-100 text-blue-700' },
+  em_atendimento:   { label: 'Em atendimento',   color: 'bg-yellow-100 text-yellow-700' },
   proposta_enviada: { label: 'Proposta enviada', color: 'bg-purple-100 text-purple-700' },
-  aprovado: { label: 'Aprovado', color: 'bg-green-100 text-green-700' },
-  reprovado: { label: 'Reprovado', color: 'bg-red-100 text-red-700' },
-  cancelado: { label: 'Cancelado', color: 'bg-gray-100 text-gray-600' },
-  concluido: { label: 'Concluído', color: 'bg-emerald-100 text-emerald-700' },
+  aprovado:         { label: 'Aprovado',         color: 'bg-green-100 text-green-700' },
+  reprovado:        { label: 'Reprovado',        color: 'bg-red-100 text-red-700' },
+  cancelado:        { label: 'Cancelado',        color: 'bg-gray-100 text-gray-600' },
+  concluido:        { label: 'Concluído',        color: 'bg-emerald-100 text-emerald-700' },
 }
 
 const getDaysAgo = (date: string) => {
@@ -62,28 +54,19 @@ export function LeadsPage() {
   })
 
   const updateStatus = useMutation({
-    mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) =>
-      api.patch(`/leads/${id}`, { status: newStatus }),
+    mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) => api.patch(`/leads/${id}`, { status: newStatus }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
   })
 
   const updateLead = useMutation({
     mutationFn: ({ id, notes, assignedTo }: { id: string; notes?: string; assignedTo?: string }) =>
       api.patch(`/leads/${id}`, { notes, assignedTo }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['leads'] })
-      setEditingId(null)
-    },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['leads'] }); setEditingId(null) },
   })
 
-  const toggleVisible = (leadId: string) => {
-    const newSet = new Set(visibleLeads)
-    if (newSet.has(leadId)) newSet.delete(leadId)
-    else newSet.add(leadId)
-    setVisibleLeads(newSet)
+  const toggleVisible = (id: string) => {
+    setVisibleLeads((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
   }
-
-  const isVisible = (leadId: string) => visibleLeads.has(leadId)
 
   const startEdit = (lead: Lead) => {
     setEditForm({ notes: lead.notes || '', assignedTo: lead.assignedTo || '' })
@@ -91,22 +74,23 @@ export function LeadsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
+    <div className="space-y-4 md:space-y-6">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Leads</h2>
-          <p className="text-gray-500 text-sm mt-1">{data?.total ?? 0} leads encontrados</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900">Leads</h2>
+          <p className="text-gray-500 text-sm mt-0.5">{data?.total ?? 0} leads encontrados</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             type="search"
             placeholder="Buscar WhatsApp/Cliente..."
             value={search}
             onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="w-64"
+            className="w-full sm:w-56"
           />
-          <Select value={status} onValueChange={(value: string) => { setStatus(value); setPage(1) }}>
-            <SelectTrigger className="w-48">
+          <Select value={status} onValueChange={(v: string) => { setStatus(v); setPage(1) }}>
+            <SelectTrigger className="w-full sm:w-44">
               <SelectValue placeholder="Todos os status" />
             </SelectTrigger>
             <SelectContent>
@@ -119,34 +103,36 @@ export function LeadsPage() {
         </div>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      {/* Tabela */}
+      <div className="border rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>WhatsApp</TableHead>
-              <TableHead>Cliente</TableHead>
+              <TableHead className="hidden sm:table-cell">Cliente</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Vendedor</TableHead>
-              <TableHead>Criado</TableHead>
-              <TableHead>Atualizado</TableHead>
+              <TableHead className="hidden md:table-cell">Vendedor</TableHead>
+              <TableHead className="hidden md:table-cell">Criado</TableHead>
+              <TableHead className="hidden lg:table-cell">Atualizado</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data?.data.map((lead) => {
-              const statusInfo = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
+              const info = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
+              const visible = visibleLeads.has(lead.id)
               return (
                 <TableRow key={lead.id}>
-                  <TableCell className="font-mono text-xs">
-                    {isVisible(lead.id) ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
+                  <TableCell className="font-mono text-xs whitespace-nowrap">
+                    {visible ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
                   </TableCell>
-                  <TableCell>{lead.clientName || '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm">{lead.clientName || '—'}</TableCell>
                   <TableCell>
                     <Select
                       value={lead.status}
-                      onValueChange={(value: string) => updateStatus.mutate({ id: lead.id, newStatus: value })}
+                      onValueChange={(v: string) => updateStatus.mutate({ id: lead.id, newStatus: v })}
                     >
-                      <SelectTrigger className={`w-32 text-xs ${statusInfo.color}`}>
+                      <SelectTrigger className={`w-28 md:w-36 text-xs ${info.color}`}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -156,86 +142,55 @@ export function LeadsPage() {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="text-xs">{lead.assignedTo ? lead.assignedTo.split('@')[0] : '—'}</TableCell>
-                  <TableCell className="text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
-                  <TableCell className="text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
-                  <TableCell className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => toggleVisible(lead.id)}
-                      title={isVisible(lead.id) ? 'Esconder' : 'Mostrar'}
-                    >
-                      {isVisible(lead.id) ? <EyeOff size={14} /> : <Eye size={14} />}
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => startEdit(lead)}
-                      title="Editar notas"
-                    >
-                      <Edit2 size={14} />
-                    </Button>
+                  <TableCell className="hidden md:table-cell text-xs">{lead.assignedTo ? lead.assignedTo.split('@')[0] : '—'}</TableCell>
+                  <TableCell className="hidden md:table-cell text-xs">{getDaysAgo(lead.createdAt)}</TableCell>
+                  <TableCell className="hidden lg:table-cell text-xs">{lead.updatedAt ? getDaysAgo(lead.updatedAt) : '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" onClick={() => toggleVisible(lead.id)} title={visible ? 'Esconder' : 'Mostrar'}>
+                        {visible ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(lead)} title="Editar">
+                        <Edit2 size={14} />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               )
             })}
           </TableBody>
         </Table>
-        {!data?.data.length && (
-          <p className="text-center text-gray-400 py-8">Nenhum lead encontrado</p>
-        )}
+        {!data?.data.length && <p className="text-center text-gray-400 py-8 text-sm">Nenhum lead encontrado</p>}
       </div>
 
       {data && data.total > 20 && (
         <div className="flex justify-center items-center gap-2">
-          <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            <ChevronLeft size={16} />
-            Anterior
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <ChevronLeft size={16} /> Anterior
           </Button>
-          <span className="px-4 py-2 text-sm text-gray-600">Página {page}</span>
-          <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
-            Próxima
-            <ChevronRight size={16} />
+          <span className="px-3 py-1.5 text-sm text-gray-600">Pág. {page}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
+            Próxima <ChevronRight size={16} />
           </Button>
         </div>
       )}
 
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Lead</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Editar Lead</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium">Vendedor/Atribuído a</label>
-              <Input
-                value={editForm.assignedTo}
-                onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })}
-                placeholder="Nome do vendedor"
-              />
+              <label className="text-sm font-medium">Vendedor / Atribuído a</label>
+              <Input value={editForm.assignedTo} onChange={(e) => setEditForm({ ...editForm, assignedTo: e.target.value })} placeholder="Nome do vendedor" />
             </div>
             <div>
               <label className="text-sm font-medium">Notas</label>
-              <Textarea
-                value={editForm.notes}
-                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                placeholder="Anotações sobre o lead..."
-                rows={4}
-              />
+              <Textarea value={editForm.notes} onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })} placeholder="Anotações sobre o lead..." rows={4} />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingId(null)}>
-              Cancelar
-            </Button>
-            <Button
-              onClick={() => {
-                if (!editingId) return
-                updateLead.mutate({ id: editingId, ...editForm })
-              }}
-              disabled={updateLead.isPending}
-            >
+            <Button variant="outline" onClick={() => setEditingId(null)}>Cancelar</Button>
+            <Button onClick={() => editingId && updateLead.mutate({ id: editingId, ...editForm })} disabled={updateLead.isPending}>
               {updateLead.isPending ? '...' : 'Salvar'}
             </Button>
           </DialogFooter>

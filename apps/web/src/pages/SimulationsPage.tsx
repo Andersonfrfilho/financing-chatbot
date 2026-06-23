@@ -31,54 +31,50 @@ export function SimulationsPage() {
   })
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Simulações</h2>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Simulações</h2>
         <p className="text-gray-500 text-sm mt-1">{data?.total ?? 0} simulações realizadas</p>
       </div>
 
-      <div className="border rounded-lg overflow-hidden">
+      <div className="border rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Modalidade</TableHead>
-              <TableHead>Valor Solicitado</TableHead>
-              <TableHead>Prazo</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Resultados</TableHead>
+              <TableHead>Valor</TableHead>
+              <TableHead className="hidden sm:table-cell">Prazo</TableHead>
+              <TableHead className="hidden sm:table-cell">Data</TableHead>
+              <TableHead>Bancos</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data?.data.map((sim) => (
               <TableRow key={sim.id}>
                 <TableCell>
-                  <div className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700">
+                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 text-blue-700 whitespace-nowrap">
                     {FINANCING_LABELS[sim.financingType] ?? sim.financingType}
-                  </div>
+                  </span>
                 </TableCell>
-                <TableCell className="font-medium">{formatBRL(sim.requestedAmount)}</TableCell>
-                <TableCell>{sim.termMonths} meses</TableCell>
-                <TableCell>{new Date(sim.createdAt).toLocaleDateString('pt-BR')}</TableCell>
-                <TableCell>{sim.results?.length ?? 0} bancos</TableCell>
+                <TableCell className="font-medium text-sm whitespace-nowrap">{formatBRL(sim.requestedAmount)}</TableCell>
+                <TableCell className="hidden sm:table-cell text-sm">{sim.termMonths} meses</TableCell>
+                <TableCell className="hidden sm:table-cell text-sm">{new Date(sim.createdAt).toLocaleDateString('pt-BR')}</TableCell>
+                <TableCell className="text-sm">{sim.results?.length ?? 0}</TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-        {!data?.data.length && (
-          <p className="text-center text-gray-400 py-8">Nenhuma simulação encontrada</p>
-        )}
+        {!data?.data.length && <p className="text-center text-gray-400 py-8 text-sm">Nenhuma simulação encontrada</p>}
       </div>
 
       {data && data.total > 20 && (
         <div className="flex justify-center items-center gap-2">
-          <Button variant="outline" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            <ChevronLeft size={16} />
-            Anterior
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+            <ChevronLeft size={16} /> Anterior
           </Button>
-          <span className="px-4 py-2 text-sm text-gray-600">Página {page}</span>
-          <Button variant="outline" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
-            Próxima
-            <ChevronRight size={16} />
+          <span className="px-3 py-1.5 text-sm text-gray-600">Pág. {page}</span>
+          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
+            Próxima <ChevronRight size={16} />
           </Button>
         </div>
       )}
