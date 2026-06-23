@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
-import { Button } from '@/components/ui'
+import { Button, Skeleton } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
 import { SelectionsSummary } from '@/components/SelectionsSummary'
 import { Avatar } from '@/components/Avatar'
@@ -174,7 +174,7 @@ export function ConversationsPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
 
-  const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
+  const { data: list, isLoading: listLoading } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
     queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
     refetchInterval: 20_000,
@@ -399,7 +399,19 @@ export function ConversationsPage() {
 
           {/* Conversas */}
           <div className="flex-1 overflow-y-auto">
-            {filteredConversations.length === 0 && conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
+            {listLoading && Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="border-b p-3 flex items-start gap-2">
+                <Skeleton className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="flex justify-between">
+                    <Skeleton className="h-3.5 w-28" />
+                    <Skeleton className="h-3 w-10" />
+                  </div>
+                  <Skeleton className="h-3 w-48" />
+                </div>
+              </div>
+            ))}
+            {!listLoading && filteredConversations.length === 0 && conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
             {filteredConversations.length === 0 && conversations.length > 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa encontrada.</p>}
             {filteredConversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)

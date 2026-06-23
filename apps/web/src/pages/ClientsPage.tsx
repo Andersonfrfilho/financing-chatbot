@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button, Input } from '@/components/ui'
+import { Button, Input, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
@@ -33,7 +33,7 @@ export function ClientsPage() {
   const [editForm, setEditForm] = useState({ name: '', email: '', city: '', state: '', whatsappNumber: '', address: '' })
   const qc = useQueryClient()
 
-  const { data } = useQuery<{ data: Client[]; total: number }>({
+  const { data, isLoading } = useQuery<{ data: Client[]; total: number }>({
     queryKey: ['clients', search, page],
     queryFn: () => api.get('/clients', { params: { search: search || undefined, page, limit: 20 } }).then((r: any) => r.data),
   })
@@ -63,6 +63,16 @@ export function ClientsPage() {
   }
 
   const isVisible = (id: string) => showAllData || visibleClients.has(id)
+
+  if (isLoading) return (
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><Skeleton className="h-7 w-32" /><Skeleton className="h-4 w-40 mt-2" /></div>
+        <Skeleton className="h-9 w-48" />
+      </div>
+      <TableSkeleton rows={8} cols={5} />
+    </div>
+  )
 
   return (
     <div className="space-y-4 md:space-y-6">

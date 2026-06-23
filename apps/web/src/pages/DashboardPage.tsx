@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
-import { Card } from '@/components/ui'
+import { Card, Skeleton } from '@/components/ui'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }
@@ -22,14 +22,44 @@ const FINANCING_LABELS: Record<string, string> = {
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316']
 
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-4 md:space-y-6">
+      <div>
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-64 mt-2" />
+      </div>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {['bg-blue-50', 'bg-green-50', 'bg-yellow-50', 'bg-purple-50'].map((bg, i) => (
+          <div key={i} className={`rounded-xl border p-3 md:p-4 ${bg}`}>
+            <Skeleton className="h-3.5 w-24 bg-gray-300/60" />
+            <Skeleton className="h-9 w-16 mt-2 bg-gray-300/60" />
+            <Skeleton className="h-3 w-20 mt-1.5 bg-gray-300/60" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {[0, 1].map((i) => (
+          <Card key={i} className="p-4">
+            <Skeleton className="h-4.5 w-40 mb-4" />
+            <div className="flex items-center justify-center h-[180px]">
+              <Skeleton className="h-32 w-32 rounded-full" />
+            </div>
+          </Card>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 export function DashboardPage() {
-  const { data: stats } = useQuery<DashboardStats>({
+  const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get('/dashboard/stats').then((r: any) => r.data),
     refetchInterval: 30_000,
   })
 
-  if (!stats) return <div className="text-gray-400 p-4">Carregando...</div>
+  if (isLoading || !stats) return <DashboardSkeleton />
 
   const statusChartData = Object.entries(stats.leads.byStatus).map(([k, v]) => ({
     name: STATUS_LABELS[k] ?? k, value: v,

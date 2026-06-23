@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { Button } from '@/components/ui'
+import { Button, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { api } from '@/lib/api'
 
@@ -25,10 +25,17 @@ const formatBRL = (v: string | number) =>
 export function SimulationsPage() {
   const [page, setPage] = useState(1)
 
-  const { data } = useQuery<{ data: Simulation[]; total: number }>({
+  const { data, isLoading } = useQuery<{ data: Simulation[]; total: number }>({
     queryKey: ['simulations', page],
     queryFn: () => api.get('/simulations', { params: { page, limit: 20 } }).then((r: any) => r.data),
   })
+
+  if (isLoading) return (
+    <div className="space-y-4 md:space-y-6">
+      <div><Skeleton className="h-7 w-32" /><Skeleton className="h-4 w-40 mt-2" /></div>
+      <TableSkeleton rows={8} cols={5} />
+    </div>
+  )
 
   return (
     <div className="space-y-4 md:space-y-6">

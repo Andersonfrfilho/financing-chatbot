@@ -2,7 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useState } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2 } from 'lucide-react'
-import { Button } from '@/components/ui'
+import { Button, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
 
@@ -38,7 +38,7 @@ export function SessionsPage() {
     refetchInterval: 15_000,
   })
 
-  const { data } = useQuery<{ data: Session[]; total: number }>({
+  const { data, isLoading } = useQuery<{ data: Session[]; total: number }>({
     queryKey: ['sessions', state],
     queryFn: () => api.get('/sessions', { params: { state: state || undefined, limit: 50 } }).then((r: any) => r.data),
   })
@@ -47,6 +47,21 @@ export function SessionsPage() {
     mutationFn: (number: string) => api.delete(`/sessions/${number}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
   })
+
+  if (isLoading) return (
+    <div className="space-y-4 md:space-y-6">
+      <div><Skeleton className="h-7 w-44" /><Skeleton className="h-4 w-52 mt-2" /></div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-xl border-2 border-transparent bg-gray-100 p-2.5 md:p-3">
+            <Skeleton className="h-7 w-8 bg-gray-300/60" />
+            <Skeleton className="h-3 w-16 mt-1.5 bg-gray-300/60" />
+          </div>
+        ))}
+      </div>
+      <TableSkeleton rows={8} cols={4} />
+    </div>
+  )
 
   return (
     <div className="space-y-4 md:space-y-6">

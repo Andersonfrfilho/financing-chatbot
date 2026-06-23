@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Edit2 } from 'lucide-react'
 import {
-  Button, Input,
+  Button, Input, Skeleton, TableSkeleton,
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle,
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow
@@ -28,7 +28,7 @@ export function UsersPage() {
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
   const qc = useQueryClient()
 
-  const { data } = useQuery<{ data: User[]; total: number }>({
+  const { data, isLoading } = useQuery<{ data: User[]; total: number }>({
     queryKey: ['users'],
     queryFn: () => api.get('/users').then((r: any) => r.data),
   })
@@ -63,6 +63,16 @@ export function UsersPage() {
   }
 
   const passwordMismatch = (f: typeof form) => f.password && f.passwordConfirm && f.password !== f.passwordConfirm
+
+  if (isLoading) return (
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex items-center justify-between">
+        <div><Skeleton className="h-7 w-32" /><Skeleton className="h-4 w-40 mt-2" /></div>
+        <Skeleton className="h-9 w-36" />
+      </div>
+      <TableSkeleton rows={6} cols={4} />
+    </div>
+  )
 
   return (
     <div className="space-y-4 md:space-y-6">

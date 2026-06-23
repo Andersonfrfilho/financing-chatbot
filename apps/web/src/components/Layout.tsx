@@ -5,14 +5,32 @@ import { useAuthStore } from '@/store/authStore'
 import { useWaitingNotifications } from '@/hooks/useWaitingNotifications'
 import { api } from '@/lib/api'
 
-const navItems = [
-  { href: '/',             label: 'Dashboard',  icon: '📊' },
-  { href: '/leads',        label: 'Leads',       icon: '🎯' },
-  { href: '/clients',      label: 'Clientes',    icon: '👥' },
-  { href: '/simulations',  label: 'Simulações',  icon: '🏦' },
-  { href: '/sessions',     label: 'Sessões',     icon: '💬' },
-  { href: '/conversations',label: 'Conversas',   icon: '🗨️', badge: true },
-  { href: '/users',        label: 'Usuários',    icon: '👤' },
+const COMPANY_NAME = import.meta.env.VITE_COMPANY_NAME || 'Financiamento Bot'
+const COMPANY_LOGO = import.meta.env.VITE_COMPANY_LOGO_URL || ''
+
+const navGroups = [
+  {
+    label: 'Geral',
+    items: [
+      { href: '/',             label: 'Dashboard',  icon: '📊' },
+      { href: '/conversations',label: 'Conversas',  icon: '🗨️', badge: true },
+      { href: '/sessions',     label: 'Sessões',    icon: '💬' },
+    ],
+  },
+  {
+    label: 'Cadastros',
+    items: [
+      { href: '/clients',      label: 'Clientes',   icon: '👥' },
+      { href: '/leads',        label: 'Leads',      icon: '🎯' },
+      { href: '/simulations',  label: 'Simulações', icon: '🏦' },
+    ],
+  },
+  {
+    label: 'Administração',
+    items: [
+      { href: '/users',        label: 'Usuários',   icon: '👤' },
+    ],
+  },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
@@ -49,51 +67,67 @@ export function Layout({ children }: { children: React.ReactNode }) {
         md:relative md:translate-x-0 md:w-64 md:shadow-none md:border-r md:border-gray-200
       `}>
 
-        {/* Logo */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-          <div>
-            <h1 className="text-base font-bold text-blue-700 leading-tight">Financiamento Bot</h1>
-            <p className="text-[11px] text-gray-400 mt-0.5">Painel Operacional</p>
+        {/* Logo / Branding */}
+        <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100">
+          <div className="flex items-center gap-2.5 min-w-0">
+            {COMPANY_LOGO ? (
+              <img src={COMPANY_LOGO} alt="Logo" className="w-8 h-8 rounded-lg object-contain flex-shrink-0" />
+            ) : (
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center flex-shrink-0">
+                <span className="text-white text-sm font-bold">{COMPANY_NAME.charAt(0)}</span>
+              </div>
+            )}
+            <div className="min-w-0">
+              <h1 className="text-sm font-bold text-gray-900 leading-tight truncate">{COMPANY_NAME}</h1>
+              <p className="text-[10px] text-gray-400 leading-tight">Painel Operacional</p>
+            </div>
           </div>
           <button
             onClick={close}
-            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="md:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors flex-shrink-0"
           >
             <X size={18} />
           </button>
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = location === item.href
-            return (
-              <a
-                key={item.href}
-                href={item.href}
-                onClick={close}
-                className={`
-                  flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
-                  transition-all duration-150 group
-                  ${active
-                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
-                  }
-                `}
-              >
-                <span className="text-lg leading-none w-6 text-center flex-shrink-0">{item.icon}</span>
-                <span className="flex-1">{item.label}</span>
-                {item.badge && waitingCount > 0 && (
-                  <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
-                    {waitingCount > 99 ? '99+' : waitingCount}
-                  </span>
-                )}
-                {active && (
-                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
-                )}
-              </a>
-            )
-          })}
+        {/* Nav com separadores por grupo */}
+        <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
+          {navGroups.map((group) => (
+            <div key={group.label}>
+              <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 uppercase tracking-widest">{group.label}</p>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const active = location === item.href
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={close}
+                      className={`
+                        flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium
+                        transition-all duration-150
+                        ${active
+                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 border border-transparent'
+                        }
+                      `}
+                    >
+                      <span className="text-base leading-none w-5 text-center flex-shrink-0">{item.icon}</span>
+                      <span className="flex-1">{item.label}</span>
+                      {(item as any).badge && waitingCount > 0 && (
+                        <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-orange-500 text-white text-[11px] font-bold flex items-center justify-center">
+                          {waitingCount > 99 ? '99+' : waitingCount}
+                        </span>
+                      )}
+                      {active && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />
+                      )}
+                    </a>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* Footer user */}
@@ -127,7 +161,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           >
             <Menu size={20} />
           </button>
-          <h1 className="flex-1 text-sm font-bold text-blue-700">Financiamento Bot</h1>
+          <h1 className="flex-1 text-sm font-bold text-gray-900">{COMPANY_NAME}</h1>
           {waitingCount > 0 && (
             <a href="/conversations" className="relative">
               <span className="text-xl">🗨️</span>

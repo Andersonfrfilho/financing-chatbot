@@ -34,6 +34,7 @@ export {
   TableCell,
 } from './table'
 export { Textarea } from './textarea'
+export { Skeleton, TableSkeleton } from './skeleton'
 export {
   Card,
   CardHeader,

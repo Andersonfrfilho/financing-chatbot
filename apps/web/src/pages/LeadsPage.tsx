@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
-import { Button, Input, Textarea } from '@/components/ui'
+import { Button, Input, Textarea, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
@@ -47,7 +47,7 @@ export function LeadsPage() {
   const [editForm, setEditForm] = useState({ notes: '', assignedTo: '' })
   const qc = useQueryClient()
 
-  const { data } = useQuery<{ data: Lead[]; total: number }>({
+  const { data, isLoading } = useQuery<{ data: Lead[]; total: number }>({
     queryKey: ['leads', search, status, page],
     queryFn: () =>
       api.get('/leads', { params: { search: search || undefined, status: status || undefined, page, limit: 20 } }).then((r: any) => r.data),
@@ -72,6 +72,16 @@ export function LeadsPage() {
     setEditForm({ notes: lead.notes || '', assignedTo: lead.assignedTo || '' })
     setEditingId(lead.id)
   }
+
+  if (isLoading) return (
+    <div className="space-y-4 md:space-y-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><Skeleton className="h-7 w-24" /><Skeleton className="h-4 w-40 mt-2" /></div>
+        <div className="flex gap-2"><Skeleton className="h-9 w-48" /><Skeleton className="h-9 w-32" /></div>
+      </div>
+      <TableSkeleton rows={8} cols={5} />
+    </div>
+  )
 
   return (
     <div className="space-y-4 md:space-y-6">
