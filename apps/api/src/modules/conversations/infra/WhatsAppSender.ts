@@ -1,9 +1,18 @@
+import { AppError } from '@/shared/errors/AppError'
+
 const GRAPH = 'https://graph.facebook.com'
 
-export class WhatsAppSendError extends Error {
-  constructor(message: string, readonly status: number) {
-    super(message)
-    this.name = 'WhatsAppSendError'
+const WINDOW_EXPIRED_CODES = new Set([
+  131047, // Re-engagement message (outside 24h window)
+  131026, // Message undeliverable
+  131000, // Something went wrong (session expired variant)
+])
+
+function parseWaErrorCode(text: string): number | undefined {
+  try {
+    return (JSON.parse(text) as any)?.error?.code as number | undefined
+  } catch {
+    return undefined
   }
 }
 
@@ -13,7 +22,11 @@ export class WhatsAppSender {
     const phoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
     const token = process.env.WHATSAPP_ACCESS_TOKEN
     if (!phoneId || !token) {
-      throw new WhatsAppSendError('WhatsApp não configurado (WHATSAPP_PHONE_NUMBER_ID / WHATSAPP_ACCESS_TOKEN)', 500)
+      throw new AppError(
+        'A integração com WhatsApp não está configurada. Verifique WHATSAPP_PHONE_NUMBER_ID e WHATSAPP_ACCESS_TOKEN nas variáveis de ambiente.',
+        503,
+        'WHATSAPP_CONFIG_MISSING',
+      )
     }
     return { version, phoneId, token }
   }
@@ -36,12 +49,24 @@ export class WhatsAppSender {
         signal: AbortSignal.timeout(10_000),
       })
     } catch {
-      throw new WhatsAppSendError('Falha de rede ao enviar pelo WhatsApp', 502)
+      throw new AppError('Falha de rede ao tentar enviar pelo WhatsApp. Verifique a conexão e tente novamente.', 502, 'WHATSAPP_NETWORK_ERROR')
     }
 
     if (!resp.ok) {
-      const txt = await resp.text().catch(() => '')
-      throw new WhatsAppSendError(`WhatsApp recusou o envio (${resp.status}): ${txt.slice(0, 300)}`, resp.status)
+      const responseText = await resp.text().catch(() => '')
+      const waCode = parseWaErrorCode(responseText)
+      if (waCode !== undefined && WINDOW_EXPIRED_CODES.has(waCode)) {
+        throw new AppError(
+          'O cliente está fora da janela de 24h do WhatsApp. Não é possível enviar mensagens livres. Envie uma mensagem de template (HSM) pré-aprovada para reabrir a conversa.',
+          400,
+          'WHATSAPP_WINDOW_EXPIRED',
+        )
+      }
+      throw new AppError(
+        `WhatsApp recusou o envio (código ${waCode ?? resp.status}). ${responseText.slice(0, 200)}`,
+        502,
+        'WHATSAPP_SEND_ERROR',
+      )
     }
 
     const data = (await resp.json().catch(() => ({}))) as { messages?: Array<{ id: string }> }
@@ -70,13 +95,14 @@ export class WhatsAppSender {
         body: form,
         signal: AbortSignal.timeout(30_000),
       })
-    } catch {
-      throw new WhatsAppSendError('Falha de rede ao fazer upload de mídia', 502)
+    } catch (uploadError) {
+      if (uploadError instanceof AppError) throw uploadError
+      throw new AppError('Falha de rede ao fazer upload de mídia.', 502, 'WHATSAPP_NETWORK_ERROR')
     }
 
     if (!uploadResp.ok) {
       const txt = await uploadResp.text().catch(() => '')
-      throw new WhatsAppSendError(`Falha no upload de mídia (${uploadResp.status}): ${txt.slice(0, 300)}`, uploadResp.status)
+      throw new AppError(`Falha no upload de mídia (${uploadResp.status}): ${txt.slice(0, 200)}`, 502, 'WHATSAPP_SEND_ERROR')
     }
 
     const { id: mediaId } = (await uploadResp.json()) as { id: string }
@@ -104,13 +130,22 @@ export class WhatsAppSender {
         }),
         signal: AbortSignal.timeout(10_000),
       })
-    } catch {
-      throw new WhatsAppSendError('Falha de rede ao enviar mídia pelo WhatsApp', 502)
+    } catch (msgError) {
+      if (msgError instanceof AppError) throw msgError
+      throw new AppError('Falha de rede ao enviar mídia pelo WhatsApp.', 502, 'WHATSAPP_NETWORK_ERROR')
     }
 
     if (!msgResp.ok) {
-      const txt = await msgResp.text().catch(() => '')
-      throw new WhatsAppSendError(`WhatsApp recusou o envio de mídia (${msgResp.status}): ${txt.slice(0, 300)}`, msgResp.status)
+      const responseText = await msgResp.text().catch(() => '')
+      const waCode = parseWaErrorCode(responseText)
+      if (waCode !== undefined && WINDOW_EXPIRED_CODES.has(waCode)) {
+        throw new AppError(
+          'O cliente está fora da janela de 24h do WhatsApp. Não é possível enviar mensagens livres. Envie uma mensagem de template (HSM) pré-aprovada para reabrir a conversa.',
+          400,
+          'WHATSAPP_WINDOW_EXPIRED',
+        )
+      }
+      throw new AppError(`WhatsApp recusou o envio de mídia (código ${waCode ?? msgResp.status}).`, 502, 'WHATSAPP_SEND_ERROR')
     }
 
     const data = (await msgResp.json().catch(() => ({}))) as { messages?: Array<{ id: string }> }
@@ -125,7 +160,7 @@ export class WhatsAppSender {
       signal: AbortSignal.timeout(10_000),
     })
     if (!urlResp.ok) {
-      throw new WhatsAppSendError(`Não foi possível obter URL de mídia (${urlResp.status})`, urlResp.status)
+      throw new AppError(`Não foi possível obter URL de mídia (${urlResp.status})`, 502, 'WHATSAPP_SEND_ERROR')
     }
 
     const { url, mime_type } = (await urlResp.json()) as { url: string; mime_type: string }
@@ -135,7 +170,7 @@ export class WhatsAppSender {
       signal: AbortSignal.timeout(30_000),
     })
     if (!dataResp.ok) {
-      throw new WhatsAppSendError(`Não foi possível baixar mídia (${dataResp.status})`, dataResp.status)
+      throw new AppError(`Não foi possível baixar mídia (${dataResp.status})`, 502, 'WHATSAPP_SEND_ERROR')
     }
 
     const arrayBuffer = await dataResp.arrayBuffer()

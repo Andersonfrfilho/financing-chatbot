@@ -32,7 +32,13 @@ export const conversations = {
       bot:      'Escreva (assume a conversa ao enviar)...',
     },
     attach:         'Anexar arquivo',
-    sendError:      'Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).',
+    sendError:      'Falha ao enviar. Tente novamente.',
+    errors: {
+      windowExpired:  'Fora da janela de 24h — o WhatsApp não permite mensagens livres. Peça ao cliente para enviar uma mensagem primeiro para reabrir a janela.',
+      configMissing:  'WhatsApp não configurado. Verifique as variáveis WHATSAPP_PHONE_NUMBER_ID e WHATSAPP_ACCESS_TOKEN no ambiente.',
+      networkError:   'Falha de rede. Verifique a conexão e tente novamente.',
+      sendError:      'O WhatsApp recusou o envio. Verifique os logs do servidor para mais detalhes.',
+    },
   },
   selectionsCard: {
     title: 'Suas Seleções',
