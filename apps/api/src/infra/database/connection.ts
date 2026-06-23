@@ -2,14 +2,26 @@ import { drizzle } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
 import fs from 'fs'
+import { logger } from '@/shared/logger'
 import * as schema from './schema'
 
 const isProduction = process.env.NODE_ENV === 'production'
+const dbLog = logger.child('DB')
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
   ssl: isProduction ? { rejectUnauthorized: false } : false,
+  min: 2,                    // sempre manter 2 conexões abertas — evita reconexão do zero
+  max: 10,
+  idleTimeoutMillis: 60000,  // fechar conexão ociosa após 60s (default era 10s)
+  connectionTimeoutMillis: 5000,
+  keepAlive: true,
 })
+
+pool.on('connect', () => dbLog.debug('pool_connect', { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }))
+pool.on('acquire', () => dbLog.debug('pool_acquire', { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }))
+pool.on('remove', () => dbLog.debug('pool_remove', { total: pool.totalCount, idle: pool.idleCount, waiting: pool.waitingCount }))
+pool.on('error', (err) => dbLog.error('pool_error', { error: String(err) }))
 
 export const db = drizzle(pool, { schema })
 

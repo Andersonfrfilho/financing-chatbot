@@ -2,6 +2,9 @@ import { and, eq, lt, desc, sql } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { conversationMessages, conversationSessions } from '@/infra/database/schema'
 import type { ConversationMessage } from '@/infra/database/schema'
+import { logger } from '@/shared/logger'
+
+const log = logger.child('ConversationRepo')
 
 export interface SessionMode {
   whatsappNumber: string
@@ -136,6 +139,7 @@ export class DrizzleConversationRepository {
 
   // Lista de conversas: última mensagem por número + cliente + estado + não-lidas + fila.
   async listConversations(limit: number, offset: number, waitingOnly: boolean): Promise<ConversationListItem[]> {
+    const t0 = Date.now()
     const waitingFilter = waitingOnly
       ? sql`WHERE s.human_requested_at IS NOT NULL AND s.assigned_user_id IS NULL`
       : sql``
@@ -168,6 +172,7 @@ export class DrizzleConversationRepository {
       ORDER BY t.created_at DESC
       LIMIT ${limit} OFFSET ${offset}
     `)
+    log.debug('listConversations_query', { ms: Date.now() - t0, rows: result.rows?.length ?? 0, waitingOnly })
     return (result.rows ?? []) as unknown as ConversationListItem[]
   }
 
