@@ -3,6 +3,7 @@ import { useState } from 'react'
 import * as Tooltip from '@radix-ui/react-tooltip'
 import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
+import { AudioPlayer } from '@/components/AudioPlayer'
 
 export interface Message {
   id: string
@@ -35,7 +36,7 @@ const statusIconMap = {
   failed: { icon: '⚠', color: 'text-red-500' }
 }
 
-function MediaContent({ message }: { message: Message }) {
+function MediaContent({ message, isMine }: { message: Message; isMine: boolean }) {
   const [mediaSrc, setMediaSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
@@ -52,7 +53,7 @@ function MediaContent({ message }: { message: Message }) {
         </a>
       )
     }
-    if (type === 'audio') return <audio controls src={src} className="max-w-[220px]" />
+    if (type === 'audio') return <AudioPlayer src={src} isMine={isMine} />
     if (type === 'video') return <video controls src={src} className="max-w-[220px] rounded-lg" />
     return (
       <a href={src} download={payload.filename || 'arquivo'} className="flex items-center gap-2 text-sm text-blue-700 underline">
@@ -109,7 +110,7 @@ function MediaContent({ message }: { message: Message }) {
         </button>
       )
     }
-    return <audio controls src={mediaSrc} className="max-w-[220px]" />
+    return <AudioPlayer src={mediaSrc} isMine={isMine} />
   }
 
   if (type === 'video') {
@@ -177,7 +178,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
         )}
 
         {isMedia ? (
-          <MediaContent message={message} />
+          <MediaContent message={message} isMine={isMine} />
         ) : (
           <p className="text-sm text-gray-800 whitespace-pre-wrap break-words">
             {message.content}
