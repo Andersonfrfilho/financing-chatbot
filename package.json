@@ -6,7 +6,6 @@
     "apps/*"
   ],
   "scripts": {
-    "prepare": "husky",
     "api:dev": "bun run --cwd apps/api dev",
     "api:start": "bun run --cwd apps/api start",
     "web:dev": "bun run --cwd apps/web dev",

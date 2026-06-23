@@ -4,5 +4,6 @@ dist/
 *.env.local
 infra/.env
 *.lock
+package-lock.json
 .DS_Store
 drizzle/migrations/*.sql
