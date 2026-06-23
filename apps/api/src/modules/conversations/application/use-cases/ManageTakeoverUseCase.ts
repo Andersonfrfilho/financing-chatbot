@@ -2,6 +2,8 @@ import type { DrizzleConversationRepository } from '../../infra/repositories/Dri
 import type { AppConfigRepository } from '@/modules/settings/infra/repositories/AppConfigRepository'
 import type { WhatsAppSender } from '../../infra/WhatsAppSender'
 import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/errors/AppError'
+import { logger } from '@/shared/logger'
+import { LOG_EVENTS } from '@/shared/constants/log-events'
 
 const TAKEOVER_MSG = '🧑‍💼 Um atendente humano irá dar continuidade ao seu atendimento. Aguarde um momento!'
 
@@ -48,7 +50,12 @@ export class ManageTakeoverUseCase {
           waMessageId,
           status: 'sent',
         })
-      } catch { /* não bloqueia o takeover se o envio falhar */ }
+      } catch (err) {
+        logger.child('ManageTakeoverUseCase.takeover').error(LOG_EVENTS.TAKEOVER, {
+          whatsapp, reason: 'Falha ao enviar mensagem de takeover',
+          error: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
 
     return { mode: 'human', assignedUserId: userId }

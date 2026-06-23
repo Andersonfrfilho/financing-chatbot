@@ -31,6 +31,9 @@ export const LOG_EVENTS = {
   N8N_FORWARD_OK:          'n8n_forward_ok',
   N8N_FORWARD_FAILED:      'n8n_forward_failed',
 
+  // Conversations
+  TAKEOVER:                'takeover',
+
   // Leads
   CREATE_LEAD:             'create_lead',
 } as const
