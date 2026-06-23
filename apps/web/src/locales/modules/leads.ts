@@ -1,0 +1,32 @@
+export const leads = {
+  title:    'Leads',
+  subtitle: (total: number) => `${total} leads encontrados`,
+  empty:    'Nenhum lead encontrado',
+  search:   'Buscar WhatsApp/Cliente...',
+  allStatus:'Todos os status',
+  columns: {
+    whatsapp:  'WhatsApp',
+    client:    'Cliente',
+    status:    'Status',
+    seller:    'Vendedor',
+    created:   'Criado',
+    updated:   'Atualizado',
+    actions:   'Ações',
+  },
+  status: {
+    novo:             'Novo',
+    em_atendimento:   'Em atendimento',
+    proposta_enviada: 'Proposta enviada',
+    aprovado:         'Aprovado',
+    reprovado:        'Reprovado',
+    cancelado:        'Cancelado',
+    concluido:        'Concluído',
+  },
+  edit: {
+    title:      'Editar Lead',
+    seller:     'Vendedor / Atribuído a',
+    sellerPlaceholder: 'Nome do vendedor',
+    notes:      'Notas',
+    notesPlaceholder: 'Anotações sobre o lead...',
+  },
+} as const

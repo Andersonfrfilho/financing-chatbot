@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { api } from '@/lib/api'
+import { leads as text, common } from '@/locales'
 import { Button, Input, Textarea, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
@@ -22,13 +23,13 @@ type Lead = {
 }
 
 const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  novo:             { label: 'Novo',             color: 'bg-blue-100 text-blue-700' },
-  em_atendimento:   { label: 'Em atendimento',   color: 'bg-yellow-100 text-yellow-700' },
-  proposta_enviada: { label: 'Proposta enviada', color: 'bg-purple-100 text-purple-700' },
-  aprovado:         { label: 'Aprovado',         color: 'bg-green-100 text-green-700' },
-  reprovado:        { label: 'Reprovado',        color: 'bg-red-100 text-red-700' },
-  cancelado:        { label: 'Cancelado',        color: 'bg-gray-100 text-gray-600' },
-  concluido:        { label: 'Concluído',        color: 'bg-emerald-100 text-emerald-700' },
+  novo:             { label: text.status.novo,             color: 'bg-blue-100 text-blue-700' },
+  em_atendimento:   { label: text.status.em_atendimento,   color: 'bg-yellow-100 text-yellow-700' },
+  proposta_enviada: { label: text.status.proposta_enviada, color: 'bg-purple-100 text-purple-700' },
+  aprovado:         { label: text.status.aprovado,         color: 'bg-green-100 text-green-700' },
+  reprovado:        { label: text.status.reprovado,        color: 'bg-red-100 text-red-700' },
+  cancelado:        { label: text.status.cancelado,        color: 'bg-gray-100 text-gray-600' },
+  concluido:        { label: text.status.concluido,        color: 'bg-emerald-100 text-emerald-700' },
 }
 
 const getDaysAgo = (date: string) => {
@@ -88,8 +89,8 @@ export function LeadsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Leads</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{data?.total ?? 0} leads encontrados</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <Input
@@ -170,7 +171,7 @@ export function LeadsPage() {
             })}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhum lead encontrado</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
 
       {data && data.total > 20 && (

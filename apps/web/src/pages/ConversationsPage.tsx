@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
+import { conversations as text } from '@/locales'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Skeleton } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
@@ -328,8 +329,8 @@ export function ConversationsPage() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Conversas</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Histórico e atendimento via WhatsApp (atualiza a cada 20s)</p>
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle}</p>
         </div>
         <Button
           variant={waitingOnly ? 'default' : 'outline'}
@@ -345,7 +346,7 @@ export function ConversationsPage() {
           {/* Ações em massa */}
           {selectedBulk.size > 0 && (
             <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/40 border-b dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{selectedBulk.size} selecionada(s)</span>
+              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{text.bulk.selected(selectedBulk.size)}</span>
               <div className="flex gap-2">
                 <Button
                   size="sm"
@@ -359,7 +360,7 @@ export function ConversationsPage() {
                   size="sm"
                   variant="destructive"
                   onClick={() => {
-                    if (confirm(`Finalizar ${selectedBulk.size} conversa(s)?`)) {
+                    if (confirm(text.bulk.confirmFinalize(selectedBulk.size))) {
                       for (const whatsapp of selectedBulk) {
                         api.post(`/conversations/${encodeURIComponent(whatsapp)}/finalize`).catch(() => {})
                       }
@@ -411,8 +412,8 @@ export function ConversationsPage() {
                 </div>
               </div>
             ))}
-            {!listLoading && filteredConversations.length === 0 && conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
-            {filteredConversations.length === 0 && conversations.length > 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa encontrada.</p>}
+            {!listLoading && filteredConversations.length === 0 && conversations.length === 0 && <p className="p-4 text-sm text-gray-400 dark:text-gray-500">{text.empty}</p>}
+            {filteredConversations.length === 0 && conversations.length > 0 && <p className="p-4 text-sm text-gray-400 dark:text-gray-500">{text.emptySearch}</p>}
             {filteredConversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)
             const isStalled = c.mode === 'bot' && minAgo > 30
@@ -489,12 +490,12 @@ export function ConversationsPage() {
                         onClick={() => setSelected(null)}
                         className="md:hidden text-blue-600 dark:text-blue-400 text-xs font-medium mb-1"
                       >
-                        ← Voltar
+                        {text.chat.backToList}
                       </button>
                       <div className="text-sm font-bold text-gray-900 dark:text-gray-100">{current?.clientName ?? 'Cliente'}</div>
                       <div className="text-xs text-gray-500 dark:text-gray-400">{selected ? formatPhone(selected) : ''}</div>
                       <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'}`}>
-                        {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
+                        {isHuman ? text.chat.humanAttending : text.chat.botActive}
                       </span>
                     </div>
                   </div>
@@ -583,7 +584,7 @@ export function ConversationsPage() {
                       e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                     }}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-                    placeholder={attached ? 'Legenda (opcional)...' : isHuman ? 'Escreva uma mensagem...' : 'Escreva (assume a conversa ao enviar)...'}
+                    placeholder={attached ? text.chat.messagePlaceholder.caption : isHuman ? text.chat.messagePlaceholder.human : text.chat.messagePlaceholder.bot}
                     className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all overflow-hidden"
                     style={{ minHeight: '36px', maxHeight: '120px' }}
                   />
@@ -602,7 +603,7 @@ export function ConversationsPage() {
                   </button>
                 </div>
                 {(send.isError || sendMedia.isError) && (
-                  <p className="mt-1 text-xs text-red-500">Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).</p>
+                  <p className="mt-1 text-xs text-red-500">{text.chat.sendError}</p>
                 )}
               </div>
             </>

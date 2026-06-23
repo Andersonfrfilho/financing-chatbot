@@ -1,0 +1,40 @@
+export const conversations = {
+  title:    'Conversas',
+  subtitle: 'Histórico e atendimento via WhatsApp (atualiza a cada 20s)',
+  search:   'Buscar conversa...',
+  empty:    'Nenhuma conversa ainda.',
+  emptySearch: 'Nenhuma conversa encontrada.',
+  noSelection: 'Selecione uma conversa',
+  filters: {
+    waitingHuman:     'Aguardando atendimento',
+    waitingWithCount: (n: number) => `Aguardando atendimento (${n})`,
+  },
+  bulk: {
+    selected:  (n: number) => `${n} selecionada(s)`,
+    clear:     'Limpar',
+    finalize:  'Finalizar',
+    confirmFinalize: (n: number) => `Finalizar ${n} conversa(s)?`,
+  },
+  chat: {
+    backToList:     '← Voltar',
+    botActive:      '🤖 bot ativo',
+    humanAttending: '🧑‍💼 atendimento humano',
+    waitingHuman:   '⏳ aguardando atendimento',
+    stalledFor:     (min: number) => `⏱️ parada há ${min}m`,
+    humanMode:      '🧑‍💼 em atendimento',
+    continueAttendance: '▶️ Continuar Atendimento',
+    takeover:       'Assumir conversa',
+    release:        'Devolver ao bot',
+    finalize:       'Finalizar',
+    messagePlaceholder: {
+      caption:  'Legenda (opcional)...',
+      human:    'Escreva uma mensagem...',
+      bot:      'Escreva (assume a conversa ao enviar)...',
+    },
+    attach:         'Anexar arquivo',
+    sendError:      'Falha ao enviar (fora da janela de 24h do WhatsApp ou config ausente).',
+  },
+  selectionsCard: {
+    title: 'Suas Seleções',
+  },
+} as const

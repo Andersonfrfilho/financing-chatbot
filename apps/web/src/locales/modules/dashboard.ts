@@ -1,0 +1,35 @@
+export const dashboard = {
+  title:    'Dashboard Geral',
+  subtitle: 'Visão consolidada em tempo real',
+  stats: {
+    leadsToday:    'Leads Hoje',
+    activeClients: 'Clientes Ativos',
+    simulationsToday: 'Simulações Hoje',
+    activeSessions:'Sessões Ativas',
+    botAttendance: 'bot em atendimento',
+    total:         (n: number) => `${n} total`,
+    newToday:      (n: number) => `+${n} hoje`,
+  },
+  charts: {
+    leadsByStatus:         'Leads por Status',
+    simulationsByModality: 'Simulações por Modalidade',
+  },
+  statusLabels: {
+    novo:             'Novo',
+    em_atendimento:   'Em atendimento',
+    proposta_enviada: 'Proposta enviada',
+    aprovado:         'Aprovado',
+    reprovado:        'Reprovado',
+    cancelado:        'Cancelado',
+    concluido:        'Concluído',
+  },
+  financingLabels: {
+    imobiliario: 'Imóvel',
+    veiculo:     'Veículo',
+    pessoal:     'Pessoal',
+    consignado:  'Consignado',
+    empresa:     'Empresa',
+    equipamento: 'Equipamento',
+    rural:       'Rural',
+  },
+} as const

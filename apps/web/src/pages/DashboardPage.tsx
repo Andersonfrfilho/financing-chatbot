@@ -2,22 +2,13 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { Card, Skeleton } from '@/components/ui'
+import { dashboard, common } from '@/locales'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }
   clients: { total: number; newToday: number; newThisWeek: number }
   simulations: { total: number; byFinancingType: Record<string, number>; todayTotal: number }
   sessions: { active: number; byState: Record<string, number> }
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  novo: 'Novo', em_atendimento: 'Em atendimento', proposta_enviada: 'Proposta enviada',
-  aprovado: 'Aprovado', reprovado: 'Reprovado', cancelado: 'Cancelado', concluido: 'Concluído',
-}
-
-const FINANCING_LABELS: Record<string, string> = {
-  imobiliario: 'Imóvel', veiculo: 'Veículo', pessoal: 'Pessoal',
-  consignado: 'Consignado', empresa: 'Empresa', equipamento: 'Equipamento', rural: 'Rural',
 }
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316']
@@ -62,30 +53,30 @@ export function DashboardPage() {
   if (isLoading || !stats) return <DashboardSkeleton />
 
   const statusChartData = Object.entries(stats.leads.byStatus).map(([k, v]) => ({
-    name: STATUS_LABELS[k] ?? k, value: v,
+    name: (dashboard.statusLabels as Record<string, string>)[k] ?? k, value: v,
   }))
 
   const financingChartData = Object.entries(stats.simulations.byFinancingType).map(([k, v]) => ({
-    name: FINANCING_LABELS[k] ?? k, value: v,
+    name: (dashboard.financingLabels as Record<string, string>)[k] ?? k, value: v,
   }))
 
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard Geral</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Visão consolidada em tempo real</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{dashboard.title}</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{dashboard.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label="Leads Hoje"      value={stats.leads.newToday}        sub={`${stats.leads.total} total`}       color="blue"   />
-        <StatCard label="Clientes Ativos" value={stats.clients.total}          sub={`+${stats.clients.newToday} hoje`}  color="green"  />
-        <StatCard label="Simulações Hoje" value={stats.simulations.todayTotal} sub={`${stats.simulations.total} total`} color="yellow" />
-        <StatCard label="Sessões Ativas"  value={stats.sessions.active}        sub="bot em atendimento"                color="purple" />
+        <StatCard label={dashboard.stats.leadsToday}       value={stats.leads.newToday}        sub={dashboard.stats.total(stats.leads.total)}            color="blue"   />
+        <StatCard label={dashboard.stats.activeClients}   value={stats.clients.total}          sub={dashboard.stats.newToday(stats.clients.newToday)}    color="green"  />
+        <StatCard label={dashboard.stats.simulationsToday}value={stats.simulations.todayTotal} sub={dashboard.stats.total(stats.simulations.total)}      color="yellow" />
+        <StatCard label={dashboard.stats.activeSessions}  value={stats.sessions.active}        sub={dashboard.stats.botAttendance}                       color="purple" />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">Leads por Status</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.leadsByStatus}</h3>
           {statusChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <PieChart>
@@ -97,12 +88,12 @@ export function DashboardPage() {
               </PieChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Sem dados ainda</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">{common.empty.noData}</p>
           )}
         </Card>
 
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">Simulações por Modalidade</h3>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.simulationsByModality}</h3>
           {financingChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={financingChartData} margin={{ left: -20 }}>
@@ -113,7 +104,7 @@ export function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           ) : (
-            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">Sem dados ainda</p>
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">{common.empty.noData}</p>
           )}
         </Card>
       </div>

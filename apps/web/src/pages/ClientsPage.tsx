@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
 import { api } from '@/lib/api'
+import { clients as text } from '@/locales'
 import { Button, Input, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
@@ -79,8 +80,8 @@ export function ClientsPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Clientes</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{data?.total ?? 0} clientes cadastrados</p>
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Input
@@ -160,7 +161,7 @@ export function ClientsPage() {
             ))}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhum cliente encontrado</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
 
       {data && data.total > 20 && (

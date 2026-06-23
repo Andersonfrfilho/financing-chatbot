@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { sessions as text } from '@/locales'
 import { useState } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2 } from 'lucide-react'
 import { Button, Skeleton, TableSkeleton } from '@/components/ui'
@@ -66,8 +67,8 @@ export function SessionsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Sessões do Bot</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Monitoramento em tempo real</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle}</p>
       </div>
 
       {stats && stateLabels && (
@@ -142,7 +143,7 @@ export function SessionsPage() {
             })}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhuma sessão ativa</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
     </div>
   )

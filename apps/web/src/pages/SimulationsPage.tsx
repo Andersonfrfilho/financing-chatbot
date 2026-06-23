@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { simulations as text } from '@/locales'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button, Skeleton, TableSkeleton } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -40,8 +41,8 @@ export function SimulationsPage() {
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">Simulações</h2>
-        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{data?.total ?? 0} simulações realizadas</p>
+        <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle(data?.total ?? 0)}</p>
       </div>
 
       <div className="border rounded-xl overflow-x-auto">
@@ -71,7 +72,7 @@ export function SimulationsPage() {
             ))}
           </TableBody>
         </Table>
-        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">Nenhuma simulação encontrada</p>}
+        {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
 
       {data && data.total > 20 && (
