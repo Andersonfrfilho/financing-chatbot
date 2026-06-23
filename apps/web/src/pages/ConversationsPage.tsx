@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useEffect, useRef, useState } from 'react'
-import { LogOut, Power } from 'lucide-react'
+import { useEffect, useRef, useState, useMemo } from 'react'
+import { LogOut, Power, Search, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui'
 import { Textarea } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
 import { SelectionsSummary } from '@/components/SelectionsSummary'
+import { Avatar } from '@/components/Avatar'
 
 const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
@@ -85,6 +86,8 @@ export function ConversationsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [text, setText] = useState('')
   const [waitingOnly, setWaitingOnly] = useState(false)
+  const [search, setSearch] = useState('')
+  const [selectedBulk, setSelectedBulk] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
 
   const { data: list } = useQuery<{ conversations: ConversationItem[] }>({
@@ -177,6 +180,10 @@ export function ConversationsPage() {
       qc.invalidateQueries({ queryKey: ['conversation', selected] })
       qc.invalidateQueries({ queryKey: ['conversations'] })
     })
+    // Atualizar quando mensagem é lida (readAt recebido)
+    es.addEventListener('message-read', () => {
+      qc.invalidateQueries({ queryKey: ['conversation', selected] })
+    })
     return () => es.close()
   }, [selected, qc])
 
@@ -185,6 +192,16 @@ export function ConversationsPage() {
   const current = conversations.find((c) => c.whatsappNumber === selected)
   const isHuman = current?.mode === 'human'
   const waitingCount = conversations.filter((c) => c.waitingHuman).length
+
+  const filteredConversations = useMemo(() => {
+    if (!search.trim()) return conversations
+    const q = search.toLowerCase()
+    return conversations.filter((c) => {
+      const name = (c.clientName || c.whatsappNumber).toLowerCase()
+      const content = (c.lastContent || '').toLowerCase()
+      return name.includes(q) || content.includes(q) || c.whatsappNumber.includes(q)
+    })
+  }, [conversations, search])
 
   // Mantém a conversa aberta como lida ao chegar mensagem nova (polling)
   useEffect(() => {
@@ -214,48 +231,125 @@ export function ConversationsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
         {/* Lista - oculta em mobile quando conversa selecionada */}
-        <div className={`border rounded-lg overflow-y-auto bg-white ${selected ? 'hidden md:flex md:flex-col' : ''}`}>
-          {conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
-          {conversations.map((c) => {
+        <div className={`border rounded-lg flex flex-col bg-white ${selected ? 'hidden md:flex' : ''}`}>
+          {/* Ações em massa */}
+          {selectedBulk.size > 0 && (
+            <div className="px-3 py-2 bg-blue-50 border-b flex items-center justify-between flex-shrink-0">
+              <span className="text-sm font-medium text-blue-700">{selectedBulk.size} selecionada(s)</span>
+              <div className="flex gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setSelectedBulk(new Set())}
+                  className="text-xs"
+                >
+                  Limpar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => {
+                    if (confirm(`Finalizar ${selectedBulk.size} conversa(s)?`)) {
+                      for (const whatsapp of selectedBulk) {
+                        api.post(`/conversations/${encodeURIComponent(whatsapp)}/finalize`).catch(() => {})
+                      }
+                      qc.invalidateQueries({ queryKey: ['conversations'] })
+                      setSelectedBulk(new Set())
+                    }
+                  }}
+                  className="text-xs"
+                >
+                  Finalizar
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Search */}
+          <div className="px-3 py-2 border-b bg-gray-50 flex-shrink-0">
+            <div className="relative flex items-center">
+              <Search size={16} className="absolute left-2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Buscar conversa..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+              />
+              {search && (
+                <button
+                  onClick={() => setSearch('')}
+                  className="absolute right-2 text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Conversas */}
+          <div className="flex-1 overflow-y-auto">
+            {filteredConversations.length === 0 && conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
+            {filteredConversations.length === 0 && conversations.length > 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa encontrada.</p>}
+            {filteredConversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)
             const isStalled = c.mode === 'bot' && minAgo > 30
             return (
               <div
                 key={c.whatsappNumber}
-                className={`border-b hover:bg-gray-50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
+                className={`border-b hover:bg-gray-50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50' : selectedBulk.has(c.whatsappNumber) ? 'bg-blue-100' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
               >
-                <button
-                  onClick={() => openConversation(c.whatsappNumber)}
-                  className="w-full text-left p-3"
-                >
-                  <div className="flex justify-between items-baseline">
-                    <span className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</span>
+                <div className="w-full text-left p-3 flex items-start gap-2">
+                  <input
+                    type="checkbox"
+                    checked={selectedBulk.has(c.whatsappNumber)}
+                    onChange={(e) => {
+                      const newSet = new Set(selectedBulk)
+                      if (e.target.checked) newSet.add(c.whatsappNumber)
+                      else newSet.delete(c.whatsappNumber)
+                      setSelectedBulk(newSet)
+                    }}
+                    className="mt-1 flex-shrink-0 cursor-pointer"
+                  />
+                  <button
+                    onClick={() => openConversation(c.whatsappNumber)}
+                    className="w-full text-left flex-1"
+                  >
+                  <div className="flex gap-2 items-start justify-between">
+                    <div className="flex gap-2 items-start min-w-0 flex-1">
+                      <Avatar name={c.clientName} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <div className="font-medium text-gray-900 truncate">{c.clientName ?? c.whatsappNumber}</div>
+                        <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
+                      </div>
+                    </div>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       {c.unread > 0 && <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none">{c.unread}</span>}
                       <span className="text-[10px] text-gray-400">{fmtTime(c.lastAt)}</span>
                     </div>
                   </div>
-                  <p className="text-xs text-gray-500 truncate mt-0.5">{c.lastDirection === 'outbound' ? '↩ ' : ''}{c.lastContent ?? ''}</p>
-                  {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium">⏳ aguardando atendimento</span>}
+                  {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">⏳ aguardando atendimento</span>}
                   {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
                   {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {minAgo}m</span>}
                 </button>
-                {isStalled && (
-                  <div className="px-3 pb-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => continueConversation.mutate(c.whatsappNumber)}
-                      disabled={continueConversation.isPending}
-                      className="w-full text-xs"
-                    >
-                      {continueConversation.isPending ? '...' : '▶️ Continuar Atendimento'}
-                    </Button>
-                  </div>
-                )}
               </div>
+              {isStalled && (
+                <div className="px-3 pb-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => continueConversation.mutate(c.whatsappNumber)}
+                    disabled={continueConversation.isPending}
+                    className="w-full text-xs"
+                  >
+                    {continueConversation.isPending ? '...' : '▶️ Continuar Atendimento'}
+                  </Button>
+                </div>
+              )}
+            </div>
             )
           })}
+            </div>
         </div>
 
         {/* Conversa - ocupa 2 colunas em lg, 1 em md, e full em mobile */}
@@ -266,18 +360,21 @@ export function ConversationsPage() {
             <>
               <div className="px-4 py-3 border-b bg-white">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1 min-w-0">
-                    <button
-                      onClick={() => setSelected(null)}
-                      className="md:hidden text-blue-600 text-xs font-medium mb-1"
-                    >
-                      ← Voltar
-                    </button>
-                    <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
-                    <div className="text-xs text-gray-500 font-mono">{selected}</div>
-                    <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                      {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
-                    </span>
+                  <div className="flex gap-3 items-start min-w-0 flex-1">
+                    <Avatar name={current?.clientName} size="lg" />
+                    <div className="min-w-0 flex-1">
+                      <button
+                        onClick={() => setSelected(null)}
+                        className="md:hidden text-blue-600 text-xs font-medium mb-1"
+                      >
+                        ← Voltar
+                      </button>
+                      <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
+                      <div className="text-xs text-gray-500 font-mono">{selected}</div>
+                      <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                        {isHuman ? '🧑‍💼 atendimento humano' : '🤖 bot ativo'}
+                      </span>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     {isHuman ? (

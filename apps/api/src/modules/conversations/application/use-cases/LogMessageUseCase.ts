@@ -10,8 +10,14 @@ export class LogMessageUseCase {
 
   async execute(input: LogMessageInput): Promise<{ id: string | null; deduped: boolean }> {
     const row = await this.repo.insertMessage(input)
-    if (row && this.sse) {
-      this.sse.emit(`conv:${input.whatsappNumber}`, 'message', { id: row.id, direction: input.direction, sender: input.sender })
+    if (this.sse) {
+      if (row) {
+        this.sse.emit(`conv:${input.whatsappNumber}`, 'message', { id: row.id, direction: input.direction, sender: input.sender })
+      }
+      // Emitir evento de leitura quando status='read' (readAt foi atualizado no banco)
+      if (input.status === 'read' && input.waMessageId) {
+        this.sse.emit(`conv:${input.whatsappNumber}`, 'message-read', { waMessageId: input.waMessageId })
+      }
     }
     return { id: row?.id ?? null, deduped: row === null }
   }
