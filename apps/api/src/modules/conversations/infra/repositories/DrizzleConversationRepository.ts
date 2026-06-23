@@ -1,4 +1,4 @@
-import { and, eq, lt, desc, sql, update } from 'drizzle-orm'
+import { and, eq, lt, desc, sql } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { conversationMessages, conversationSessions } from '@/infra/database/schema'
 import type { ConversationMessage } from '@/infra/database/schema'
