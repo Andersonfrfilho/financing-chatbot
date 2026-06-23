@@ -26,7 +26,7 @@ export interface ResponseHelper {
 
 const log = logger.child('Router')
 
-function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHelper {
+function buildResponseHelper(res: uWS.HttpResponse, origin: string, isAborted: () => boolean): ResponseHelper {
   const allowedOrigins = (process.env.ALLOWED_ORIGINS ?? 'http://localhost:5173').split(',')
 
   function writeHeaders(statusCode: string) {
@@ -39,6 +39,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
 
   return {
     json(data: unknown, status = 200) {
+      if (isAborted()) return
       const statusText = status === 200 ? '200 OK' : status === 201 ? '201 Created' : `${status}`
       res.cork(() => {
         writeHeaders(statusText)
@@ -46,6 +47,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
       })
     },
     text(data: string, status = 200) {
+      if (isAborted()) return
       const statusText = status === 200 ? '200 OK' : status === 201 ? '201 Created' : `${status}`
       res.cork(() => {
         res.writeStatus(statusText)
@@ -57,6 +59,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
       })
     },
     error(error: unknown) {
+      if (isAborted()) return
       if (error instanceof AppError) {
         res.cork(() => {
           writeHeaders(`${error.statusCode}`)
@@ -72,7 +75,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
   }
 }
 
-async function readBody(res: uWS.HttpResponse): Promise<{ body: unknown; rawBody: Buffer }> {
+async function readBody(res: uWS.HttpResponse, setAborted: () => void): Promise<{ body: unknown; rawBody: Buffer }> {
   return new Promise((resolve) => {
     let buffer = Buffer.alloc(0)
     res.onData((chunk, isLast) => {
@@ -85,7 +88,10 @@ async function readBody(res: uWS.HttpResponse): Promise<{ body: unknown; rawBody
         }
       }
     })
-    res.onAborted(() => resolve({ body: {}, rawBody: Buffer.alloc(0) }))
+    res.onAborted(() => {
+      setAborted()
+      resolve({ body: {}, rawBody: Buffer.alloc(0) })
+    })
   })
 }
 
@@ -94,7 +100,9 @@ export class Router {
 
   private register(method: 'get' | 'post' | 'put' | 'patch' | 'del', path: string, ...handlers: Handler[]): void {
     this.app[method](path, async (res, req) => {
-      res.onAborted(() => {})
+      let aborted = false
+      const setAborted = () => { aborted = true }
+      const isAborted = () => aborted
 
       // Must read ALL req properties synchronously before any await
       const headers: Record<string, string> = {}
@@ -117,9 +125,19 @@ export class Router {
         params[key] = req.getParameter(i) ?? ''
       })
 
-      const { body, rawBody } = method !== 'get' ? await readBody(res) : { body: {}, rawBody: Buffer.alloc(0) }
-      const responseHelper = buildResponseHelper(res, origin)
+      let body: unknown = {}
+      let rawBody = Buffer.alloc(0)
 
+      if (method !== 'get') {
+        const result = await readBody(res, setAborted)
+        body = result.body
+        rawBody = result.rawBody
+      } else {
+        // For GET requests, set abort handler before any await
+        res.onAborted(setAborted)
+      }
+
+      const responseHelper = buildResponseHelper(res, origin, isAborted)
       const parsedRequest: ParsedRequest = { method: method_, url, headers, params, query, body, rawBody }
 
       await runWithContext(async () => {
