@@ -20,7 +20,12 @@ export class WebhookController {
 
     if (mode === 'subscribe' && token === VERIFY_TOKEN) {
       log_.info(LOG_EVENTS.WEBHOOK_VERIFY_OK, { challenge })
-      response.json(challenge ? parseInt(challenge) : 'ok', 200)
+      // Meta espera o challenge como texto puro, não JSON
+      if (challenge) {
+        response.text(challenge, 200)
+      } else {
+        response.json({ status: 'ok' }, 200)
+      }
     } else {
       log_.warn(LOG_EVENTS.WEBHOOK_VERIFY_FAILED, { mode, tokenMatch: token === VERIFY_TOKEN })
       response.json({ error: 'Forbidden' }, 403)

@@ -33,6 +33,20 @@ interface WhatsAppMessage {
   timestamp:   string
 }
 
+interface WhatsAppMessageEcho {
+  id: string
+  from: string
+  timestamp: string
+  type: string
+}
+
+interface WhatsAppStatus {
+  id: string
+  status: 'sent' | 'delivered' | 'read' | 'failed'
+  timestamp: string
+  recipient_id?: string
+}
+
 interface WebhookPayload {
   object: string
   entry: Array<{
@@ -41,6 +55,8 @@ interface WebhookPayload {
       value: {
         messaging_product: string
         messages?:  WhatsAppMessage[]
+        message_echoes?: WhatsAppMessageEcho[]
+        statuses?: WhatsAppStatus[]
         metadata?:  { display_phone_number: string; phone_number_id: string }
       }
     }>
@@ -139,11 +155,17 @@ export class ReceiveWhatsAppWebhookUseCase {
     log_.debug(LOG_EVENTS.WEBHOOK_NONCE_STORED, { nonce: input.nonce, ttlSeconds: NONCE_TTL_SECONDS })
 
     let messageCount = 0
+    let echoCount = 0
+    let statusCount = 0
+
     for (const entry of input.payload.entry) {
       for (const change of entry.changes) {
-        const messages      = change.value.messages ?? []
-        const phoneNumberId = change.value.metadata?.phone_number_id
+        const messages       = change.value.messages ?? []
+        const messageEchoes  = change.value.message_echoes ?? []
+        const statuses       = change.value.statuses ?? []
+        const phoneNumberId  = change.value.metadata?.phone_number_id
 
+        // Processa mensagens recebidas (inbound)
         for (const message of messages) {
           messageCount++
           log_.info(LOG_EVENTS.WEBHOOK_MESSAGE, {
@@ -168,12 +190,56 @@ export class ReceiveWhatsAppWebhookUseCase {
           // Forward ao n8n de forma assíncrona — não bloqueia a resposta ao Meta
           forwardToN8n(message, phoneNumberId, log_).catch(() => {})
         }
+
+        // Processa confirmação de envio (message_echoes)
+        for (const echo of messageEchoes) {
+          echoCount++
+          log_.debug(LOG_EVENTS.WEBHOOK_MESSAGE, {
+            id:        echo.id,
+            from:      echo.from,
+            type:      'echo',
+            event:     'sent',
+            timestamp: echo.timestamp,
+          })
+          // message_echoes confirma que a mensagem foi enviada com sucesso
+        }
+
+        // Processa mudanças de status (sent, delivered, read, failed)
+        for (const status of statuses) {
+          statusCount++
+          log_.info(LOG_EVENTS.WEBHOOK_MESSAGE, {
+            messageId: status.id,
+            status:    status.status,
+            timestamp: status.timestamp,
+            event:     'status_update',
+          })
+          // Encaminhar ao n8n para processar mudança de status
+          await fetch(process.env.N8N_WEBHOOK_URL ?? '', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type:      'status',
+              messageId: status.id,
+              status:    status.status,
+              timestamp: status.timestamp,
+            }),
+            signal: AbortSignal.timeout(10_000),
+          }).catch((err) => {
+            log_.warn(LOG_EVENTS.N8N_FORWARD_FAILED, {
+              id:     status.id,
+              status: status.status,
+              reason: err?.message ?? 'unknown',
+            })
+          })
+        }
       }
     }
 
     log_.info(LOG_EVENTS.WEBHOOK_PROCESSED, {
       nonce:             input.nonce,
       messagesProcessed: messageCount,
+      echoesProcessed:   echoCount,
+      statusesProcessed: statusCount,
       nextStep:          messageCount > 0 ? 'forwarded to n8n' : 'no messages in payload',
     })
   }

@@ -21,6 +21,7 @@ export interface ParsedRequest {
 export interface ResponseHelper {
   json(data: unknown, status?: number): void
   error(error: unknown): void
+  text(data: string, status?: number): void
 }
 
 const log = logger.child('Router')
@@ -42,6 +43,17 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string): ResponseHel
       res.cork(() => {
         writeHeaders(statusText)
         res.end(JSON.stringify(data))
+      })
+    },
+    text(data: string, status = 200) {
+      const statusText = status === 200 ? '200 OK' : status === 201 ? '201 Created' : `${status}`
+      res.cork(() => {
+        res.writeStatus(statusText)
+        res.writeHeader('Content-Type', 'text/plain; charset=utf-8')
+        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+          res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
+        }
+        res.end(data)
       })
     },
     error(error: unknown) {
