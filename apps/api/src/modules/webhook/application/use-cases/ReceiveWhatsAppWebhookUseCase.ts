@@ -181,21 +181,30 @@ export class ReceiveWhatsAppWebhookUseCase {
           })
 
           // Salvar mensagem no banco de dados
-          await this.conversationRepository.insertMessage({
-            whatsappNumber: message.from,
-            direction: 'inbound',
-            sender: 'customer',
-            type: message.type,
-            content: message.text?.body ?? null,
-            waMessageId: message.id,
-            payload: message.interactive ? { interactive: message.interactive } : null,
-          }).catch((err) => {
-            log_.warn(LOG_EVENTS.WEBHOOK_MESSAGE, {
-              id: message.id,
-              reason: 'Failed to save to database',
-              error: err instanceof Error ? err.message : String(err),
+          try {
+            const saved = await this.conversationRepository.insertMessage({
+              whatsappNumber: message.from,
+              direction: 'inbound',
+              sender: 'customer',
+              type: message.type,
+              content: message.text?.body ?? null,
+              waMessageId: message.id,
+              payload: message.interactive ? { interactive: message.interactive } : null,
             })
-          })
+            log_.debug(LOG_EVENTS.WEBHOOK_MESSAGE, {
+              id: message.id,
+              saved: saved ? 'yes' : 'skipped',
+              reason: saved ? 'persisted' : 'duplicate or error',
+            })
+          } catch (err) {
+            log_.error(LOG_EVENTS.WEBHOOK_MESSAGE, {
+              id: message.id,
+              from: message.from,
+              reason: 'Failed to insert message',
+              error: err instanceof Error ? err.message : String(err),
+              stack: err instanceof Error ? err.stack : undefined,
+            })
+          }
 
           await this.cache.set(
             `wa:msg:${message.id}`,

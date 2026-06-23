@@ -46,6 +46,28 @@ export class DrizzleConversationRepository {
       if (existing.length > 0) return null
     }
 
+    // Garantir que a session existe
+    const existingSession = await db
+      .select({ whatsappNumber: conversationSessions.whatsappNumber })
+      .from(conversationSessions)
+      .where(eq(conversationSessions.whatsappNumber, input.whatsappNumber))
+      .limit(1)
+
+    if (existingSession.length === 0) {
+      await db
+        .insert(conversationSessions)
+        .values({
+          whatsappNumber: input.whatsappNumber,
+          mode: 'bot',
+          currentState: 'new',
+          context: {},
+          humanRequestedAt: null,
+          assignedUserId: null,
+          lastAgentReadAt: null,
+        })
+        .onConflictDoNothing()
+    }
+
     // Se status='read', atualizar a mensagem anterior com readAt=now()
     if (input.status === 'read' && input.waMessageId) {
       await db
