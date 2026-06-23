@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
+import { formatPhone } from '@/lib/phone'
+
+type WaitingConv = { whatsappNumber: string; clientName: string | null }
 
 function requestPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
@@ -7,17 +10,20 @@ function requestPermission() {
   }
 }
 
-function notify(count: number) {
+function notifyNew(convs: WaitingConv[]) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
-  const body = count === 1
-    ? '1 conversa aguardando atendimento'
-    : `${count} conversas aguardando atendimento`
-  new Notification('⏳ Atendimento pendente', { body, icon: '/favicon.ico' })
+  for (const c of convs) {
+    const who = c.clientName || formatPhone(c.whatsappNumber)
+    new Notification('⏳ Atendimento pendente', {
+      body: `${who} está aguardando atendimento`,
+      icon: '/favicon.ico',
+    })
+  }
 }
 
 export function useWaitingNotifications(): number {
   const [waitingCount, setWaitingCount] = useState(0)
-  const prevRef = useRef<number | null>(null)
+  const knownRef = useRef<Set<string> | null>(null)
 
   useEffect(() => {
     requestPermission()
@@ -25,12 +31,16 @@ export function useWaitingNotifications(): number {
     async function poll() {
       try {
         const r = await api.get('/conversations', { params: { waitingHuman: 'true', limit: 50 } })
-        const current: number = (r.data?.conversations ?? []).length
-        if (prevRef.current !== null && current > prevRef.current) {
-          notify(current - prevRef.current)
+        const convs: WaitingConv[] = r.data?.conversations ?? []
+        const currentNumbers = new Set(convs.map((c) => c.whatsappNumber))
+
+        if (knownRef.current !== null) {
+          const newOnes = convs.filter((c) => !knownRef.current!.has(c.whatsappNumber))
+          if (newOnes.length > 0) notifyNew(newOnes)
         }
-        prevRef.current = current
-        setWaitingCount(current)
+
+        knownRef.current = currentNumbers
+        setWaitingCount(convs.length)
       } catch { /* silent */ }
     }
 
