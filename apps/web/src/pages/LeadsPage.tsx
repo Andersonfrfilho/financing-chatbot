@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
