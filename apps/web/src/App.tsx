@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/store/authStore'
 import { LoginPage } from '@/pages/LoginPage'
+import { ResetPasswordPage } from '@/pages/ResetPasswordPage'
 import { Layout } from '@/components/Layout'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { LeadsPage } from '@/pages/LeadsPage'
@@ -8,6 +9,7 @@ import { SimulationsPage } from '@/pages/SimulationsPage'
 import { SessionsPage } from '@/pages/SessionsPage'
 import { ConversationsPage } from '@/pages/ConversationsPage'
 import { UsersPage } from '@/pages/UsersPage'
+import { SettingsPage } from '@/pages/SettingsPage'
 
 const ROUTES: Record<string, React.ComponentType> = {
   '/': DashboardPage,
@@ -17,11 +19,16 @@ const ROUTES: Record<string, React.ComponentType> = {
   '/sessions': SessionsPage,
   '/conversations': ConversationsPage,
   '/users': UsersPage,
+  '/settings': SettingsPage,
 }
 
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const path = window.location.pathname
+
+  if (path === '/reset-password') {
+    return <ResetPasswordPage />
+  }
 
   if (!isAuthenticated || path === '/login') {
     return <LoginPage />

@@ -27,7 +27,10 @@ import { DrizzleUserRepository } from '@/modules/auth/infra/repositories/Drizzle
 import { LoginUseCase } from '@/modules/auth/application/use-cases/LoginUseCase'
 import { RefreshTokenUseCase } from '@/modules/auth/application/use-cases/RefreshTokenUseCase'
 import { LogoutUseCase } from '@/modules/auth/application/use-cases/LogoutUseCase'
+import { ForgotPasswordUseCase } from '@/modules/auth/application/use-cases/ForgotPasswordUseCase'
+import { ResetPasswordUseCase } from '@/modules/auth/application/use-cases/ResetPasswordUseCase'
 import { AuthController } from '@/modules/auth/infra/http/AuthController'
+import { NodemailerEmailProvider } from '@/infra/email/NodemailerEmailProvider'
 
 // Simulations
 import { CreateSimulationUseCase } from '@/modules/simulations/application/use-cases/CreateSimulationUseCase'
@@ -106,11 +109,17 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   const cache = new RedisProvider()
   const userRepository = new DrizzleUserRepository(db)
 
+  // Settings (needed by auth for email flag)
+  const appConfigRepository = new AppConfigRepository()
+
   // Auth
+  const emailProvider = new NodemailerEmailProvider()
   const loginUseCase = new LoginUseCase(userRepository, cache)
   const refreshTokenUseCase = new RefreshTokenUseCase(userRepository, cache)
   const logoutUseCase = new LogoutUseCase(cache)
-  const authController = new AuthController(loginUseCase, refreshTokenUseCase, logoutUseCase)
+  const forgotPasswordUseCase = new ForgotPasswordUseCase(emailProvider, appConfigRepository)
+  const resetPasswordUseCase = new ResetPasswordUseCase()
+  const authController = new AuthController(loginUseCase, refreshTokenUseCase, logoutUseCase, forgotPasswordUseCase, resetPasswordUseCase)
 
   // Simulations
   const createSimulationUseCase = new CreateSimulationUseCase(db, cache, wsHub)
@@ -167,9 +176,6 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new GetCommercialReportUseCase(),
   )
 
-  // Settings (needed before conversations)
-  const appConfigRepository = new AppConfigRepository()
-
   // Conversations (must be before webhook)
   const conversationRepository = new DrizzleConversationRepository()
   const whatsAppSender = new WhatsAppSender()
@@ -197,6 +203,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   )
   const settingsController = new SettingsController(
     new UpdateMaxAgentSessionsUseCase(appConfigRepository),
+    appConfigRepository,
   )
 
   return {

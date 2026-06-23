@@ -43,6 +43,13 @@
       "when": 1750897200000,
       "tag": "0008_app_config",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1782240000000,
+      "tag": "0009_password_reset_and_company",
+      "breakpoints": true
     }
   ]
 }

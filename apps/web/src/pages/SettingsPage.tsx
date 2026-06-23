@@ -1,0 +1,236 @@
+import { useState, useEffect } from 'react'
+import { Save, Building2, Mail, Phone, Image } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
+import { api } from '@/lib/api'
+import { useCompanySettings } from '@/hooks/useCompanySettings'
+import { Skeleton } from '@/components/ui/skeleton'
+
+export function SettingsPage() {
+  const { data: company, isLoading } = useCompanySettings()
+  const queryClient = useQueryClient()
+
+  const [name, setName] = useState('')
+  const [logoUrl, setLogoUrl] = useState('')
+  const [email, setEmail] = useState('')
+  const [phone, setPhone] = useState('')
+  const [emailResetEnabled, setEmailResetEnabled] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [savingToggle, setSavingToggle] = useState(false)
+  const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    if (company) {
+      setName(company.company_name || '')
+      setLogoUrl(company.company_logo_url || '')
+      setEmail(company.company_email || '')
+      setPhone(company.company_phone || '')
+      setEmailResetEnabled(company.email_reset_enabled === 'true')
+    }
+  }, [company])
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault()
+    setSaving(true)
+    setSuccess(false)
+    try {
+      await api.put('/settings/company', {
+        company_name: name,
+        company_logo_url: logoUrl,
+        company_email: email,
+        company_phone: phone,
+      })
+      queryClient.invalidateQueries({ queryKey: ['company-settings'] })
+      setSuccess(true)
+      setTimeout(() => setSuccess(false), 3000)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function toggleEmailReset(val: boolean) {
+    setSavingToggle(true)
+    try {
+      await api.put('/settings/email-reset-enabled', { enabled: val })
+      setEmailResetEnabled(val)
+      queryClient.invalidateQueries({ queryKey: ['company-settings'] })
+    } finally {
+      setSavingToggle(false)
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="max-w-2xl space-y-6">
+        <Skeleton className="h-8 w-48" />
+        <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-6 space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-10 w-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-2xl space-y-8">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Configurações</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Informações da empresa e preferências do sistema.</p>
+      </div>
+
+      {/* Informações da empresa */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
+            Informações da Empresa
+          </h2>
+        </div>
+        <form onSubmit={handleSave} className="p-6 space-y-5">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Nome da empresa
+            </label>
+            <div className="relative">
+              <Building2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="Ex: Financiamento Bot"
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              URL da logo
+            </label>
+            <div className="relative">
+              <Image size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="url"
+                value={logoUrl}
+                onChange={(e) => setLogoUrl(e.target.value)}
+                placeholder="https://..."
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
+            {logoUrl && (
+              <div className="mt-2 flex items-center gap-2">
+                <img src={logoUrl} alt="preview" className="h-8 w-8 rounded object-contain border border-gray-200 dark:border-gray-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
+                <span className="text-xs text-gray-500 dark:text-gray-400">Pré-visualização</span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              E-mail de contato
+            </label>
+            <div className="relative">
+              <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="contato@empresa.com"
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Telefone
+            </label>
+            <div className="relative">
+              <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="(11) 99999-9999"
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              />
+            </div>
+          </div>
+
+          {success && (
+            <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
+              Configurações salvas com sucesso!
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={saving}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              {saving ? (
+                <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Save size={14} />
+              )}
+              {saving ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* E-mail de recuperação de senha */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <Mail size={16} className="text-blue-600 dark:text-blue-400" />
+            Recuperação de Senha por E-mail
+          </h2>
+        </div>
+        <div className="p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Recuperação via e-mail
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                Permite que usuários redefina a senha via link enviado por e-mail. Requer configuração SMTP ativa no servidor.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => toggleEmailReset(!emailResetEnabled)}
+              disabled={savingToggle}
+              className={`
+                relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none
+                ${emailResetEnabled
+                  ? 'bg-blue-600 dark:bg-blue-500'
+                  : 'bg-gray-200 dark:bg-gray-700'
+                }
+                ${savingToggle ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
+              role="switch"
+              aria-checked={emailResetEnabled}
+            >
+              <span
+                className={`
+                  pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
+                  ${emailResetEnabled ? 'translate-x-5' : 'translate-x-0'}
+                `}
+              />
+            </button>
+          </div>
+          {emailResetEnabled && (
+            <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
+              Configure as variáveis de ambiente SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM e FRONTEND_URL no servidor.
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
+  )
+}
