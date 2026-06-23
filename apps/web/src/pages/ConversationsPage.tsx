@@ -166,7 +166,7 @@ type AttachedFile = { file: File; base64: string; mimeType: string; preview?: st
 export function ConversationsPage() {
   const deepLinkNumber = new URLSearchParams(window.location.search).get('whatsapp')
   const [selected, setSelected] = useState<string | null>(deepLinkNumber)
-  const [text, setText] = useState('')
+  const [message, setMessage] = useState('')
   const [attached, setAttached] = useState<AttachedFile | null>(null)
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')
@@ -228,7 +228,7 @@ export function ConversationsPage() {
   })
   const send = useMutation({
     mutationFn: (body: string) => api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: body }),
-    onSuccess: () => { setText(''); refresh() },
+    onSuccess: () => { setMessage(''); refresh() },
   })
 
   const sendMedia = useMutation({
@@ -236,9 +236,9 @@ export function ConversationsPage() {
       base64: f.base64,
       mimeType: f.mimeType,
       filename: f.file.name,
-      caption: text.trim(),
+      caption: message.trim(),
     }),
-    onSuccess: () => { setText(''); setAttached(null); refresh() },
+    onSuccess: () => { setMessage(''); setAttached(null); refresh() },
   })
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -321,7 +321,7 @@ export function ConversationsPage() {
 
   const submit = () => {
     if (attached && !sendMedia.isPending) { sendMedia.mutate(attached); return }
-    const body = text.trim()
+    const body = message.trim()
     if (body && !send.isPending) send.mutate(body)
   }
 
@@ -576,10 +576,10 @@ export function ConversationsPage() {
                   {/* Textarea auto-resize */}
                   <textarea
                     ref={textareaRef}
-                    value={text}
+                    value={message}
                     rows={1}
                     onChange={(e) => {
-                      setText(e.target.value)
+                      setMessage(e.target.value)
                       e.target.style.height = 'auto'
                       e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                     }}
@@ -592,7 +592,7 @@ export function ConversationsPage() {
                   {/* Botão enviar */}
                   <button
                     onClick={submit}
-                    disabled={(send.isPending || sendMedia.isPending) || (!text.trim() && !attached)}
+                    disabled={(send.isPending || sendMedia.isPending) || (!message.trim() && !attached)}
                     className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     title="Enviar"
                   >
