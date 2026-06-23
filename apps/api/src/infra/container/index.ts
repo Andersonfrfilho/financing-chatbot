@@ -176,7 +176,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new LogMessageUseCase(conversationRepository, sseHub),
     new GetConversationHistoryUseCase(conversationRepository),
     new ListConversationsUseCase(conversationRepository),
-    new ManageTakeoverUseCase(conversationRepository, appConfigRepository),
+    new ManageTakeoverUseCase(conversationRepository, appConfigRepository, whatsAppSender),
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
   )
 

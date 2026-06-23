@@ -1,12 +1,16 @@
 import type { DrizzleConversationRepository } from '../../infra/repositories/DrizzleConversationRepository'
 import type { AppConfigRepository } from '@/modules/settings/infra/repositories/AppConfigRepository'
+import type { WhatsAppSender } from '../../infra/WhatsAppSender'
 import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/errors/AppError'
+
+const TAKEOVER_MSG = '🧑‍💼 Um atendente humano irá dar continuidade ao seu atendimento. Aguarde um momento!'
 
 // Assumir / devolver uma conversa (pausar / religar o bot).
 export class ManageTakeoverUseCase {
   constructor(
     private readonly repo: DrizzleConversationRepository,
     private readonly configRepo: AppConfigRepository,
+    private readonly sender?: WhatsAppSender,
   ) {}
 
   async takeover(whatsapp: string, userId: string): Promise<{ mode: string; assignedUserId: string }> {
@@ -29,6 +33,24 @@ export class ManageTakeoverUseCase {
     }
 
     await this.repo.setMode(whatsapp, 'human', userId)
+
+    // Notifica o cliente que um atendente assumiu
+    if (this.sender) {
+      try {
+        const { waMessageId } = await this.sender.sendText(whatsapp, TAKEOVER_MSG)
+        await this.repo.insertMessage({
+          whatsappNumber: whatsapp,
+          direction: 'outbound',
+          sender: 'agent',
+          agentUserId: userId,
+          type: 'text',
+          content: TAKEOVER_MSG,
+          waMessageId,
+          status: 'sent',
+        })
+      } catch { /* não bloqueia o takeover se o envio falhar */ }
+    }
+
     return { mode: 'human', assignedUserId: userId }
   }
 
