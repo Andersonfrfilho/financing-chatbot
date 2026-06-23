@@ -8,11 +8,11 @@ export class CreateLeadUseCase {
   async execute(input: CreateLeadInput) {
     const log_ = logger.child('CreateLeadUseCase.execute')
 
-    log_.debug(LOG_EVENTS.CREATE_LEAD, { clientId: input.clientId, status: input.status })
+    log_.debug(LOG_EVENTS.CREATE_LEAD, { clientId: input.clientId, whatsappNumber: input.whatsappNumber })
 
     const lead = await this.repository.create(input)
 
-    log_.info(LOG_EVENTS.CREATE_LEAD, { leadId: lead.id, clientId: input.clientId })
+    log_.info(LOG_EVENTS.CREATE_LEAD, { leadId: lead.id, clientId: input.clientId, status: lead.status })
     return lead
   }
 }

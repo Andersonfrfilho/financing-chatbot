@@ -6,10 +6,11 @@ import type { CreateLeadUseCase } from '../../application/use-cases/CreateLeadUs
 import type { UpdateLeadStatusUseCase } from '../../application/use-cases/UpdateLeadStatusUseCase'
 
 const createSchema = z.object({
-  clientId:   z.string().uuid(),
-  status:     z.enum(['new','qualified','disqualified','negotiating','proposal_sent','won','lost']).default('new'),
-  source:     z.string().optional(),
-  notes:      z.string().optional(),
+  clientId:        z.string().uuid(),
+  whatsappNumber:  z.string(),
+  simulationId:    z.string().uuid().optional(),
+  assignedTo:      z.string().uuid().optional(),
+  notes:           z.string().optional(),
 })
 
 const updateSchema = z.object({
