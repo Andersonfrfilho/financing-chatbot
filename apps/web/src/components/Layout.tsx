@@ -1,5 +1,6 @@
 import { useLocation } from '@/hooks/useRouter'
 import { useAuthStore } from '@/store/authStore'
+import { useWaitingNotifications } from '@/hooks/useWaitingNotifications'
 import { api } from '@/lib/api'
 
 const navItems = [
@@ -8,13 +9,14 @@ const navItems = [
   { href: '/clients', label: 'Clientes', icon: '👥', tooltip: 'Cadastro e edição de clientes com histórico' },
   { href: '/simulations', label: 'Simulações', icon: '🏦', tooltip: 'Histórico de todas as simulações de financiamento' },
   { href: '/sessions', label: 'Sessões', icon: '💬', tooltip: 'Monitoramento em tempo real das sessões do bot' },
-  { href: '/conversations', label: 'Conversas', icon: '🗨️', tooltip: 'Histórico de conversas e atendimento ao cliente' },
+  { href: '/conversations', label: 'Conversas', icon: '🗨️', tooltip: 'Histórico de conversas e atendimento ao cliente', badge: true },
   { href: '/users', label: 'Usuários', icon: '👤', tooltip: 'Gerenciamento de usuários e permissões' },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const { user, clearAuth } = useAuthStore()
   const location = useLocation()
+  const waitingCount = useWaitingNotifications()
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => {})
@@ -42,7 +44,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               <span>{item.icon}</span>
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {item.badge && waitingCount > 0 && (
+                <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-orange-500 text-white text-xs font-bold flex items-center justify-center">
+                  {waitingCount > 99 ? '99+' : waitingCount}
+                </span>
+              )}
             </a>
           ))}
         </nav>
