@@ -32,6 +32,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string, isAborted: (
   function writeHeaders(statusCode: string) {
     res.writeStatus(statusCode)
     res.writeHeader('Content-Type', 'application/json; charset=utf-8')
+    res.writeHeader('Connection', 'close')
     if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
     }
@@ -52,6 +53,7 @@ function buildResponseHelper(res: uWS.HttpResponse, origin: string, isAborted: (
       res.cork(() => {
         res.writeStatus(statusText)
         res.writeHeader('Content-Type', 'text/plain; charset=utf-8')
+        res.writeHeader('Connection', 'close')
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           res.writeHeader('Access-Control-Allow-Origin', allowedOrigins.includes('*') ? '*' : origin)
         }
