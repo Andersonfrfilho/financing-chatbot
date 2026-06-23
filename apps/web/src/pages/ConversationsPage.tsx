@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore'
 import { Button } from '@/components/ui'
 import { Textarea } from '@/components/ui'
 import { MessageBubble } from '@/components/MessageBubble'
+import { SelectionsSummary } from '@/components/SelectionsSummary'
 
 const SSE_BASE = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api'
 
@@ -55,6 +56,31 @@ function getMinutesAgo(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60))
 }
 
+function contextToSelections(ctx: Record<string, unknown> | null): Record<string, any> {
+  if (!ctx) return {}
+  const labels: Record<string, string> = {
+    habitationType: 'Tipo de Habitação',
+    vehicleModel: 'Veículo',
+    financingType: 'Tipo de Financiamento',
+    installments: 'Parcelas',
+    downPayment: 'Entrada',
+    totalAmount: 'Valor Total',
+  }
+
+  return Object.entries(ctx).reduce((acc, [key, value]) => {
+    if (value && typeof value === 'string') {
+      acc[key] = {
+        step: key,
+        label: labels[key] || key,
+        value: String(value),
+        selectedAt: new Date().toISOString(),
+        status: 'completed' as const
+      }
+    }
+    return acc
+  }, {} as Record<string, any>)
+}
+
 export function ConversationsPage() {
   const [selected, setSelected] = useState<string | null>(null)
   const [text, setText] = useState('')
@@ -83,6 +109,12 @@ export function ConversationsPage() {
     queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/messages`, { params: { limit: 50, before } }).then((r: any) => r.data),
     enabled: !!selected,
     refetchInterval: selected ? 10_000 : false,
+  })
+
+  const { data: context } = useQuery<Record<string, unknown>>({
+    queryKey: ['conversation-context', selected],
+    queryFn: () => api.get(`/conversations/${encodeURIComponent(selected!)}/context`).then((r: any) => r.data),
+    enabled: !!selected,
   })
 
   const refresh = () => {
@@ -180,9 +212,9 @@ export function ConversationsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
-        {/* Lista */}
-        <div className="border rounded-lg overflow-y-auto bg-white">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+        {/* Lista - oculta em mobile quando conversa selecionada */}
+        <div className={`border rounded-lg overflow-y-auto bg-white ${selected ? 'hidden md:flex md:flex-col' : ''}`}>
           {conversations.length === 0 && <p className="p-4 text-sm text-gray-400">Nenhuma conversa ainda.</p>}
           {conversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)
@@ -226,15 +258,21 @@ export function ConversationsPage() {
           })}
         </div>
 
-        {/* Conversa */}
-        <div className="lg:col-span-2 border rounded-lg flex flex-col bg-gray-50">
+        {/* Conversa - ocupa 2 colunas em lg, 1 em md, e full em mobile */}
+        <div className={`${!selected ? 'hidden' : ''} md:col-span-1 lg:col-span-2 border rounded-lg flex flex-col bg-gray-50`}>
           {!selected ? (
             <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Selecione uma conversa</div>
           ) : (
             <>
               <div className="px-4 py-3 border-b bg-white">
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1 min-w-0">
+                    <button
+                      onClick={() => setSelected(null)}
+                      className="md:hidden text-blue-600 text-xs font-medium mb-1"
+                    >
+                      ← Voltar
+                    </button>
                     <div className="text-sm font-bold text-gray-900">{current?.clientName ?? 'Cliente'}</div>
                     <div className="text-xs text-gray-500 font-mono">{selected}</div>
                     <span className={`inline-block mt-1 text-[10px] px-2 py-0.5 rounded-full ${isHuman ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -273,6 +311,12 @@ export function ConversationsPage() {
                   </div>
                 </div>
               </div>
+
+              {context && Object.keys(contextToSelections(context)).length > 0 && (
+                <div className="px-4 py-2 bg-blue-50 border-b">
+                  <SelectionsSummary selections={contextToSelections(context)} compact={false} />
+                </div>
+              )}
 
               <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
                 {messages.map((m) => (

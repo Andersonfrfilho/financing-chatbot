@@ -9,6 +9,7 @@ export function registerConversationRoutes(router: Router, controller: Conversat
   router.post('/api/conversations/:whatsapp/request-human', authenticate, (req, res) => controller.requestHuman(req, res))
   // Painel (usuários com JWT)
   router.get('/api/conversations/:whatsapp/messages', authenticate, authorize(['clients:read']), (req, res) => controller.history(req, res))
+  router.get('/api/conversations/:whatsapp/context', authenticate, authorize(['clients:read']), (req, res) => controller.getContext(req, res))
   router.get('/api/conversations', authenticate, authorize(['clients:read']), (req, res) => controller.list(req, res))
   // Takeover humano
   router.post('/api/conversations/:whatsapp/takeover',  authenticate, authorize(['clients:write']), (req, res) => controller.assume(req, res))

@@ -1,4 +1,4 @@
-import { and, eq, lt, desc, sql } from 'drizzle-orm'
+import { and, eq, lt, desc, sql, update } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { conversationMessages, conversationSessions } from '@/infra/database/schema'
 import type { ConversationMessage } from '@/infra/database/schema'
@@ -45,6 +45,15 @@ export class DrizzleConversationRepository {
         .limit(1)
       if (existing.length > 0) return null
     }
+
+    // Se status='read', atualizar a mensagem anterior com readAt=now()
+    if (input.status === 'read' && input.waMessageId) {
+      await db
+        .update(conversationMessages)
+        .set({ readAt: new Date() })
+        .where(eq(conversationMessages.waMessageId, input.waMessageId))
+    }
+
     const [row] = await db
       .insert(conversationMessages)
       .values({
@@ -162,5 +171,14 @@ export class DrizzleConversationRepository {
       .from(conversationSessions)
       .where(and(eq(conversationSessions.mode, 'human'), eq(conversationSessions.assignedUserId, agentUserId)))
     return result[0]?.count ?? 0
+  }
+
+  async getContext(whatsappNumber: string): Promise<Record<string, unknown> | null> {
+    const rows = await db
+      .select({ context: conversationSessions.context })
+      .from(conversationSessions)
+      .where(eq(conversationSessions.whatsappNumber, whatsappNumber))
+      .limit(1)
+    return rows[0]?.context ?? null
   }
 }

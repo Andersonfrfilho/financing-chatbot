@@ -101,4 +101,11 @@ export class ConversationController {
     await this.takeover.requestHuman(whatsapp)
     response.json({ ok: true }, 201)
   }
+
+  // GET /api/conversations/:whatsapp/context  (contexto da sessão: seleções do usuário)
+  async getContext(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const context = await this.takeover.getContext(whatsapp)
+    response.json(context || {})
+  }
 }

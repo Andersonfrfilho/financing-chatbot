@@ -87,7 +87,9 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
                 <Tooltip.Root>
                   <Tooltip.Trigger>
                     <span
-                      className={`text-[10px] font-bold cursor-help ${statusDisplay.color}`}
+                      className={`text-[10px] font-bold cursor-help ${statusDisplay.color} ${
+                        message.status === 'delivered' ? 'animate-status-pulse' : ''
+                      }`}
                     >
                       {statusDisplay.icon}
                     </span>

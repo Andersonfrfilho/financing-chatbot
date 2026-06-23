@@ -55,4 +55,8 @@ export class ManageTakeoverUseCase {
   async requestHuman(whatsapp: string): Promise<void> {
     await this.repo.requestHuman(whatsapp)
   }
+
+  async getContext(whatsapp: string): Promise<Record<string, unknown> | null> {
+    return await this.repo.getContext(whatsapp)
+  }
 }

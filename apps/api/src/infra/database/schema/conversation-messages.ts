@@ -13,6 +13,7 @@ export const conversationMessages = pgTable('conversation_messages', {
   payload:        jsonb('payload').$type<Record<string, unknown>>(),
   waMessageId:    varchar('wa_message_id', { length: 128 }),
   status:         varchar('status', { length: 16 }),                // received | sent | delivered | read | failed
+  readAt:         timestamp('read_at', { withTimezone: true }),      // quando a mensagem foi lida
   createdAt:      timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 }, (t) => ({
   byConversation: index('idx_conv_messages_number_created').on(t.whatsappNumber, t.createdAt),
