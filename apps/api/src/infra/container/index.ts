@@ -50,6 +50,7 @@ import { ClientController } from '@/modules/clients/infra/http/ClientController'
 import { DrizzleLeadRepository } from '@/modules/leads/infra/repositories/DrizzleLeadRepository'
 import { ListLeadsUseCase } from '@/modules/leads/application/use-cases/ListLeadsUseCase'
 import { GetLeadUseCase } from '@/modules/leads/application/use-cases/GetLeadUseCase'
+import { CreateLeadUseCase } from '@/modules/leads/application/use-cases/CreateLeadUseCase'
 import { UpdateLeadStatusUseCase } from '@/modules/leads/application/use-cases/UpdateLeadStatusUseCase'
 import { LeadController } from '@/modules/leads/infra/http/LeadController'
 
@@ -130,6 +131,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   const leadController = new LeadController(
     new ListLeadsUseCase(leadRepository),
     new GetLeadUseCase(leadRepository),
+    new CreateLeadUseCase(leadRepository),
     new UpdateLeadStatusUseCase(leadRepository),
   )
 
