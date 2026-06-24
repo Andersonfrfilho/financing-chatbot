@@ -609,7 +609,7 @@ export function ConversationsPage() {
               </div>
 
               {context && Object.keys(contextToSelections(context)).length > 0 && (
-                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-700 max-h-48 overflow-y-auto flex-shrink-0 scrollbar-thin">
+                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-700 max-h-64 overflow-y-auto flex-shrink-0 scrollbar-thin">
                   <SelectionsSummary selections={contextToSelections(context)} compact={false} />
                 </div>
               )}
