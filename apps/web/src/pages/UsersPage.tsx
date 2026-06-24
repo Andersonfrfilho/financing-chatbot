@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Edit2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { users as text } from '@/locales'
 import { useSortableData } from '@/hooks/useSortableData'
 import {
@@ -24,15 +24,42 @@ type User = {
 type Role = { id: string; name: string }
 
 export function UsersPage() {
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [roleId, setRoleId] = useState('')
+  const [active, setActive] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
   const qc = useQueryClient()
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const hasFilters = debouncedSearch || roleId || active
+  const clearFilters = () => {
+    setSearch('')
+    setRoleId('')
+    setActive('')
+  }
+
   const { data, isLoading } = useQuery<{ data: User[]; total: number }>({
-    queryKey: ['users'],
-    queryFn: () => api.get('/users').then((r: any) => r.data),
+    queryKey: ['users', debouncedSearch, roleId, active, page, limit],
+    queryFn: () => api.get('/users', {
+      params: {
+        search: debouncedSearch || undefined,
+        roleId: roleId || undefined,
+        active: active || undefined,
+        page,
+        limit,
+      }
+    }).then((r: any) => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<User>(data?.data, 'name', 'asc')
@@ -87,6 +114,42 @@ export function UsersPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
         </div>
         <button className="btn-primary self-start" onClick={() => setShowCreate(true)}>+ Novo Usuário</button>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          type="search"
+          placeholder="Buscar por nome..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-48"
+        />
+        <Select value={roleId} onValueChange={(v: string) => { setRoleId(v); setPage(1) }}>
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder="Perfil" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Todos</SelectItem>
+            {roles?.map((r) => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={active} onValueChange={(v: string) => { setActive(v); setPage(1) }}>
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">Todos</SelectItem>
+            <SelectItem value="true">Ativo</SelectItem>
+            <SelectItem value="false">Inativo</SelectItem>
+          </SelectContent>
+        </Select>
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">
+            <X size={14} />
+            <span className="ml-1">Limpar filtros</span>
+          </Button>
+        )}
       </div>
 
       {/* Formulário de criação */}
@@ -176,6 +239,36 @@ export function UsersPage() {
         </Table>
         {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
+
+      {data && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Exibir</span>
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
+              className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm"
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <span>por página</span>
+            <span className="ml-2 text-gray-400">({data.total} total)</span>
+          </div>
+          {data.total > limit && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                <ChevronLeft size={16} /> Anterior
+              </Button>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
+                Próxima <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
 
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
         <DialogContent>

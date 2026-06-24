@@ -1,7 +1,7 @@
 import { drizzle } from 'drizzle-orm/node-postgres'
-import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
 import fs from 'fs'
+import path from 'path'
 import { logger } from '@/shared/logger'
 import * as schema from './schema'
 
@@ -46,12 +46,45 @@ export async function ensureN8nDatabase(): Promise<void> {
 }
 
 export async function runMigrations(): Promise<void> {
-  const migrationsFolder = './drizzle/migrations'
-  const hasMigrations = fs.existsSync(migrationsFolder) && fs.readdirSync(migrationsFolder).some((f) => f.endsWith('.sql'))
-  if (!hasMigrations) {
-    console.log('[DB] No migration files found — skipping migrate step')
+  const migrationsFolder = path.resolve('./drizzle/migrations')
+
+  let files: string[]
+  try {
+    files = fs.readdirSync(migrationsFolder)
+      .filter((f) => f.endsWith('.sql'))
+      .sort()
+  } catch {
+    console.log('[DB] No migrations folder found — skipping')
     return
   }
-  await migrate(db, { migrationsFolder })
-  console.log('[DB] Migrations applied')
+
+  if (files.length === 0) {
+    console.log('[DB] No migration files found — skipping')
+    return
+  }
+
+  console.log(`[DB] Running ${files.length} migrations...`)
+
+  const client = await pool.connect()
+  try {
+    for (const file of files) {
+      const filePath = path.join(migrationsFolder, file)
+      const sql = fs.readFileSync(filePath, 'utf-8')
+      try {
+        await client.query(sql)
+        console.log(`[DB]   OK  ${file}`)
+      } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : String(error)
+        if (message.includes('already exists') || message.includes('multiple primary keys')) {
+          console.log(`[DB]   SKIP  ${file} (já aplicada)`)
+        } else {
+          console.error(`[DB]   FAIL  ${file}: ${message}`)
+        }
+      }
+    }
+  } finally {
+    client.release()
+  }
+
+  console.log('[DB] Migrations completed')
 }

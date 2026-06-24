@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { api } from '@/lib/api'
 import { leads as text } from '@/locales'
 import { Button, Input, Textarea, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
@@ -63,17 +63,47 @@ const getDaysAgo = (date: string) => {
 
 export function LeadsPage() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [assignedTo, setAssignedTo] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
   const [visibleLeads, setVisibleLeads] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ notes: '', assignedTo: '' })
   const qc = useQueryClient()
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const hasFilters = debouncedSearch || status || assignedTo || startDate || endDate
+  const clearFilters = () => {
+    setSearch('')
+    setStatus('')
+    setAssignedTo('')
+    setStartDate('')
+    setEndDate('')
+  }
+
   const { data, isLoading } = useQuery<{ data: Lead[]; total: number }>({
-    queryKey: ['leads', search, status, page],
+    queryKey: ['leads', debouncedSearch, status, assignedTo, startDate, endDate, page, limit],
     queryFn: () =>
-      api.get('/leads', { params: { search: search || undefined, status: status || undefined, page, limit: 20 } }).then((r: any) => r.data),
+      api.get('/leads', {
+        params: {
+          search: debouncedSearch || undefined,
+          status: status || undefined,
+          assignedTo: assignedTo || undefined,
+          startDate: startDate || undefined,
+          endDate: endDate || undefined,
+          page,
+          limit,
+        }
+      }).then((r: any) => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Lead>(data?.data, 'createdAt')
@@ -117,26 +147,53 @@ export function LeadsPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 max-w-lg">{text.description}</p>
         </div>
-        <div className="flex flex-col sm:flex-row gap-2 flex-shrink-0">
-          <Input
-            type="search"
-            placeholder={text.search}
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="w-full sm:w-56"
-          />
-          <Select value={status} onValueChange={(v: string) => { setStatus(v); setPage(1) }}>
-            <SelectTrigger className="w-full sm:w-44">
-              <SelectValue placeholder={text.allStatus} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="">{text.allStatus}</SelectItem>
-              {Object.entries(STATUS_LABELS).map(([key, value]) => (
-                <SelectItem key={key} value={key}>{value.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          type="search"
+          placeholder={text.filters.search}
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-48"
+        />
+        <Select value={status} onValueChange={(v: string) => { setStatus(v); setPage(1) }}>
+          <SelectTrigger className="w-full sm:w-36">
+            <SelectValue placeholder={text.filters.status} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">{text.allStatus}</SelectItem>
+            {Object.entries(STATUS_LABELS).map(([key, value]) => (
+              <SelectItem key={key} value={key}>{value.label}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          type="search"
+          placeholder={text.filters.assignedTo}
+          value={assignedTo}
+          onChange={(e) => { setAssignedTo(e.target.value); setPage(1) }}
+          className="w-full sm:w-36"
+        />
+        <Input
+          type="date"
+          value={startDate}
+          onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">
+            <X size={14} />
+            <span className="ml-1">{text.filters.clearAll}</span>
+          </Button>
+        )}
       </div>
 
       {/* Tabela */}
@@ -209,15 +266,35 @@ export function LeadsPage() {
         {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
 
-      {data && data.total > 20 && (
-        <div className="flex justify-center items-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-            <ChevronLeft size={16} /> Anterior
-          </Button>
-          <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>
-            Próxima <ChevronRight size={16} />
-          </Button>
+      {data && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Exibir</span>
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
+              className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm"
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <span>por página</span>
+            <span className="ml-2 text-gray-400">
+              ({data.total} total)
+            </span>
+          </div>
+          {data.total > limit && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                <ChevronLeft size={16} /> Anterior
+              </Button>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
+                Próxima <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
         </div>
       )}
 

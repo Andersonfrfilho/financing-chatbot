@@ -43,6 +43,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: company } = useCompanySettings()
   const companyName = company?.company_name || import.meta.env.VITE_COMPANY_NAME || 'Sistema'
   const companyLogo = company?.company_logo_url || import.meta.env.VITE_COMPANY_LOGO_URL || ''
+  const simEnabled = company?.simulations_enabled !== 'false'
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => {})
@@ -104,7 +105,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             <div key={group.label}>
               <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{group.label}</p>
               <div className="space-y-0.5">
-                {group.items.map((item) => {
+                {group.items.filter((item) => item.href !== '/simulations' || simEnabled).map((item) => {
                   const active = location === item.href
                   return (
                     <a

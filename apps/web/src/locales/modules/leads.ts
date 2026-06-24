@@ -6,6 +6,14 @@ export const leads = {
   search:      'Buscar WhatsApp/Cliente...',
   allStatus:   'Todos os status',
   noProduct:   'Não identificado',
+  filters: {
+    search:     'Buscar WhatsApp/Cliente...',
+    status:     'Status',
+    assignedTo: 'Vendedor',
+    startDate:  'Data início',
+    endDate:    'Data fim',
+    clearAll:   'Limpar filtros',
+  },
   columns: {
     whatsapp: 'WhatsApp',
     client:   'Cliente',

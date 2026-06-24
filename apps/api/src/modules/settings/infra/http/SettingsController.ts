@@ -49,6 +49,7 @@ export class SettingsController {
     const company: Record<string, string> = {}
     for (const key of COMPANY_KEYS) company[key] = all[key] ?? ''
     company['email_reset_enabled'] = all['email_reset_enabled'] ?? 'false'
+    company['simulations_enabled'] = all['simulations_enabled'] ?? 'true'
     res.json(company, 200)
   }
 
@@ -63,6 +64,17 @@ export class SettingsController {
   async updateEmailResetEnabled(req: ParsedRequest, res: ResponseHelper): Promise<void> {
     const { enabled } = validateBody(z.object({ enabled: z.boolean() }), req.body)
     await this.configRepo.setConfig('email_reset_enabled', enabled ? 'true' : 'false')
+    res.json({ ok: true, enabled }, 200)
+  }
+
+  async getSimulationsEnabled(_req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const value = await this.configRepo.getConfig('simulations_enabled')
+    res.json({ enabled: value !== 'false' }, 200)
+  }
+
+  async updateSimulationsEnabled(req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const { enabled } = validateBody(z.object({ enabled: z.boolean() }), req.body)
+    await this.configRepo.setConfig('simulations_enabled', enabled ? 'true' : 'false')
     res.json({ ok: true, enabled }, 200)
   }
 }

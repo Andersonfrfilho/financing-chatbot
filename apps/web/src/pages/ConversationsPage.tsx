@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
+import { useToast } from '@/components/Toast'
 import { conversations as text } from '@/locales'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Skeleton } from '@/components/ui'
@@ -17,6 +18,7 @@ type ConversationItem = {
   lastContent: string | null
   lastDirection: string | null
   lastAt: string
+  lastInboundAt: string | null
   clientName: string | null
   currentState: string | null
   mode: string | null
@@ -56,6 +58,28 @@ function fmtTime(iso: string) {
 
 function getMinutesAgo(iso: string): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / (1000 * 60))
+}
+
+function getHoursAgo(iso: string | null): number | null {
+  if (!iso) return null
+  return (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60)
+}
+
+type WindowStatus = 'active' | 'approaching' | 'warning' | 'expired'
+
+function getWindowStatus(hours: number | null): WindowStatus {
+  if (hours === null) return 'active'
+  if (hours >= 24) return 'expired'
+  if (hours >= 21) return 'warning'
+  if (hours >= 12) return 'approaching'
+  return 'active'
+}
+
+const WINDOW_BORDER: Record<WindowStatus, string> = {
+  active:      'border-l-4 border-l-green-200 dark:border-l-green-800',
+  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600',
+  warning:     'border-l-4 border-l-red-500 dark:border-l-red-500 animate-status-pulse',
+  expired:     'border-l-4 border-l-gray-300 dark:border-l-gray-600',
 }
 
 const HIDDEN_FIELDS = new Set(['flow', 'step'])
@@ -193,6 +217,7 @@ export function ConversationsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
+  const toast = useToast()
 
   const { data: list, isLoading: listLoading } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
@@ -321,6 +346,8 @@ export function ConversationsPage() {
   const current = conversations.find((c) => c.whatsappNumber === selected)
   const isHuman = current?.mode === 'human'
   const waitingCount = conversations.filter((c) => c.waitingHuman).length
+  const selectedHours = getHoursAgo(current?.lastInboundAt ?? null)
+  const windowExpired = selectedHours !== null && selectedHours >= 24
 
   const filteredConversations = useMemo(() => {
     if (!search.trim()) return conversations
@@ -359,7 +386,7 @@ export function ConversationsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-220px)]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-210px)] md:h-[calc(100vh-190px)] lg:h-[calc(100vh-170px)]">
         {/* Lista - oculta em mobile quando conversa selecionada */}
         <div className={`border dark:border-gray-700 rounded-lg flex flex-col bg-white dark:bg-gray-800 ${selected ? 'hidden md:flex' : ''}`}>
           {/* Ações em massa */}
@@ -417,6 +444,29 @@ export function ConversationsPage() {
             </div>
           </div>
 
+          {/* Legenda da janela de 24h */}
+          {conversations.length > 0 && (
+            <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex items-center gap-3 text-[10px]">
+              <span className="text-gray-500 dark:text-gray-400 font-medium">{text.window.legend}:</span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-green-200 dark:bg-green-800" />
+                {text.window.active}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-yellow-400 dark:bg-yellow-600" />
+                {text.window.approaching}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-status-pulse" />
+                {text.window.warning}
+              </span>
+              <span className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm bg-gray-300 dark:bg-gray-600" />
+                {text.window.expired}
+              </span>
+            </div>
+          )}
+
           {/* Conversas */}
           <div className="flex-1 overflow-y-auto">
             {listLoading && Array.from({ length: 6 }).map((_, i) => (
@@ -435,11 +485,13 @@ export function ConversationsPage() {
             {filteredConversations.length === 0 && conversations.length > 0 && <p className="p-4 text-sm text-gray-400 dark:text-gray-500">{text.emptySearch}</p>}
             {filteredConversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)
+            const hoursSinceInbound = getHoursAgo(c.lastInboundAt)
+            const window = getWindowStatus(hoursSinceInbound)
             const isStalled = c.mode === 'bot' && minAgo > 30
             return (
               <div
                 key={c.whatsappNumber}
-                className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50 dark:bg-blue-950/60' : selectedBulk.has(c.whatsappNumber) ? 'bg-blue-100 dark:bg-blue-950/80' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : ''}`}
+                className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50 dark:bg-blue-950/60' : selectedBulk.has(c.whatsappNumber) ? 'bg-blue-100 dark:bg-blue-950/80' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : WINDOW_BORDER[window]}`}
               >
                 <div className="w-full text-left p-3 flex items-start gap-2">
                   <input
@@ -567,62 +619,84 @@ export function ConversationsPage() {
 
               {/* Input moderno */}
               <div className="border-t dark:border-gray-700 bg-white dark:bg-gray-800 px-3 py-2 flex-shrink-0">
-                {/* Preview do arquivo anexado */}
-                {attached && (
-                  <div className="mb-2 flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2">
-                    {attached.preview
-                      ? <img src={attached.preview} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
-                      : <div className="w-10 h-10 rounded bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 text-lg">📎</div>
-                    }
-                    <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{attached.file.name}</span>
-                    <button onClick={() => setAttached(null)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
-                      <X size={14} />
-                    </button>
+                {/* Template message button para conversas expiradas */}
+                {windowExpired ? (
+                  <div className="space-y-2">
+                    <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                      <span className="font-semibold block mb-0.5">{text.window.expiredBanner}</span>
+                      {text.window.templateHint}
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        toast.toast('info', 'Funcionalidade de template será implementada em breve.')
+                      }}
+                    >
+                      {text.window.sendTemplate}
+                    </Button>
                   </div>
-                )}
-                <div className="flex items-end gap-2">
-                  {/* Anexar arquivo */}
-                  <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
-                    accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" />
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                    title="Anexar arquivo"
-                  >
-                    <Paperclip size={18} />
-                  </button>
+                ) : (
+                  <>
+                    {/* Preview do arquivo anexado */}
+                    {attached && (
+                      <div className="mb-2 flex items-center gap-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-3 py-2">
+                        {attached.preview
+                          ? <img src={attached.preview} alt="" className="w-10 h-10 rounded object-cover flex-shrink-0" />
+                          : <div className="w-10 h-10 rounded bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0 text-blue-600 dark:text-blue-400 text-lg">📎</div>
+                        }
+                        <span className="text-xs text-gray-700 dark:text-gray-300 flex-1 truncate">{attached.file.name}</span>
+                        <button onClick={() => setAttached(null)} className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    )}
+                    <div className="flex items-end gap-2">
+                      {/* Anexar arquivo */}
+                      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
+                        accept="image/*,video/*,audio/*,.pdf,.doc,.docx,.xls,.xlsx,.zip" />
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                        title="Anexar arquivo"
+                      >
+                        <Paperclip size={18} />
+                      </button>
 
-                  {/* Textarea auto-resize */}
-                  <textarea
-                    ref={textareaRef}
-                    value={message}
-                    rows={1}
-                    onChange={(e) => {
-                      setMessage(e.target.value)
-                      e.target.style.height = 'auto'
-                      e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
-                    }}
-                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-                    placeholder={attached ? text.chat.messagePlaceholder.caption : isHuman ? text.chat.messagePlaceholder.human : text.chat.messagePlaceholder.bot}
-                    className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all overflow-hidden"
-                    style={{ minHeight: '36px', maxHeight: '120px' }}
-                  />
+                      {/* Textarea auto-resize */}
+                      <textarea
+                        ref={textareaRef}
+                        value={message}
+                        rows={1}
+                        onChange={(e) => {
+                          setMessage(e.target.value)
+                          e.target.style.height = 'auto'
+                          e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
+                        }}
+                        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
+                        placeholder={attached ? text.chat.messagePlaceholder.caption : isHuman ? text.chat.messagePlaceholder.human : text.chat.messagePlaceholder.bot}
+                        className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all overflow-hidden"
+                        style={{ minHeight: '36px', maxHeight: '120px' }}
+                      />
 
-                  {/* Botão enviar */}
-                  <button
-                    onClick={submit}
-                    disabled={(send.isPending || sendMedia.isPending) || (!message.trim() && !attached)}
-                    className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                    title="Enviar"
-                  >
-                    {(send.isPending || sendMedia.isPending)
-                      ? <span className="text-xs">⏳</span>
-                      : <SendHorizonal size={16} />
-                    }
-                  </button>
-                </div>
-                {(send.isError || sendMedia.isError) && (
-                  <SendErrorMessage error={send.error ?? sendMedia.error} errors={text.chat.errors} fallback={text.chat.sendError} />
+                      {/* Botão enviar */}
+                      <button
+                        onClick={submit}
+                        disabled={(send.isPending || sendMedia.isPending) || (!message.trim() && !attached)}
+                        className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        title="Enviar"
+                      >
+                        {(send.isPending || sendMedia.isPending)
+                          ? <span className="text-xs">⏳</span>
+                          : <SendHorizonal size={16} />
+                        }
+                      </button>
+                    </div>
+                    {(send.isError || sendMedia.isError) && (
+                      <SendErrorMessage error={send.error ?? sendMedia.error} errors={text.chat.errors} fallback={text.chat.sendError} />
+                    )}
+                  </>
                 )}
               </div>
             </>

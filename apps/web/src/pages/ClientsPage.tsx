@@ -1,13 +1,14 @@
 // @ts-nocheck
-import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Eye, EyeOff, Trash2, Edit2 } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
+import { Eye, EyeOff, Trash2, Edit2, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { clients as text } from '@/locales'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
+import { BRAZILIAN_STATES } from '@/lib/constants'
 import { useSortableData } from '@/hooks/useSortableData'
 
 type Client = {
@@ -27,17 +28,41 @@ const obfuscateEmail = (email: string) => {
 
 export function ClientsPage() {
   const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const [city, setCity] = useState('')
+  const [state, setState] = useState('')
+  const [createdAfter, setCreatedAfter] = useState('')
+  const [createdBefore, setCreatedBefore] = useState('')
   const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
   const [showAllData, setShowAllData] = useState(false)
   const [visibleClients, setVisibleClients] = useState<Set<string>>(new Set())
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ name: '', email: '', city: '', state: '', whatsappNumber: '', address: '' })
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({ name: '', whatsappNumber: '', email: '', city: '', state: '' })
   const qc = useQueryClient()
 
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
   const { data, isLoading } = useQuery<{ data: Client[]; total: number }>({
-    queryKey: ['clients', search, page],
-    queryFn: () => api.get('/clients', { params: { search: search || undefined, page, limit: 20 } }).then((r: any) => r.data),
+    queryKey: ['clients', debouncedSearch, city, state, createdAfter, createdBefore, page, limit],
+    queryFn: () => api.get('/clients', {
+      params: {
+        search: debouncedSearch || undefined,
+        city: city || undefined,
+        state: state || undefined,
+        createdAfter: createdAfter || undefined,
+        createdBefore: createdBefore || undefined,
+        page,
+        limit,
+      }
+    }).then((r: any) => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Client>(data?.data, 'createdAt')
@@ -55,6 +80,15 @@ export function ClientsPage() {
   const deleteMultiple = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map((id) => api.delete(`/clients/${id}`))),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); setSelectedClients(new Set()) },
+  })
+
+  const createClient = useMutation({
+    mutationFn: (payload: typeof createForm) => api.post('/clients', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['clients'] })
+      setCreating(false)
+      setCreateForm({ name: '', whatsappNumber: '', email: '', city: '', state: '' })
+    },
   })
 
   const toggleVisible = (id: string) => {
@@ -87,13 +121,10 @@ export function ClientsPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Input
-            type="search"
-            placeholder="Buscar por nome..."
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1) }}
-            className="w-full sm:w-52"
-          />
+          <Button size="sm" onClick={() => setCreating(true)}>
+            <Plus size={14} />
+            <span className="ml-1 hidden sm:inline">{text.actions.create}</span>
+          </Button>
           <Button variant={showAllData ? 'default' : 'outline'} size="sm" onClick={() => setShowAllData(!showAllData)}>
             {showAllData ? <EyeOff size={14} /> : <Eye size={14} />}
             <span className="ml-1 hidden sm:inline">{showAllData ? 'Esconder' : 'Mostrar'}</span>
@@ -105,6 +136,46 @@ export function ClientsPage() {
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2">
+        <Input
+          type="search"
+          placeholder="Nome, e-mail ou WhatsApp..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-52"
+        />
+        <Input
+          type="search"
+          placeholder="Cidade..."
+          value={city}
+          onChange={(e) => { setCity(e.target.value); setPage(1) }}
+          className="w-full sm:w-36"
+        />
+        <select
+          value={state}
+          onChange={(e) => { setState(e.target.value); setPage(1) }}
+          className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-ring w-full sm:w-24"
+        >
+          <option value="">Estado</option>
+          {BRAZILIAN_STATES.map((uf) => (
+            <option key={uf} value={uf}>{uf}</option>
+          ))}
+        </select>
+        <Input
+          type="date"
+          value={createdAfter}
+          onChange={(e) => { setCreatedAfter(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
+        <Input
+          type="date"
+          value={createdBefore}
+          onChange={(e) => { setCreatedBefore(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
       </div>
 
       {/* Tabela */}
@@ -167,13 +238,81 @@ export function ClientsPage() {
         {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
 
-      {data && data.total > 20 && (
-        <div className="flex justify-center gap-2">
-          <button className="btn-secondary text-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
-          <span className="px-3 py-2 text-sm text-gray-600">Pág. {page}</span>
-          <button className="btn-secondary text-sm" onClick={() => setPage((p) => p + 1)} disabled={page * 20 >= data.total}>Próxima</button>
+      {data && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Exibir</span>
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
+              className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm"
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <span>por página</span>
+            <span className="ml-2 text-gray-400">
+              ({data.total} total)
+            </span>
+          </div>
+          {data.total > limit && (
+            <div className="flex items-center gap-2">
+              <button className="btn-secondary text-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
+              <span className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <button className="btn-secondary text-sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>Próxima</button>
+            </div>
+          )}
         </div>
       )}
+
+      {/* Criar cliente */}
+      <Dialog open={creating} onOpenChange={() => setCreating(false)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{text.create.title}</DialogTitle></DialogHeader>
+          <div className="space-y-3 max-h-[70vh] overflow-y-auto pr-1">
+            <div>
+              <label className="text-sm font-medium">{text.create.name}</label>
+              <Input value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} placeholder={text.create.namePlaceholder} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{text.create.whatsapp}</label>
+              <Input type="tel" value={formatPhone(createForm.whatsappNumber)}
+                onChange={(e) => setCreateForm({ ...createForm, whatsappNumber: e.target.value.replace(/\D/g, '') })}
+                placeholder={text.create.whatsappPlaceholder} className="font-mono" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{text.create.email}</label>
+              <Input type="email" value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} placeholder={text.create.emailPlaceholder} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">{text.create.city}</label>
+                <Input value={createForm.city} onChange={(e) => setCreateForm({ ...createForm, city: e.target.value })} />
+              </div>
+              <div>
+                <label className="text-sm font-medium">{text.create.state}</label>
+                <select
+                  value={createForm.state}
+                  onChange={(e) => setCreateForm({ ...createForm, state: e.target.value })}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm"
+                >
+                  <option value="">UF</option>
+                  {BRAZILIAN_STATES.map((uf) => (
+                    <option key={uf} value={uf}>{uf}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreating(false)}>Cancelar</Button>
+            <Button onClick={() => createClient.mutate(createForm)} disabled={createClient.isPending || !createForm.name || !createForm.whatsappNumber}>
+              {createClient.isPending ? '...' : text.create.submit}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!editingId} onOpenChange={() => setEditingId(null)}>
         <DialogContent>

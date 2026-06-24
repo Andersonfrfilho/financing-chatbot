@@ -35,6 +35,8 @@ import { NodemailerEmailProvider } from '@/infra/email/NodemailerEmailProvider'
 // Simulations
 import { CreateSimulationUseCase } from '@/modules/simulations/application/use-cases/CreateSimulationUseCase'
 import { GetSimulationUseCase } from '@/modules/simulations/application/use-cases/GetSimulationUseCase'
+import { ListSimulationsUseCase } from '@/modules/simulations/application/use-cases/ListSimulationsUseCase'
+import { DrizzleSimulationRepository } from '@/modules/simulations/infra/repositories/DrizzleSimulationRepository'
 import { SimulationController } from '@/modules/simulations/infra/http/SimulationController'
 
 // Webhook
@@ -45,6 +47,7 @@ import { WebhookController } from '@/modules/webhook/infra/http/WebhookControlle
 import { DrizzleClientRepository } from '@/modules/clients/infra/repositories/DrizzleClientRepository'
 import { ListClientsUseCase } from '@/modules/clients/application/use-cases/ListClientsUseCase'
 import { GetClientUseCase } from '@/modules/clients/application/use-cases/GetClientUseCase'
+import { CreateClientUseCase } from '@/modules/clients/application/use-cases/CreateClientUseCase'
 import { UpdateClientUseCase } from '@/modules/clients/application/use-cases/UpdateClientUseCase'
 import { DeleteClientUseCase } from '@/modules/clients/application/use-cases/DeleteClientUseCase'
 import { FindClientByDocumentUseCase } from '@/modules/clients/application/use-cases/FindClientByDocumentUseCase'
@@ -122,15 +125,18 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   const authController = new AuthController(loginUseCase, refreshTokenUseCase, logoutUseCase, forgotPasswordUseCase, resetPasswordUseCase)
 
   // Simulations
+  const simulationRepository = new DrizzleSimulationRepository()
   const createSimulationUseCase = new CreateSimulationUseCase(db, cache, wsHub)
   const getSimulationUseCase = new GetSimulationUseCase(db)
-  const simulationController = new SimulationController(createSimulationUseCase, getSimulationUseCase)
+  const listSimulationsUseCase = new ListSimulationsUseCase(simulationRepository)
+  const simulationController = new SimulationController(createSimulationUseCase, getSimulationUseCase, listSimulationsUseCase)
 
   // Clients
   const clientRepository = new DrizzleClientRepository()
   const clientController = new ClientController(
     new ListClientsUseCase(clientRepository),
     new GetClientUseCase(clientRepository),
+    new CreateClientUseCase(clientRepository),
     new UpdateClientUseCase(clientRepository),
     new DeleteClientUseCase(clientRepository),
     new FindClientByDocumentUseCase(clientRepository),

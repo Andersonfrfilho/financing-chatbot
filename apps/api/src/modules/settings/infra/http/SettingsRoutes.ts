@@ -17,4 +17,8 @@ export function registerSettingsRoutes(router: Router, controller: SettingsContr
 
   // Email reset flag (admin only)
   router.put('/api/settings/email-reset-enabled', authenticate, (req, res) => controller.updateEmailResetEnabled(req, res))
+
+  // Feature toggles
+  router.get('/api/settings/simulations-enabled', authenticate, (req, res) => controller.getSimulationsEnabled(req, res))
+  router.put('/api/settings/simulations-enabled', authenticate, (req, res) => controller.updateSimulationsEnabled(req, res))
 }

@@ -7,6 +7,7 @@ export interface CompanySettings {
   company_email: string
   company_phone: string
   email_reset_enabled: string
+  simulations_enabled: string
 }
 
 export function useCompanySettings() {

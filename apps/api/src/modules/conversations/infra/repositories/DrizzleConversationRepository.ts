@@ -29,6 +29,7 @@ export interface ConversationListItem {
   lastContent: string | null
   lastDirection: string | null
   lastAt: string
+  lastInboundAt: string | null
   clientName: string | null
   currentState: string | null
   mode: string | null
@@ -154,10 +155,12 @@ export class DrizzleConversationRepository {
              s.assigned_user_id  AS "assignedUserId",
              (s.human_requested_at IS NOT NULL AND s.assigned_user_id IS NULL) AS "waitingHuman",
              COALESCE((
-               SELECT count(*)::int FROM conversation_messages u
-               WHERE u.whatsapp_number = t.whatsapp_number AND u.direction = 'inbound'
-                 AND (s.last_agent_read_at IS NULL OR u.created_at > s.last_agent_read_at)
-             ), 0) AS "unread"
+                SELECT count(*)::int FROM conversation_messages u
+                WHERE u.whatsapp_number = t.whatsapp_number AND u.direction = 'inbound'
+                  AND (s.last_agent_read_at IS NULL OR u.created_at > s.last_agent_read_at)
+              ), 0) AS "unread",
+              (SELECT MAX(m2.created_at) FROM conversation_messages m2
+               WHERE m2.whatsapp_number = t.whatsapp_number AND m2.direction = 'inbound') AS "lastInboundAt"
       FROM (
         SELECT DISTINCT ON (m.whatsapp_number)
                m.whatsapp_number, m.content, m.direction, m.created_at

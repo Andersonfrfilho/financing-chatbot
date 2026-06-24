@@ -29,11 +29,13 @@ export type CreateClientInput = {
 export type UpdateClientInput = Partial<Omit<CreateClientInput, 'whatsappNumber'>>
 
 export type ClientFilters = {
-  search?: string
-  city?:   string
-  state?:  string
-  page?:   number
-  limit?:  number
+  search?:        string
+  city?:          string
+  state?:         string
+  createdAfter?:  string
+  createdBefore?: string
+  page?:          number
+  limit?:         number
 }
 
 export interface ClientRepository {

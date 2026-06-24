@@ -1,6 +1,6 @@
 import { eq, desc, and, gte, lte, sql } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
-import { conversationSessions } from '@/infra/database/schema'
+import { conversationSessions, financingClients } from '@/infra/database/schema'
 import type { ConversationSession } from '@/infra/database/schema'
 
 export type SessionFilters = {
@@ -10,6 +10,8 @@ export type SessionFilters = {
   page?: number
   limit?: number
 }
+
+export type SessionRow = ConversationSession & { clientName: string | null }
 
 export class DrizzleSessionRepository {
   async findByWhatsappNumber(whatsappNumber: string): Promise<ConversationSession | null> {
@@ -21,7 +23,7 @@ export class DrizzleSessionRepository {
     return result[0] ?? null
   }
 
-  async findAll(filters: SessionFilters): Promise<{ data: ConversationSession[]; total: number }> {
+  async findAll(filters: SessionFilters): Promise<{ data: SessionRow[]; total: number }> {
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20
     const offset = (page - 1) * limit
@@ -33,12 +35,41 @@ export class DrizzleSessionRepository {
 
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
+    const baseQuery = db
+      .select({
+        id:              conversationSessions.id,
+        whatsappNumber:  conversationSessions.whatsappNumber,
+        currentState:    conversationSessions.currentState,
+        context:         conversationSessions.context,
+        mode:            conversationSessions.mode,
+        assignedUserId:  conversationSessions.assignedUserId,
+        humanRequestedAt: conversationSessions.humanRequestedAt,
+        lastInboundAt:   conversationSessions.lastInboundAt,
+        lastAgentReadAt: conversationSessions.lastAgentReadAt,
+        lastActivity:    conversationSessions.lastActivity,
+        createdAt:       conversationSessions.createdAt,
+        updatedAt:       conversationSessions.updatedAt,
+        clientName:      sql<string | null>`COALESCE(${financingClients.name}, ${financingClients.companyName})`,
+      })
+      .from(conversationSessions)
+      .leftJoin(financingClients, and(
+        eq(conversationSessions.whatsappNumber, financingClients.whatsappNumber),
+        sql`${financingClients.deletedAt} IS NULL`,
+      ))
+      .where(where)
+
     const [data, countResult] = await Promise.all([
-      db.select().from(conversationSessions).where(where).orderBy(desc(conversationSessions.lastActivity)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)` }).from(conversationSessions).where(where),
+      baseQuery.orderBy(desc(conversationSessions.lastActivity)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)` })
+        .from(conversationSessions)
+        .leftJoin(financingClients, and(
+          eq(conversationSessions.whatsappNumber, financingClients.whatsappNumber),
+          sql`${financingClients.deletedAt} IS NULL`,
+        ))
+        .where(where),
     ])
 
-    return { data, total: Number(countResult[0].count) }
+    return { data: data as SessionRow[], total: Number(countResult[0].count) }
   }
 
   async countByState(): Promise<Record<string, number>> {

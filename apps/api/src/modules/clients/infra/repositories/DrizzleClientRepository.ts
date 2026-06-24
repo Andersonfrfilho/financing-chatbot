@@ -1,4 +1,4 @@
-import { eq, ilike, and, isNull, sql, desc } from 'drizzle-orm'
+import { eq, ilike, and, or, isNull, gte, lte, sql, desc } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { financingClients } from '@/infra/database/schema'
 import type { FinancingClient } from '@/infra/database/schema'
@@ -52,9 +52,18 @@ export class DrizzleClientRepository implements ClientRepository {
     const offset = (page - 1) * limit
 
     const conditions = [isNull(financingClients.deletedAt)]
-    if (filters.search) conditions.push(ilike(financingClients.name, `%${filters.search}%`))
+    if (filters.search) {
+      const term = `%${filters.search}%`
+      conditions.push(or(
+        ilike(financingClients.name, term),
+        ilike(financingClients.email, term),
+        ilike(financingClients.whatsappNumber, term),
+      )!)
+    }
     if (filters.city) conditions.push(ilike(financingClients.city, `%${filters.city}%`))
     if (filters.state) conditions.push(eq(financingClients.state, filters.state))
+    if (filters.createdAfter) conditions.push(gte(financingClients.createdAt, new Date(filters.createdAfter)))
+    if (filters.createdBefore) conditions.push(lte(financingClients.createdAt, new Date(filters.createdBefore)))
 
     const where = and(...conditions)
 

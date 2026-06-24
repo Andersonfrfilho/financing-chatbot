@@ -5,6 +5,16 @@ export const conversations = {
   empty:    'Nenhuma conversa ainda.',
   emptySearch: 'Nenhuma conversa encontrada.',
   noSelection: 'Selecione uma conversa',
+  window: {
+    legend: 'Janela WhatsApp',
+    active:      'Ativa (< 12h)',
+    approaching: 'Próxima (12–21h)',
+    warning:     'Expirando (21–24h)',
+    expired:     'Expirada (> 24h)',
+    expiredBanner: '⏰ Janela de 24h expirada — o WhatsApp não aceita mensagens livres.',
+    sendTemplate: '📨 Enviar Template (HSM)',
+    templateHint: 'Envie uma mensagem de template para reabrir a conversa com o cliente.',
+  },
   filters: {
     waitingHuman:     'Aguardando atendimento',
     waitingWithCount: (n: number) => `Aguardando atendimento (${n})`,

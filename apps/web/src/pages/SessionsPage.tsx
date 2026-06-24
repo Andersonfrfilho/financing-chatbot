@@ -1,9 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { sessions as text } from '@/locales'
 import { useState } from 'react'
-import { Eye, EyeOff, MessageSquare, Trash2 } from 'lucide-react'
-import { Button, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
+import { Eye, EyeOff, MessageSquare, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
 import { useSortableData } from '@/hooks/useSortableData'
@@ -21,8 +21,19 @@ type StateLabel = { label: string; color: string }
 
 export function SessionsPage() {
   const [state, setState] = useState('')
+  const [startDate, setStartDate] = useState('')
+  const [endDate, setEndDate] = useState('')
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
   const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
+
+  const hasFilters = state || startDate || endDate
+  const clearFilters = () => {
+    setState('')
+    setStartDate('')
+    setEndDate('')
+  }
 
   const toggleVisible = (id: string) => {
     setVisibleSessions((prev) => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s })
@@ -41,8 +52,17 @@ export function SessionsPage() {
   })
 
   const { data, isLoading } = useQuery<{ data: Session[]; total: number }>({
-    queryKey: ['sessions', state],
-    queryFn: () => api.get('/sessions', { params: { state: state || undefined, limit: 50 } }).then((r: any) => r.data),
+    queryKey: ['sessions', state, startDate, endDate, page, limit],
+    queryFn: () => api.get('/sessions', {
+      params: {
+        state: state || undefined,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
+        page,
+        limit,
+      }
+    }).then((r: any) => r.data),
+    placeholderData: keepPreviousData,
   })
 
   const resetSession = useMutation({
@@ -92,6 +112,28 @@ export function SessionsPage() {
           })}
         </div>
       )}
+
+      {/* Filtros */}
+      <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          type="date"
+          value={startDate}
+          onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
+        <Input
+          type="date"
+          value={endDate}
+          onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
+          className="w-full sm:w-36 text-xs"
+        />
+        {hasFilters && (
+          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">
+            <X size={14} />
+            <span className="ml-1">{text.filters.clearAll}</span>
+          </Button>
+        )}
+      </div>
 
       <div className="border rounded-xl overflow-x-auto">
         <Table>
@@ -148,6 +190,38 @@ export function SessionsPage() {
         </Table>
         {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}
       </div>
+
+      {data && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+            <span>Exibir</span>
+            <select
+              value={limit}
+              onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
+              className="h-8 rounded-md border border-input bg-background px-2 py-1 text-xs shadow-sm"
+            >
+              {[10, 20, 50, 100].map((n) => (
+                <option key={n} value={n}>{n}</option>
+              ))}
+            </select>
+            <span>por página</span>
+            <span className="ml-2 text-gray-400">
+              ({data.total} total)
+            </span>
+          </div>
+          {data.total > limit && (
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
+                <ChevronLeft size={16} /> Anterior
+              </Button>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
+                Próxima <ChevronRight size={16} />
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }

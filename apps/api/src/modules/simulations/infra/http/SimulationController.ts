@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type { CreateSimulationUseCase } from '../../application/use-cases/CreateSimulationUseCase'
 import type { GetSimulationUseCase } from '../../application/use-cases/GetSimulationUseCase'
+import type { ListSimulationsUseCase } from '../../application/use-cases/ListSimulationsUseCase'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import { validateBody } from '@/infra/http/middlewares/validateBody'
 
@@ -31,7 +32,21 @@ export class SimulationController {
   constructor(
     private readonly createSimulationUseCase: CreateSimulationUseCase,
     private readonly getSimulationUseCase: GetSimulationUseCase,
+    private readonly listSimulationsUseCase: ListSimulationsUseCase,
   ) {}
+
+  async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const q = request.query
+    const result = await this.listSimulationsUseCase.execute({
+      search:        q['search'],
+      financingType: q['financingType'],
+      startDate:     q['startDate'],
+      endDate:       q['endDate'],
+      page:          q['page']  ? Number(q['page'])  : undefined,
+      limit:         q['limit'] ? Number(q['limit']) : undefined,
+    })
+    response.json(result)
+  }
 
   async create(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     // n8n envia null para campos ausentes (JSON.stringify mantém null, só descarta undefined).

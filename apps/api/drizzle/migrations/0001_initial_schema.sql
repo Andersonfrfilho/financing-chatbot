@@ -2,63 +2,63 @@
 -- Enums
 -- ============================================================
 
-CREATE TYPE "person_type" AS ENUM ('pf', 'pj');
+CREATE TYPE IF NOT EXISTS "person_type" AS ENUM ('pf', 'pj');
 
-CREATE TYPE "civil_status" AS ENUM (
+CREATE TYPE IF NOT EXISTS "civil_status" AS ENUM (
   'single', 'married', 'divorced', 'widowed', 'stable_union'
 );
 
-CREATE TYPE "financing_type" AS ENUM (
+CREATE TYPE IF NOT EXISTS "financing_type" AS ENUM (
   'imobiliario', 'veiculo', 'pessoal', 'consignado', 'empresa', 'equipamento', 'rural'
 );
 
-CREATE TYPE "property_type" AS ENUM (
+CREATE TYPE IF NOT EXISTS "property_type" AS ENUM (
   'residential', 'commercial', 'land', 'rural'
 );
 
-CREATE TYPE "vehicle_type" AS ENUM (
+CREATE TYPE IF NOT EXISTS "vehicle_type" AS ENUM (
   'car', 'motorcycle', 'truck', 'other'
 );
 
-CREATE TYPE "seller_context" AS ENUM (
+CREATE TYPE IF NOT EXISTS "seller_context" AS ENUM (
   'dealer', 'dealership', 'private'
 );
 
-CREATE TYPE "vehicle_fuel" AS ENUM (
+CREATE TYPE IF NOT EXISTS "vehicle_fuel" AS ENUM (
   'flex', 'gasoline', 'diesel', 'electric', 'hybrid'
 );
 
-CREATE TYPE "purchase_intent" AS ENUM (
+CREATE TYPE IF NOT EXISTS "purchase_intent" AS ENUM (
   'researching', 'buying'
 );
 
-CREATE TYPE "real_estate_objective" AS ENUM (
+CREATE TYPE IF NOT EXISTS "real_estate_objective" AS ENUM (
   'financing', 'home_equity', 'portability'
 );
 
-CREATE TYPE "purchase_timeline" AS ENUM (
+CREATE TYPE IF NOT EXISTS "purchase_timeline" AS ENUM (
   'immediate', '3m', '6m', '12m', 'researching'
 );
 
-CREATE TYPE "employment_type" AS ENUM (
+CREATE TYPE IF NOT EXISTS "employment_type" AS ENUM (
   'clt', 'public_servant', 'self_employed', 'business_owner', 'retired'
 );
 
-CREATE TYPE "amortization_system" AS ENUM ('SAC', 'PRICE', 'NAO_APLICAVEL');
+CREATE TYPE IF NOT EXISTS "amortization_system" AS ENUM ('SAC', 'PRICE', 'NAO_APLICAVEL');
 
-CREATE TYPE "financing_modality" AS ENUM (
+CREATE TYPE IF NOT EXISTS "financing_modality" AS ENUM (
   'SFH', 'SFI', 'FGTS', 'MCMV', 'CDC', 'LEASING',
   'PESSOAL', 'CONSIGNADO_PUBLICO', 'CONSIGNADO_PRIVADO', 'CONSIGNADO_INSS',
   'CAPITAL_GIRO', 'DESCONTO_DUPLICATAS', 'RURAL', 'FINAME'
 );
 
-CREATE TYPE "rate_source" AS ENUM ('open_finance', 'manual');
+CREATE TYPE IF NOT EXISTS "rate_source" AS ENUM ('open_finance', 'manual');
 
-CREATE TYPE "lead_status" AS ENUM (
+CREATE TYPE IF NOT EXISTS "lead_status" AS ENUM (
   'new', 'qualified', 'disqualified', 'negotiating', 'proposal_sent', 'won', 'lost'
 );
 
-CREATE TYPE "conversation_state" AS ENUM (
+CREATE TYPE IF NOT EXISTS "conversation_state" AS ENUM (
   'greeting',
   'awaiting_financing_type',
   'awaiting_person_type',
@@ -100,7 +100,7 @@ CREATE TYPE "conversation_state" AS ENUM (
 -- Tables
 -- ============================================================
 
-CREATE TABLE "roles" (
+CREATE TABLE IF NOT EXISTS "roles" (
   "id"          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name"        VARCHAR(100) NOT NULL UNIQUE,
   "description" VARCHAR(255),
@@ -109,7 +109,7 @@ CREATE TABLE "roles" (
   "updated_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "users" (
+CREATE TABLE IF NOT EXISTS "users" (
   "id"                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "role_id"              UUID NOT NULL REFERENCES "roles"("id"),
   "name"                 VARCHAR(255) NOT NULL,
@@ -121,7 +121,7 @@ CREATE TABLE "users" (
   "updated_at"           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "banks" (
+CREATE TABLE IF NOT EXISTS "banks" (
   "id"                    UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "name"                  VARCHAR(255) NOT NULL,
   "code"                  VARCHAR(50) NOT NULL UNIQUE,
@@ -132,7 +132,7 @@ CREATE TABLE "banks" (
   "updated_at"            TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "bank_rates" (
+CREATE TABLE IF NOT EXISTS "bank_rates" (
   "id"                        UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "bank_id"                   UUID NOT NULL REFERENCES "banks"("id") ON DELETE CASCADE,
   "modality"                  "financing_modality" NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE "bank_rates" (
 );
 
 -- Dados sensíveis armazenados criptografados (LGPD)
-CREATE TABLE "financing_clients" (
+CREATE TABLE IF NOT EXISTS "financing_clients" (
   "id"                          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "whatsapp_number"             VARCHAR(20) NOT NULL UNIQUE,
   "person_type"                 "person_type" NOT NULL DEFAULT 'pf',
@@ -178,7 +178,7 @@ CREATE TABLE "financing_clients" (
   "deleted_at"  TIMESTAMPTZ
 );
 
-CREATE TABLE "financing_simulations" (
+CREATE TABLE IF NOT EXISTS "financing_simulations" (
   "id"               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "client_id"        UUID REFERENCES "financing_clients"("id") ON DELETE SET NULL,
   "whatsapp_number"  VARCHAR(20) NOT NULL,
@@ -221,7 +221,7 @@ CREATE TABLE "financing_simulations" (
   "created_at"  TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "simulation_results" (
+CREATE TABLE IF NOT EXISTS "simulation_results" (
   "id"                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "simulation_id"       UUID NOT NULL REFERENCES "financing_simulations"("id") ON DELETE CASCADE,
   "bank_id"             UUID NOT NULL REFERENCES "banks"("id"),
@@ -236,7 +236,7 @@ CREATE TABLE "simulation_results" (
   "created_at"          TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "leads" (
+CREATE TABLE IF NOT EXISTS "leads" (
   "id"               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "client_id"        UUID REFERENCES "financing_clients"("id") ON DELETE SET NULL,
   "simulation_id"    UUID REFERENCES "financing_simulations"("id") ON DELETE SET NULL,
@@ -248,7 +248,7 @@ CREATE TABLE "leads" (
   "updated_at"       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "conversation_sessions" (
+CREATE TABLE IF NOT EXISTS "conversation_sessions" (
   "id"               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "whatsapp_number"  VARCHAR(20) NOT NULL UNIQUE,
   "current_state"    "conversation_state" NOT NULL DEFAULT 'greeting',
@@ -258,7 +258,7 @@ CREATE TABLE "conversation_sessions" (
   "updated_at"       TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE "audit_logs" (
+CREATE TABLE IF NOT EXISTS "audit_logs" (
   "id"            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   "user_id"       UUID,
   "action"        VARCHAR(100) NOT NULL,
@@ -272,11 +272,11 @@ CREATE TABLE "audit_logs" (
 -- Indexes
 -- ============================================================
 
-CREATE INDEX "idx_leads_whatsapp"         ON "leads"("whatsapp_number");
-CREATE INDEX "idx_leads_status"           ON "leads"("status");
-CREATE INDEX "idx_leads_assigned_to"      ON "leads"("assigned_to");
-CREATE INDEX "idx_simulations_whatsapp"   ON "financing_simulations"("whatsapp_number");
-CREATE INDEX "idx_simulations_type"       ON "financing_simulations"("financing_type");
-CREATE INDEX "idx_sessions_last_activity" ON "conversation_sessions"("last_activity");
-CREATE INDEX "idx_bank_rates_bank"        ON "bank_rates"("bank_id", "modality");
-CREATE INDEX "idx_audit_logs_resource"    ON "audit_logs"("resource_type", "resource_id");
+CREATE INDEX IF NOT EXISTS "idx_leads_whatsapp"         ON "leads"("whatsapp_number");
+CREATE INDEX IF NOT EXISTS "idx_leads_status"           ON "leads"("status");
+CREATE INDEX IF NOT EXISTS "idx_leads_assigned_to"      ON "leads"("assigned_to");
+CREATE INDEX IF NOT EXISTS "idx_simulations_whatsapp"   ON "financing_simulations"("whatsapp_number");
+CREATE INDEX IF NOT EXISTS "idx_simulations_type"       ON "financing_simulations"("financing_type");
+CREATE INDEX IF NOT EXISTS "idx_sessions_last_activity" ON "conversation_sessions"("last_activity");
+CREATE INDEX IF NOT EXISTS "idx_bank_rates_bank"        ON "bank_rates"("bank_id", "modality");
+CREATE INDEX IF NOT EXISTS "idx_audit_logs_resource"    ON "audit_logs"("resource_type", "resource_id");
