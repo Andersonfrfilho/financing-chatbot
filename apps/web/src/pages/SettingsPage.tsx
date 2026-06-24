@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
-import { Save, Building2, Mail, Phone, Image, Calculator } from 'lucide-react'
-import { useQueryClient } from '@tanstack/react-query'
+import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare } from 'lucide-react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -19,6 +19,17 @@ export function SettingsPage() {
   const [savingToggle, setSavingToggle] = useState(false)
   const [success, setSuccess] = useState(false)
 
+  const [whatsappTemplateName, setWhatsappTemplateName] = useState('')
+  const [whatsappTemplateLanguage, setWhatsappTemplateLanguage] = useState('pt_BR')
+  const [savingWhatsapp, setSavingWhatsapp] = useState(false)
+  const [whatsappSuccess, setWhatsappSuccess] = useState(false)
+
+  const { data: whatsappSettings } = useQuery<{ whatsapp_template_name: string; whatsapp_template_language: string }>({
+    queryKey: ['whatsapp-settings'],
+    queryFn: () => api.get('/settings/whatsapp').then((r: any) => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+
   useEffect(() => {
     if (company) {
       setName(company.company_name || '')
@@ -29,6 +40,13 @@ export function SettingsPage() {
       setSimulationsEnabled(company.simulations_enabled !== 'false')
     }
   }, [company])
+
+  useEffect(() => {
+    if (whatsappSettings) {
+      setWhatsappTemplateName(whatsappSettings.whatsapp_template_name || '')
+      setWhatsappTemplateLanguage(whatsappSettings.whatsapp_template_language || 'pt_BR')
+    }
+  }, [whatsappSettings])
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -57,6 +75,23 @@ export function SettingsPage() {
       queryClient.invalidateQueries({ queryKey: ['company-settings'] })
     } finally {
       setSavingToggle(false)
+    }
+  }
+
+  async function handleSaveWhatsapp(e: React.FormEvent) {
+    e.preventDefault()
+    setSavingWhatsapp(true)
+    setWhatsappSuccess(false)
+    try {
+      await api.put('/settings/whatsapp', {
+        whatsapp_template_name:     whatsappTemplateName,
+        whatsapp_template_language: whatsappTemplateLanguage,
+      })
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-settings'] })
+      setWhatsappSuccess(true)
+      setTimeout(() => setWhatsappSuccess(false), 3000)
+    } finally {
+      setSavingWhatsapp(false)
     }
   }
 
@@ -243,6 +278,68 @@ export function SettingsPage() {
             </div>
           )}
         </div>
+      </section>
+
+      {/* WhatsApp */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <MessageSquare size={16} className="text-green-600 dark:text-green-400" />
+            WhatsApp — Template de Reengajamento
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Template HSM usado para reabrir conversas com janela de 24h expirada. O nome deve corresponder a um template aprovado no WhatsApp Business Manager.
+          </p>
+        </div>
+        <form onSubmit={handleSaveWhatsapp} className="p-6 space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Nome do template
+            </label>
+            <input
+              type="text"
+              value={whatsappTemplateName}
+              onChange={(e) => setWhatsappTemplateName(e.target.value)}
+              placeholder="Ex: reengajamento_cliente"
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+            />
+            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              Use apenas letras minúsculas, números e underscores (ex: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">ola_tudo_bem</code>).
+            </p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Idioma do template
+            </label>
+            <select
+              value={whatsappTemplateLanguage}
+              onChange={(e) => setWhatsappTemplateLanguage(e.target.value)}
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+            >
+              <option value="pt_BR">Português (pt_BR)</option>
+              <option value="en_US">English (en_US)</option>
+              <option value="es">Español (es)</option>
+            </select>
+          </div>
+          {whatsappSuccess && (
+            <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
+              Configurações de WhatsApp salvas!
+            </div>
+          )}
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={savingWhatsapp || !whatsappTemplateName.trim()}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              {savingWhatsapp
+                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <Save size={14} />
+              }
+              {savingWhatsapp ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
       </section>
 
       {/* Feature toggles */}

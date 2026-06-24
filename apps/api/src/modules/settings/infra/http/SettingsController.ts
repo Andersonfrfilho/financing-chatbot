@@ -19,6 +19,11 @@ const companySchema = z.object({
 
 const COMPANY_KEYS = ['company_name', 'company_logo_url', 'company_email', 'company_phone'] as const
 
+const whatsappSchema = z.object({
+  whatsapp_template_name:     z.string().max(100),
+  whatsapp_template_language: z.string().max(20).default('pt_BR'),
+})
+
 export class SettingsController {
   constructor(
     private readonly updateMaxAgentSessionsUseCase: UpdateMaxAgentSessionsUseCase,
@@ -76,5 +81,20 @@ export class SettingsController {
     const { enabled } = validateBody(z.object({ enabled: z.boolean() }), req.body)
     await this.configRepo.setConfig('simulations_enabled', enabled ? 'true' : 'false')
     res.json({ ok: true, enabled }, 200)
+  }
+
+  async getWhatsAppSettings(_req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const all = await this.configRepo.getAllConfigs()
+    res.json({
+      whatsapp_template_name:     all['whatsapp_template_name'] ?? process.env.WHATSAPP_TEMPLATE_NAME ?? '',
+      whatsapp_template_language: all['whatsapp_template_language'] ?? process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR',
+    }, 200)
+  }
+
+  async updateWhatsAppSettings(req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const input = validateBody(whatsappSchema, req.body)
+    await this.configRepo.setConfig('whatsapp_template_name', input.whatsapp_template_name)
+    await this.configRepo.setConfig('whatsapp_template_language', input.whatsapp_template_language ?? 'pt_BR')
+    res.json({ ok: true }, 200)
   }
 }

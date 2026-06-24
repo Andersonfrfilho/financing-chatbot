@@ -193,6 +193,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
     new SendAgentMediaUseCase(conversationRepository, whatsAppSender, sseHub),
     whatsAppSender,
+    appConfigRepository,
   )
 
   // Webhook (after conversations)

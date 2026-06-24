@@ -8,6 +8,8 @@ import type { ManageTakeoverUseCase } from '../../application/use-cases/ManageTa
 import type { SendAgentMessageUseCase } from '../../application/use-cases/SendAgentMessageUseCase'
 import type { SendAgentMediaUseCase } from '../../application/use-cases/SendAgentMediaUseCase'
 import type { WhatsAppSender } from '../WhatsAppSender'
+import type { AppConfigRepository } from '@/modules/settings/infra/repositories/AppConfigRepository'
+import { AppError } from '@/shared/errors/AppError'
 
 const sendSchema = z.object({ text: z.string().min(1) })
 
@@ -31,13 +33,14 @@ const logSchema = z.object({
 
 export class ConversationController {
   constructor(
-    private readonly logMessage:  LogMessageUseCase,
-    private readonly getHistory:  GetConversationHistoryUseCase,
-    private readonly listConvs:   ListConversationsUseCase,
-    private readonly takeover:    ManageTakeoverUseCase,
-    private readonly sendAgent:   SendAgentMessageUseCase,
+    private readonly logMessage:     LogMessageUseCase,
+    private readonly getHistory:     GetConversationHistoryUseCase,
+    private readonly listConvs:      ListConversationsUseCase,
+    private readonly takeover:       ManageTakeoverUseCase,
+    private readonly sendAgent:      SendAgentMessageUseCase,
     private readonly sendAgentMedia?: SendAgentMediaUseCase,
-    private readonly waSender?: WhatsAppSender,
+    private readonly waSender?:      WhatsAppSender,
+    private readonly configRepo?:    AppConfigRepository,
   ) {}
 
   // POST /api/conversations/:whatsapp/takeover  (assume a conversa, pausa o bot)
@@ -135,8 +138,21 @@ export class ConversationController {
     if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }
     const whatsapp = request.params['whatsapp'] ?? ''
     const userId = request.user?.sub ?? ''
-    const templateName = process.env.WHATSAPP_TEMPLATE_NAME ?? 'template'
-    const { waMessageId } = await this.waSender.sendTemplate(whatsapp)
+    const templateName =
+      (await this.configRepo?.getConfig('whatsapp_template_name'))
+      ?? process.env.WHATSAPP_TEMPLATE_NAME
+    const languageCode =
+      (await this.configRepo?.getConfig('whatsapp_template_language'))
+      ?? process.env.WHATSAPP_TEMPLATE_LANGUAGE
+      ?? 'pt_BR'
+    if (!templateName) {
+      throw new AppError(
+        'Template WhatsApp não configurado. Acesse Configurações > WhatsApp para definir o nome do template.',
+        503,
+        'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+      )
+    }
+    const { waMessageId } = await this.waSender.sendTemplate(whatsapp, templateName, languageCode)
     await this.logMessage.execute({
       whatsappNumber: whatsapp,
       direction: 'outbound',

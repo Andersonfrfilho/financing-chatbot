@@ -152,17 +152,8 @@ export class WhatsAppSender {
     return { waMessageId: data.messages?.[0]?.id ?? null }
   }
 
-  async sendTemplate(to: string): Promise<{ waMessageId: string | null }> {
+  async sendTemplate(to: string, templateName: string, languageCode = 'pt_BR'): Promise<{ waMessageId: string | null }> {
     const { version, phoneId, token } = this.getConfig()
-    const templateName = process.env.WHATSAPP_TEMPLATE_NAME
-    const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR'
-    if (!templateName) {
-      throw new AppError(
-        'Template WhatsApp não configurado. Defina WHATSAPP_TEMPLATE_NAME nas variáveis de ambiente.',
-        503,
-        'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
-      )
-    }
 
     let resp: Response
     try {
