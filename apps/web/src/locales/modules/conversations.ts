@@ -14,6 +14,10 @@ export const conversations = {
     expiredBanner: '⏰ Janela de 24h expirada — o WhatsApp não aceita mensagens livres.',
     sendTemplate: '📨 Enviar Template (HSM)',
     templateHint: 'Envie uma mensagem de template para reabrir a conversa com o cliente.',
+    templateSending: 'Enviando template...',
+    templateSent: '✅ Template enviado! Aguarde o cliente responder.',
+    templateNotConfigured: 'Template não configurado no servidor. Defina WHATSAPP_TEMPLATE_NAME.',
+    templateError: 'Falha ao enviar template. Verifique os logs do servidor.',
   },
   filters: {
     waitingHuman:     'Aguardando atendimento',

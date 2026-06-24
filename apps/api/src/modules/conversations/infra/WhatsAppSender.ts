@@ -152,6 +152,49 @@ export class WhatsAppSender {
     return { waMessageId: data.messages?.[0]?.id ?? null }
   }
 
+  async sendTemplate(to: string): Promise<{ waMessageId: string | null }> {
+    const { version, phoneId, token } = this.getConfig()
+    const templateName = process.env.WHATSAPP_TEMPLATE_NAME
+    const languageCode = process.env.WHATSAPP_TEMPLATE_LANGUAGE ?? 'pt_BR'
+    if (!templateName) {
+      throw new AppError(
+        'Template WhatsApp não configurado. Defina WHATSAPP_TEMPLATE_NAME nas variáveis de ambiente.',
+        503,
+        'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
+      )
+    }
+
+    let resp: Response
+    try {
+      resp = await fetch(`${GRAPH}/${version}/${phoneId}/messages`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messaging_product: 'whatsapp',
+          to,
+          type: 'template',
+          template: { name: templateName, language: { code: languageCode } },
+        }),
+        signal: AbortSignal.timeout(10_000),
+      })
+    } catch {
+      throw new AppError('Falha de rede ao enviar template WhatsApp.', 502, 'WHATSAPP_NETWORK_ERROR')
+    }
+
+    if (!resp.ok) {
+      const responseText = await resp.text().catch(() => '')
+      const waCode = parseWaErrorCode(responseText)
+      throw new AppError(
+        `WhatsApp recusou o envio do template (código ${waCode ?? resp.status}). ${responseText.slice(0, 200)}`,
+        502,
+        'WHATSAPP_SEND_ERROR',
+      )
+    }
+
+    const data = (await resp.json().catch(() => ({}))) as { messages?: Array<{ id: string }> }
+    return { waMessageId: data.messages?.[0]?.id ?? null }
+  }
+
   async fetchMediaAsBase64(mediaId: string): Promise<{ data: string; mimeType: string }> {
     const { version, token } = this.getConfig()
 

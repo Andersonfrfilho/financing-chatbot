@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
 import { api } from '@/lib/api'
-import { useToast } from '@/components/Toast'
 import { conversations as text } from '@/locales'
 import { useAuthStore } from '@/store/authStore'
 import { Button, Skeleton } from '@/components/ui'
@@ -217,8 +216,6 @@ export function ConversationsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
-  const toast = useToast()
-
   const { data: list, isLoading: listLoading } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
     queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
@@ -299,6 +296,11 @@ export function ConversationsPage() {
     reader.readAsDataURL(file)
     e.target.value = ''
   }
+  const sendTemplate = useMutation({
+    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/send-template`),
+    onSuccess: () => refresh(),
+  })
+
   const continueConversation = useMutation({
     mutationFn: (whatsapp: string) => {
       const conv = conversations.find((c) => c.whatsappNumber === whatsapp)
@@ -446,22 +448,22 @@ export function ConversationsPage() {
 
           {/* Legenda da janela de 24h */}
           {conversations.length > 0 && (
-            <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex items-center gap-3 text-[10px]">
-              <span className="text-gray-500 dark:text-gray-400 font-medium">{text.window.legend}:</span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-green-200 dark:bg-green-800" />
+            <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
+              <span className="text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{text.window.legend}:</span>
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-sm bg-green-200 dark:bg-green-800 flex-shrink-0" />
                 {text.window.active}
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-yellow-400 dark:bg-yellow-600" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-sm bg-yellow-400 dark:bg-yellow-600 flex-shrink-0" />
                 {text.window.approaching}
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-status-pulse" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-status-pulse flex-shrink-0" />
                 {text.window.warning}
               </span>
-              <span className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm bg-gray-300 dark:bg-gray-600" />
+              <span className="flex items-center gap-1 whitespace-nowrap">
+                <span className="w-2.5 h-2.5 rounded-sm bg-gray-300 dark:bg-gray-600 flex-shrink-0" />
                 {text.window.expired}
               </span>
             </div>
@@ -519,7 +521,7 @@ export function ConversationsPage() {
                     </div>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
                       {c.unread > 0 && <span className="text-[10px] bg-blue-600 text-white rounded-full px-1.5 py-0.5 leading-none">{c.unread}</span>}
-                      <span className="text-[10px] text-gray-400 dark:text-gray-500">{fmtTime(c.lastAt)}</span>
+                      <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtTime(c.lastAt)}</span>
                     </div>
                   </div>
                   {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">⏳ aguardando atendimento</span>}
@@ -624,18 +626,28 @@ export function ConversationsPage() {
                   <div className="space-y-2">
                     <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
                       <span className="font-semibold block mb-0.5">{text.window.expiredBanner}</span>
-                      {text.window.templateHint}
+                      {sendTemplate.isSuccess
+                        ? text.window.templateSent
+                        : text.window.templateHint}
                     </div>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        toast.toast('info', 'Funcionalidade de template será implementada em breve.')
-                      }}
-                    >
-                      {text.window.sendTemplate}
-                    </Button>
+                    {!sendTemplate.isSuccess && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => sendTemplate.mutate()}
+                        disabled={sendTemplate.isPending}
+                      >
+                        {sendTemplate.isPending ? text.window.templateSending : text.window.sendTemplate}
+                      </Button>
+                    )}
+                    {sendTemplate.isError && (
+                      <p className="text-xs text-red-500">
+                        {(sendTemplate.error as any)?.response?.data?.error === 'WHATSAPP_TEMPLATE_NOT_CONFIGURED'
+                          ? text.window.templateNotConfigured
+                          : text.window.templateError}
+                      </p>
+                    )}
                   </div>
                 ) : (
                   <>

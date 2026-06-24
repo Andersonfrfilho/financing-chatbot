@@ -130,6 +130,26 @@ export class ConversationController {
     response.json(result, 201)
   }
 
+  // POST /api/conversations/:whatsapp/send-template  (envia template HSM para reabrir janela expirada)
+  async sendTemplate(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }
+    const whatsapp = request.params['whatsapp'] ?? ''
+    const userId = request.user?.sub ?? ''
+    const templateName = process.env.WHATSAPP_TEMPLATE_NAME ?? 'template'
+    const { waMessageId } = await this.waSender.sendTemplate(whatsapp)
+    await this.logMessage.execute({
+      whatsappNumber: whatsapp,
+      direction: 'outbound',
+      sender: 'agent',
+      agentUserId: userId || undefined,
+      type: 'template',
+      content: `[Template: ${templateName}]`,
+      waMessageId: waMessageId ?? undefined,
+      status: 'sent',
+    })
+    response.json({ ok: true, waMessageId }, 201)
+  }
+
   // GET /api/conversations/media/:mediaId  (proxy de mídia do WhatsApp → base64)
   async mediaProxy(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }

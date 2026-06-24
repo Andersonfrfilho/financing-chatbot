@@ -15,8 +15,9 @@ export function registerConversationRoutes(router: Router, controller: Conversat
   router.post('/api/conversations/:whatsapp/takeover',  authenticate, authorize(['clients:write']), (req, res) => controller.assume(req, res))
   router.post('/api/conversations/:whatsapp/release',   authenticate, authorize(['clients:write']), (req, res) => controller.release(req, res))
   router.post('/api/conversations/:whatsapp/finalize',  authenticate, authorize(['clients:write']), (req, res) => controller.finalize(req, res))
-  router.post('/api/conversations/:whatsapp/send',       authenticate, authorize(['clients:write']), (req, res) => controller.send(req, res))
-  router.post('/api/conversations/:whatsapp/send-media', authenticate, authorize(['clients:write']), (req, res) => controller.sendMedia(req, res))
+  router.post('/api/conversations/:whatsapp/send',          authenticate, authorize(['clients:write']), (req, res) => controller.send(req, res))
+  router.post('/api/conversations/:whatsapp/send-media',    authenticate, authorize(['clients:write']), (req, res) => controller.sendMedia(req, res))
+  router.post('/api/conversations/:whatsapp/send-template', authenticate, authorize(['clients:write']), (req, res) => controller.sendTemplate(req, res))
   router.post('/api/conversations/:whatsapp/read',       authenticate, authorize(['clients:read']),  (req, res) => controller.read(req, res))
   // media proxy — ANTES das rotas com :whatsapp para evitar conflito
   router.get('/api/conversations/media/:mediaId',        authenticate, authorize(['clients:read']),  (req, res) => controller.mediaProxy(req, res))

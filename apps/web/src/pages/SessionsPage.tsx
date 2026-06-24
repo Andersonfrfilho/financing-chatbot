@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { sessions as text } from '@/locales'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -20,6 +20,8 @@ type Session = {
 type StateLabel = { label: string; color: string }
 
 export function SessionsPage() {
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [state, setState] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -28,8 +30,14 @@ export function SessionsPage() {
   const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
 
-  const hasFilters = state || startDate || endDate
+  useEffect(() => {
+    const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const hasFilters = debouncedSearch || state || startDate || endDate
   const clearFilters = () => {
+    setSearch('')
     setState('')
     setStartDate('')
     setEndDate('')
@@ -52,12 +60,13 @@ export function SessionsPage() {
   })
 
   const { data, isLoading } = useQuery<{ data: Session[]; total: number }>({
-    queryKey: ['sessions', state, startDate, endDate, page, limit],
+    queryKey: ['sessions', debouncedSearch, state, startDate, endDate, page, limit],
     queryFn: () => api.get('/sessions', {
       params: {
-        state: state || undefined,
+        search:    debouncedSearch || undefined,
+        state:     state || undefined,
         startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        endDate:   endDate || undefined,
         page,
         limit,
       }
@@ -115,6 +124,13 @@ export function SessionsPage() {
 
       {/* Filtros */}
       <div className="flex flex-wrap gap-2 items-center">
+        <Input
+          type="search"
+          placeholder="Buscar por nome ou WhatsApp..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full sm:w-56"
+        />
         <Input
           type="date"
           value={startDate}

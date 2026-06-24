@@ -13,6 +13,7 @@ export class SessionController {
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const q = request.query
     const result = await this.listSessions.execute({
+      search:    q['search'],
       state:     q['state'],
       startDate: q['startDate'],
       endDate:   q['endDate'],
