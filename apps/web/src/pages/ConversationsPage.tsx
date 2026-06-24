@@ -448,23 +448,25 @@ export function ConversationsPage() {
 
           {/* Legenda da janela de 24h */}
           {conversations.length > 0 && (
-            <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px]">
-              <span className="text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">{text.window.legend}:</span>
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <span className="w-2.5 h-2.5 rounded-sm bg-green-200 dark:bg-green-800 flex-shrink-0" />
-                {text.window.active}
-              </span>
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <span className="w-2.5 h-2.5 rounded-sm bg-yellow-400 dark:bg-yellow-600 flex-shrink-0" />
-                {text.window.approaching}
-              </span>
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <span className="w-2.5 h-2.5 rounded-sm bg-red-500 animate-status-pulse flex-shrink-0" />
-                {text.window.warning}
-              </span>
-              <span className="flex items-center gap-1 whitespace-nowrap">
-                <span className="w-2.5 h-2.5 rounded-sm bg-gray-300 dark:bg-gray-600 flex-shrink-0" />
-                {text.window.expired}
+            <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+              <span className="font-medium">Janela:</span>
+              <span className="flex items-center gap-3 ml-1">
+                <span className="flex items-center gap-1 cursor-default" title={text.window.active}>
+                  <span className="w-2 h-2 rounded-sm bg-green-400 dark:bg-green-600 flex-shrink-0" />
+                  {'< 12h'}
+                </span>
+                <span className="flex items-center gap-1 cursor-default" title={text.window.approaching}>
+                  <span className="w-2 h-2 rounded-sm bg-yellow-400 dark:bg-yellow-500 flex-shrink-0" />
+                  12–21h
+                </span>
+                <span className="flex items-center gap-1 cursor-default" title={text.window.warning}>
+                  <span className="w-2 h-2 rounded-sm bg-red-500 flex-shrink-0" />
+                  21–24h
+                </span>
+                <span className="flex items-center gap-1 cursor-default" title={text.window.expired}>
+                  <span className="w-2 h-2 rounded-sm bg-gray-300 dark:bg-gray-600 flex-shrink-0" />
+                  {'> 24h'}
+                </span>
               </span>
             </div>
           )}
