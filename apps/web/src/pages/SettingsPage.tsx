@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, Trash2 } from 'lucide-react'
+import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
@@ -30,6 +30,15 @@ export function SettingsPage() {
     queryFn: () => api.get('/settings/whatsapp').then((r: any) => r.data),
     staleTime: 5 * 60 * 1000,
   })
+
+  type WhatsAppTemplate = { name: string; category: string; language: string; bodyText: string | null; variableCount: number }
+  const { data: whatsappTemplates, isLoading: loadingTemplates, refetch: refetchTemplates, isError: templatesError } =
+    useQuery<{ templates: WhatsAppTemplate[] }>({
+      queryKey: ['whatsapp-templates'],
+      queryFn: () => api.get('/settings/whatsapp/templates').then((r: any) => r.data),
+      staleTime: 2 * 60 * 1000,
+      retry: false,
+    })
 
   useEffect(() => {
     if (company) {
@@ -296,33 +305,65 @@ export function SettingsPage() {
         </div>
         <form onSubmit={handleSaveWhatsapp} className="p-6 space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Nome do template
-            </label>
-            <input
-              type="text"
-              value={whatsappTemplateName}
-              onChange={(e) => setWhatsappTemplateName(e.target.value)}
-              placeholder="Ex: reengajamento_cliente"
-              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
-            />
-            <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              Use apenas letras minúsculas, números e underscores (ex: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">ola_tudo_bem</code>).
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Idioma do template
-            </label>
-            <select
-              value={whatsappTemplateLanguage}
-              onChange={(e) => setWhatsappTemplateLanguage(e.target.value)}
-              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
-            >
-              <option value="pt_BR">Português (pt_BR)</option>
-              <option value="en_US">English (en_US)</option>
-              <option value="es">Español (es)</option>
-            </select>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Template aprovado
+              </label>
+              <button
+                type="button"
+                onClick={() => refetchTemplates()}
+                disabled={loadingTemplates}
+                className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
+              >
+                <RefreshCw size={11} className={loadingTemplates ? 'animate-spin' : ''} />
+                Atualizar lista
+              </button>
+            </div>
+
+            {templatesError && (
+              <div className="mb-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
+                Não foi possível carregar os templates da API. Verifique WHATSAPP_BUSINESS_ACCOUNT_ID e WHATSAPP_ACCESS_TOKEN.
+                <br />
+                <span className="text-gray-500 dark:text-gray-400 mt-0.5 block">Nome atual salvo: <strong>{whatsappTemplateName || '—'}</strong></span>
+              </div>
+            )}
+
+            {loadingTemplates && (
+              <div className="h-10 rounded-xl bg-gray-100 dark:bg-gray-700 animate-pulse" />
+            )}
+
+            {!loadingTemplates && !templatesError && (
+              <select
+                value={whatsappTemplateName}
+                onChange={(e) => {
+                  const selected = whatsappTemplates?.templates.find((template) => template.name === e.target.value)
+                  setWhatsappTemplateName(e.target.value)
+                  if (selected) {
+                    setWhatsappTemplateLanguage(selected.language)
+                    if (selected.variableCount > 0 && whatsappTemplateVariables.length === 0) {
+                      setWhatsappTemplateVariables(Array.from({ length: selected.variableCount }, () => ''))
+                    }
+                  }
+                }}
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+              >
+                <option value="">— Selecione um template —</option>
+                {whatsappTemplates?.templates.map((template) => (
+                  <option key={`${template.name}-${template.language}`} value={template.name}>
+                    {template.name} ({template.language}) · {template.category}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {(() => {
+              const selected = whatsappTemplates?.templates.find((template) => template.name === whatsappTemplateName)
+              return selected?.bodyText ? (
+                <div className="mt-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2 text-xs text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                  {selected.bodyText}
+                </div>
+              ) : null
+            })()}
           </div>
 
           <div>

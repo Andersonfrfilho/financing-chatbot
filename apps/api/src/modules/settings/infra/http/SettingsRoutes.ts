@@ -23,6 +23,7 @@ export function registerSettingsRoutes(router: Router, controller: SettingsContr
   router.put('/api/settings/simulations-enabled', authenticate, (req, res) => controller.updateSimulationsEnabled(req, res))
 
   // WhatsApp template settings
-  router.get('/api/settings/whatsapp', authenticate, (req, res) => controller.getWhatsAppSettings(req, res))
-  router.put('/api/settings/whatsapp', authenticate, (req, res) => controller.updateWhatsAppSettings(req, res))
+  router.get('/api/settings/whatsapp',           authenticate, (req, res) => controller.getWhatsAppSettings(req, res))
+  router.put('/api/settings/whatsapp',           authenticate, (req, res) => controller.updateWhatsAppSettings(req, res))
+  router.get('/api/settings/whatsapp/templates', authenticate, (req, res) => controller.listWhatsAppTemplates(req, res))
 }

@@ -3,8 +3,11 @@ import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import { validateBody } from '@/infra/http/middlewares/validateBody'
 import type { UpdateMaxAgentSessionsUseCase } from '../../application/use-cases/UpdateMaxAgentSessionsUseCase'
 import type { AppConfigRepository } from '../../infra/repositories/AppConfigRepository'
+import { AppError } from '@/shared/errors/AppError'
 import { STATE_LABELS } from './StateLabelsRepository'
 import { VALUE_LABELS } from './ValueLabelsRepository'
+
+const GRAPH = 'https://graph.facebook.com'
 
 const updateMaxSessionsSchema = z.object({
   maxSessions: z.number().int().min(1).max(100),
@@ -100,5 +103,55 @@ export class SettingsController {
     await this.configRepo.setConfig('whatsapp_template_language', input.whatsapp_template_language ?? 'pt_BR')
     await this.configRepo.setConfig('whatsapp_template_variables', JSON.stringify(input.whatsapp_template_variables ?? []))
     res.json({ ok: true }, 200)
+  }
+
+  async listWhatsAppTemplates(_req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID
+    const token  = process.env.WHATSAPP_ACCESS_TOKEN
+    const version = process.env.WHATSAPP_API_VERSION ?? 'v21.0'
+    if (!wabaId || !token) {
+      throw new AppError(
+        'WHATSAPP_BUSINESS_ACCOUNT_ID ou WHATSAPP_ACCESS_TOKEN não configurados.',
+        503,
+        'WHATSAPP_CONFIG_MISSING',
+      )
+    }
+
+    const url = `${GRAPH}/${version}/${wabaId}/message_templates?fields=name,status,category,language,components&limit=100&access_token=${token}`
+    let resp: Response
+    try {
+      resp = await fetch(url, { signal: AbortSignal.timeout(10_000) })
+    } catch {
+      throw new AppError('Falha de rede ao consultar templates WhatsApp.', 502, 'WHATSAPP_NETWORK_ERROR')
+    }
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      throw new AppError(`Erro ao listar templates (${resp.status}): ${text.slice(0, 200)}`, 502, 'WHATSAPP_SEND_ERROR')
+    }
+
+    const data = (await resp.json()) as { data: Array<{
+      name: string
+      status: string
+      category: string
+      language: string
+      components: Array<{ type: string; text?: string; format?: string }>
+    }> }
+
+    const templates = data.data
+      .filter((template) => template.status === 'APPROVED')
+      .map((template) => {
+        const body = template.components.find((component) => component.type === 'BODY')
+        const variableCount = (body?.text?.match(/\{\{(\d+)\}\}/g) ?? []).length
+        return {
+          name:          template.name,
+          category:      template.category,
+          language:      template.language,
+          bodyText:      body?.text ?? null,
+          variableCount,
+        }
+      })
+
+    res.json({ templates }, 200)
   }
 }
