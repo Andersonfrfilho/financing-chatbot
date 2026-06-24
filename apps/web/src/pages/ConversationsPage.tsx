@@ -262,7 +262,14 @@ export function ConversationsPage() {
   })
 
   const finalize = useMutation({
-    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/finalize`),
+    mutationFn: async () => {
+      try {
+        await api.post(`/conversations/${encodeURIComponent(selected!)}/send`, { text: text.chat.farewell })
+      } catch {
+        // ignora erro de envio (ex: janela expirada) e finaliza de qualquer forma
+      }
+      return api.post(`/conversations/${encodeURIComponent(selected!)}/finalize`)
+    },
     onSuccess: () => {
       setSelected(null)
       qc.invalidateQueries({ queryKey: ['conversations'] })
@@ -661,6 +668,10 @@ export function ConversationsPage() {
                       </Button>
                     )}
                   </div>
+                ) : !isHuman ? (
+                  <div className="rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2.5 text-xs text-gray-500 dark:text-gray-400 text-center">
+                    {text.chat.takeoverRequired}
+                  </div>
                 ) : (
                   <>
                     {/* Preview do arquivo anexado */}
@@ -699,7 +710,7 @@ export function ConversationsPage() {
                           e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px'
                         }}
                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit() } }}
-                        placeholder={attached ? text.chat.messagePlaceholder.caption : isHuman ? text.chat.messagePlaceholder.human : text.chat.messagePlaceholder.bot}
+                        placeholder={attached ? text.chat.messagePlaceholder.caption : text.chat.messagePlaceholder.human}
                         className="flex-1 resize-none rounded-2xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-700 px-4 py-2 text-sm text-gray-800 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent transition-all overflow-hidden"
                         style={{ minHeight: '36px', maxHeight: '120px' }}
                       />

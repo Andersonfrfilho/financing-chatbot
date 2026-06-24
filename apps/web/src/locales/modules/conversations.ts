@@ -46,6 +46,8 @@ export const conversations = {
       human:    'Escreva uma mensagem...',
       bot:      'Escreva (assume a conversa ao enviar)...',
     },
+    takeoverRequired: 'Clique em "Assumir conversa" para enviar mensagens.',
+    farewell: 'Obrigado pelo contato! Seu atendimento foi encerrado. Caso precise de ajuda novamente, é só nos enviar uma mensagem. 😊',
     attach:         'Anexar arquivo',
     sendError:      'Falha ao enviar. Tente novamente.',
     errors: {
