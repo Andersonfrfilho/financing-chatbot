@@ -16,7 +16,8 @@ export const conversations = {
     templateHint: 'Envie uma mensagem de template para reabrir a conversa com o cliente.',
     templateSending: 'Enviando template...',
     templateSent: '✅ Template enviado! Aguarde o cliente responder.',
-    templateNotConfigured: 'Template não configurado no servidor. Defina WHATSAPP_TEMPLATE_NAME.',
+    templateNotConfigured: 'Template não configurado.',
+    goToSettings: 'Ir para Configurações',
     templateError: 'Falha ao enviar template. Verifique os logs do servidor.',
   },
   filters: {

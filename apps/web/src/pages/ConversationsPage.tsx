@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { LogOut, Paperclip, Power, Search, SendHorizonal, UserCheck, X } from 'lucide-react'
+import { LogOut, Paperclip, Power, Search, SendHorizonal, Settings, UserCheck, X } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { api } from '@/lib/api'
 import { conversations as text } from '@/locales'
 import { useAuthStore } from '@/store/authStore'
@@ -628,9 +629,25 @@ export function ConversationsPage() {
                   <div className="space-y-2">
                     <div className="rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
                       <span className="font-semibold block mb-0.5">{text.window.expiredBanner}</span>
-                      {sendTemplate.isSuccess
-                        ? text.window.templateSent
-                        : text.window.templateHint}
+                      {sendTemplate.isSuccess && text.window.templateSent}
+                      {!sendTemplate.isSuccess && !sendTemplate.isError && text.window.templateHint}
+                      {sendTemplate.isError && (() => {
+                        const errorCode = (sendTemplate.error as any)?.response?.data?.error
+                        return errorCode === 'WHATSAPP_TEMPLATE_NOT_CONFIGURED'
+                          ? (
+                            <span>
+                              {text.window.templateNotConfigured}{' '}
+                              <Link
+                                to="/settings"
+                                className="inline-flex items-center gap-0.5 underline font-semibold hover:text-amber-900 dark:hover:text-amber-200"
+                              >
+                                <Settings size={10} />
+                                {text.window.goToSettings}
+                              </Link>
+                            </span>
+                          )
+                          : text.window.templateError
+                      })()}
                     </div>
                     {!sendTemplate.isSuccess && (
                       <Button
@@ -642,13 +659,6 @@ export function ConversationsPage() {
                       >
                         {sendTemplate.isPending ? text.window.templateSending : text.window.sendTemplate}
                       </Button>
-                    )}
-                    {sendTemplate.isError && (
-                      <p className="text-xs text-red-500">
-                        {(sendTemplate.error as any)?.response?.data?.error === 'WHATSAPP_TEMPLATE_NOT_CONFIGURED'
-                          ? text.window.templateNotConfigured
-                          : text.window.templateError}
-                      </p>
                     )}
                   </div>
                 ) : (
