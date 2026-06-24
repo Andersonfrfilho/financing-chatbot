@@ -297,7 +297,7 @@ export function ConversationsPage() {
     e.target.value = ''
   }
   const sendTemplate = useMutation({
-    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/send-template`),
+    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/send-template`, { clientName: current?.clientName }),
     onSuccess: () => refresh(),
   })
 

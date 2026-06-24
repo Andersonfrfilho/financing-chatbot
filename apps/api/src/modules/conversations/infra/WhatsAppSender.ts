@@ -152,8 +152,17 @@ export class WhatsAppSender {
     return { waMessageId: data.messages?.[0]?.id ?? null }
   }
 
-  async sendTemplate(to: string, templateName: string, languageCode = 'pt_BR'): Promise<{ waMessageId: string | null }> {
+  async sendTemplate(
+    to: string,
+    templateName: string,
+    languageCode = 'pt_BR',
+    bodyParameters: string[] = [],
+  ): Promise<{ waMessageId: string | null }> {
     const { version, phoneId, token } = this.getConfig()
+
+    const components = bodyParameters.length > 0
+      ? [{ type: 'body', parameters: bodyParameters.map((text) => ({ type: 'text', text })) }]
+      : undefined
 
     let resp: Response
     try {
@@ -164,7 +173,11 @@ export class WhatsAppSender {
           messaging_product: 'whatsapp',
           to,
           type: 'template',
-          template: { name: templateName, language: { code: languageCode } },
+          template: {
+            name: templateName,
+            language: { code: languageCode },
+            ...(components ? { components } : {}),
+          },
         }),
         signal: AbortSignal.timeout(10_000),
       })

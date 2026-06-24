@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare } from 'lucide-react'
+import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, Trash2 } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
@@ -21,10 +21,11 @@ export function SettingsPage() {
 
   const [whatsappTemplateName, setWhatsappTemplateName] = useState('')
   const [whatsappTemplateLanguage, setWhatsappTemplateLanguage] = useState('pt_BR')
+  const [whatsappTemplateVariables, setWhatsappTemplateVariables] = useState<string[]>([])
   const [savingWhatsapp, setSavingWhatsapp] = useState(false)
   const [whatsappSuccess, setWhatsappSuccess] = useState(false)
 
-  const { data: whatsappSettings } = useQuery<{ whatsapp_template_name: string; whatsapp_template_language: string }>({
+  const { data: whatsappSettings } = useQuery<{ whatsapp_template_name: string; whatsapp_template_language: string; whatsapp_template_variables: string[] }>({
     queryKey: ['whatsapp-settings'],
     queryFn: () => api.get('/settings/whatsapp').then((r: any) => r.data),
     staleTime: 5 * 60 * 1000,
@@ -45,6 +46,7 @@ export function SettingsPage() {
     if (whatsappSettings) {
       setWhatsappTemplateName(whatsappSettings.whatsapp_template_name || '')
       setWhatsappTemplateLanguage(whatsappSettings.whatsapp_template_language || 'pt_BR')
+      setWhatsappTemplateVariables(whatsappSettings.whatsapp_template_variables ?? [])
     }
   }, [whatsappSettings])
 
@@ -84,8 +86,9 @@ export function SettingsPage() {
     setWhatsappSuccess(false)
     try {
       await api.put('/settings/whatsapp', {
-        whatsapp_template_name:     whatsappTemplateName,
-        whatsapp_template_language: whatsappTemplateLanguage,
+        whatsapp_template_name:      whatsappTemplateName,
+        whatsapp_template_language:  whatsappTemplateLanguage,
+        whatsapp_template_variables: whatsappTemplateVariables,
       })
       queryClient.invalidateQueries({ queryKey: ['whatsapp-settings'] })
       setWhatsappSuccess(true)
@@ -321,6 +324,57 @@ export function SettingsPage() {
               <option value="es">Español (es)</option>
             </select>
           </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Variáveis do template
+              </label>
+              <button
+                type="button"
+                onClick={() => setWhatsappTemplateVariables((previous) => [...previous, ''])}
+                className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                <Plus size={12} />
+                Adicionar variável
+              </button>
+            </div>
+            <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
+              Cada linha é um parâmetro (<code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{1}}'}</code>, <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{2}}'}</code>...) enviado ao template. Use <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{clientName}'}</code> para o nome do cliente e <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{phone}'}</code> para o número.
+            </p>
+            {whatsappTemplateVariables.length === 0 && (
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">Nenhuma variável configurada. O template será enviado sem parâmetros.</p>
+            )}
+            <div className="space-y-2">
+              {whatsappTemplateVariables.map((variable, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="text-xs text-gray-400 dark:text-gray-500 w-6 text-right flex-shrink-0">
+                    {`{{${index + 1}}}`}
+                  </span>
+                  <input
+                    type="text"
+                    value={variable}
+                    onChange={(e) => {
+                      const updated = [...whatsappTemplateVariables]
+                      updated[index] = e.target.value
+                      setWhatsappTemplateVariables(updated)
+                    }}
+                    placeholder="Ex: {clientName}"
+                    className="flex-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setWhatsappTemplateVariables((previous) => previous.filter((_, i) => i !== index))}
+                    className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors flex-shrink-0"
+                    title="Remover variável"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {whatsappSuccess && (
             <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
               Configurações de WhatsApp salvas!

@@ -12,6 +12,7 @@ import type { AppConfigRepository } from '@/modules/settings/infra/repositories/
 import { AppError } from '@/shared/errors/AppError'
 
 const sendSchema = z.object({ text: z.string().min(1) })
+const sendTemplateSchema = z.object({ clientName: z.string().optional() })
 
 const sendMediaSchema = z.object({
   base64:   z.string().min(1),
@@ -138,6 +139,8 @@ export class ConversationController {
     if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }
     const whatsapp = request.params['whatsapp'] ?? ''
     const userId = request.user?.sub ?? ''
+    const { clientName } = validateBody(sendTemplateSchema, request.body ?? {})
+
     const templateName =
       (await this.configRepo?.getConfig('whatsapp_template_name'))
       ?? process.env.WHATSAPP_TEMPLATE_NAME
@@ -152,14 +155,23 @@ export class ConversationController {
         'WHATSAPP_TEMPLATE_NOT_CONFIGURED',
       )
     }
-    const { waMessageId } = await this.waSender.sendTemplate(whatsapp, templateName, languageCode)
+
+    const variablesRaw = await this.configRepo?.getConfig('whatsapp_template_variables')
+    const variablePatterns: string[] = variablesRaw ? JSON.parse(variablesRaw) : []
+    const bodyParameters = variablePatterns.map((pattern) =>
+      pattern
+        .replace('{clientName}', clientName ?? '')
+        .replace('{phone}', whatsapp),
+    )
+
+    const { waMessageId } = await this.waSender.sendTemplate(whatsapp, templateName, languageCode, bodyParameters)
     await this.logMessage.execute({
       whatsappNumber: whatsapp,
       direction: 'outbound',
       sender: 'agent',
       agentUserId: userId || undefined,
       type: 'template',
-      content: `[Template: ${templateName}]`,
+      content: `[Template: ${templateName}]${bodyParameters.length ? ` vars: ${bodyParameters.join(', ')}` : ''}`,
       waMessageId: waMessageId ?? undefined,
       status: 'sent',
     })
