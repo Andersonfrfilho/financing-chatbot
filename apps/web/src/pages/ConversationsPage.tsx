@@ -374,8 +374,8 @@ export function ConversationsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-between flex-shrink-0 mb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle}</p>
@@ -388,9 +388,9 @@ export function ConversationsPage() {
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 h-[calc(100vh-210px)] md:h-[calc(100vh-190px)] lg:h-[calc(100vh-170px)]">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Lista - oculta em mobile quando conversa selecionada */}
-        <div className={`border dark:border-gray-700 rounded-lg flex flex-col bg-white dark:bg-gray-800 ${selected ? 'hidden md:flex' : ''}`}>
+        <div className={`border dark:border-gray-700 rounded-lg flex flex-col bg-white dark:bg-gray-800 overflow-hidden ${selected ? 'hidden md:flex' : ''}`}>
           {/* Ações em massa */}
           {selectedBulk.size > 0 && (
             <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/40 border-b dark:border-gray-700 flex items-center justify-between flex-shrink-0">
@@ -472,7 +472,7 @@ export function ConversationsPage() {
           )}
 
           {/* Conversas */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0 scrollbar-thin">
             {listLoading && Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="border-b p-3 flex items-start gap-2">
                 <Skeleton className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5" />
@@ -551,7 +551,7 @@ export function ConversationsPage() {
         </div>
 
         {/* Conversa - ocupa 2 colunas em lg, 1 em md, e full em mobile */}
-        <div className={`${!selected ? 'hidden' : ''} md:col-span-1 lg:col-span-2 border dark:border-gray-700 rounded-lg flex flex-col bg-gray-50 dark:bg-gray-900`}>
+        <div className={`${!selected ? 'hidden' : ''} md:col-span-1 lg:col-span-2 border dark:border-gray-700 rounded-lg flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden`}>
           {!selected ? (
             <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Selecione uma conversa</div>
           ) : (
@@ -609,12 +609,12 @@ export function ConversationsPage() {
               </div>
 
               {context && Object.keys(contextToSelections(context)).length > 0 && (
-                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-700">
+                <div className="px-4 py-2 bg-blue-50 dark:bg-blue-950/30 border-b dark:border-gray-700 max-h-48 overflow-y-auto flex-shrink-0 scrollbar-thin">
                   <SelectionsSummary selections={contextToSelections(context)} compact={false} />
                 </div>
               )}
 
-              <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto p-4 space-y-3">
+              <div ref={scrollContainerRef} onScroll={handleScroll} className="flex-1 overflow-y-auto min-h-0 p-4 space-y-3 scrollbar-thin">
                 {messages.map((m) => (
                   <MessageBubble key={m.id} message={m} isMine={m.direction === 'outbound'} />
                 ))}
