@@ -511,9 +511,9 @@ export function ConversationsPage() {
                   />
                   <button
                     onClick={() => openConversation(c.whatsappNumber)}
-                    className="w-full text-left flex-1"
+                    className="text-left flex-1 min-w-0"
                   >
-                  <div className="flex gap-2 items-start justify-between">
+                  <div className="flex gap-2 items-start justify-between min-w-0">
                     <div className="flex gap-2 items-start min-w-0 flex-1">
                       <Avatar name={c.clientName} size="sm" />
                       <div className="min-w-0 flex-1">
