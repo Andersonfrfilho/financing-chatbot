@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Financiamento Bot — Apresentação</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --blue:    #2563eb;
+    --blue-l:  #3b82f6;
+    --blue-d:  #1e40af;
+    --green:   #16a34a;
+    --gray-50: #f8fafc;
+    --gray-100:#f1f5f9;
+    --gray-200:#e2e8f0;
+    --gray-400:#94a3b8;
+    --gray-600:#475569;
+    --gray-700:#334155;
+    --gray-900:#0f172a;
+    --white:   #ffffff;
+    --radius:  14px;
+  }
+
+  html, body { width: 100%; height: 100%; overflow: hidden; background: var(--gray-900); font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; }
+
+  /* ── SLIDES ── */
+  .deck { width: 100vw; height: 100vh; position: relative; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: center; align-items: center;
+    padding: 60px 80px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .45s ease;
+  }
+  .slide.active { opacity: 1; pointer-events: all; }
+
+  /* ── BACKGROUNDS ── */
+  .bg-dark   { background: var(--gray-900); color: var(--white); }
+  .bg-blue   { background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%); color: var(--white); }
+  .bg-light  { background: var(--gray-50); color: var(--gray-900); }
+  .bg-white  { background: var(--white); color: var(--gray-900); }
+  .bg-green  { background: linear-gradient(135deg, #14532d 0%, #166534 60%, #16a34a 100%); color: var(--white); }
+
+  /* ── TYPOGRAPHY ── */
+  .tag { font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; opacity: .7; margin-bottom: 12px; }
+  h1 { font-size: clamp(36px, 5vw, 64px); font-weight: 800; line-height: 1.1; }
+  h2 { font-size: clamp(26px, 3.5vw, 44px); font-weight: 700; line-height: 1.2; }
+  h3 { font-size: clamp(16px, 2vw, 22px); font-weight: 600; }
+  p, li { font-size: clamp(14px, 1.6vw, 18px); line-height: 1.65; }
+  .small { font-size: clamp(12px, 1.2vw, 14px); opacity: .7; }
+
+  .accent { color: #60a5fa; }
+  .accent-green { color: #4ade80; }
+  .muted { opacity: .65; }
+
+  /* ── LAYOUT HELPERS ── */
+  .row   { display: flex; gap: 24px; width: 100%; align-items: flex-start; }
+  .col   { flex: 1; }
+  .center { text-align: center; align-items: center; }
+  .max-700 { max-width: 700px; }
+  .max-900 { max-width: 900px; }
+  .w-full { width: 100%; }
+  .gap-8  { gap: 8px; }
+  .gap-16 { gap: 16px; }
+  .gap-32 { gap: 32px; }
+  .mt-8   { margin-top: 8px; }
+  .mt-16  { margin-top: 16px; }
+  .mt-24  { margin-top: 24px; }
+  .mt-32  { margin-top: 32px; }
+  .mt-48  { margin-top: 48px; }
+
+  /* ── CARDS ── */
+  .card {
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.12);
+    border-radius: var(--radius); padding: 24px 28px;
+    backdrop-filter: blur(6px);
+  }
+  .card-light {
+    background: var(--white); border: 1px solid var(--gray-200);
+    border-radius: var(--radius); padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+  }
+  .card-blue {
+    background: linear-gradient(135deg,#1e40af,#2563eb);
+    border-radius: var(--radius); padding: 24px 28px; color: var(--white);
+  }
+
+  /* ── ICON BADGE ── */
+  .icon { font-size: clamp(28px, 4vw, 48px); margin-bottom: 8px; display: block; }
+  .badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 52px; height: 52px; border-radius: 12px;
+    font-size: 24px; flex-shrink: 0;
+    background: rgba(255,255,255,.12);
+  }
+
+  /* ── FEATURE LIST ── */
+  .feat-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+  .feat-list li { display: flex; align-items: flex-start; gap: 10px; font-size: clamp(13px,1.4vw,16px); }
+  .feat-list li::before { content: '✓'; color: #4ade80; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
+
+  /* ── TABLE ── */
+  table { width: 100%; border-collapse: collapse; font-size: clamp(12px,1.3vw,15px); }
+  th { padding: 10px 16px; text-align: left; font-weight: 700; font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+  td { padding: 10px 16px; border-top: 1px solid rgba(255,255,255,.1); }
+  .table-light td { border-top: 1px solid var(--gray-200); }
+  .table-light th { background: var(--gray-100); color: var(--gray-600); }
+  .highlight { background: rgba(37,99,235,.15); }
+
+  /* ── PILL ── */
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+  .pill-blue  { background: rgba(59,130,246,.2); color: #93c5fd; }
+  .pill-green { background: rgba(22,163,74,.2);  color: #4ade80; }
+  .pill-gray  { background: rgba(255,255,255,.1); color: rgba(255,255,255,.7); }
+
+  /* ── FLOW ── */
+  .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .flow-step {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+    border-radius: 10px; padding: 10px 16px; font-size: clamp(11px,1.2vw,14px); font-weight: 600;
+    text-align: center;
+  }
+  .flow-arrow { opacity: .5; font-size: 18px; }
+
+  /* ── PROGRESS BAR ── */
+  .bar-wrap { background: rgba(255,255,255,.1); border-radius: 6px; height: 8px; overflow: hidden; margin-top: 6px; }
+  .bar { height: 100%; border-radius: 6px; background: linear-gradient(90deg,#3b82f6,#60a5fa); }
+
+  /* ── NAV ── */
+  #nav {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 12px; z-index: 100;
+    background: rgba(15,23,42,.8); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.12); border-radius: 40px;
+    padding: 8px 16px;
+  }
+  #nav button {
+    background: none; border: none; color: rgba(255,255,255,.7); cursor: pointer;
+    font-size: 18px; padding: 4px 8px; border-radius: 6px; transition: all .2s;
+  }
+  #nav button:hover { background: rgba(255,255,255,.1); color: #fff; }
+  #counter { color: rgba(255,255,255,.5); font-size: 13px; min-width: 52px; text-align: center; }
+
+  /* ── DIVIDER ── */
+  .divider { width: 60px; height: 4px; border-radius: 2px; background: #3b82f6; margin: 20px 0; }
+  .divider-green { background: #4ade80; }
+
+  /* ── COVER DECORATION ── */
+  .cover-glow {
+    position: absolute; width: 600px; height: 600px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(37,99,235,.35) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* ── NUMBER BIG ── */
+  .num { font-size: clamp(40px,6vw,72px); font-weight: 800; line-height: 1; }
+
+  /* ── QUOTE ── */
+  .quote { font-size: clamp(18px,2.5vw,32px); font-weight: 600; line-height: 1.4; font-style: italic; opacity: .9; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 1 — CAPA
+  ───────────────────────────────────────── -->
+  <div class="slide bg-blue center active">
+    <div class="cover-glow" style="top:-150px;left:-150px;"></div>
+    <div class="cover-glow" style="bottom:-200px;right:-100px;opacity:.5;"></div>
+
+    <div style="position:relative;z-index:1;text-align:center;">
+      <div style="font-size:64px;margin-bottom:20px;">🤖</div>
+      <div class="tag" style="opacity:.8;letter-spacing:.2em;">Produto SaaS · WhatsApp + IA</div>
+      <h1 style="margin-bottom:16px;">Bot de Financiamento<br/><span class="accent">Imobiliário</span></h1>
+      <p class="muted mt-16 max-700" style="font-size:clamp(15px,2vw,20px);">
+        Qualificação automática de leads via WhatsApp com atendimento humano integrado e simulações de financiamento em tempo real.
+      </p>
+      <div class="mt-48 small" style="opacity:.5;">Use as setas ← → ou clique nos botões para navegar</div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 2 — O PROBLEMA
+  ───────────────────────────────────────── -->
+  <div class="slide bg-dark">
+    <div class="max-900 w-full">
+      <div class="tag accent">O Problema</div>
+      <h2>Corretores e correspondentes bancários<br/><span class="accent">perdem leads por falta de resposta rápida</span></h2>
+      <div class="divider mt-24"></div>
+      <div class="row mt-32 gap-32">
+        <div class="card col">
+          <span class="icon">⏱️</span>
+          <h3>Demora no atendimento</h3>
+          <p class="muted mt-8">Leads qualificados abandonam após 5 minutos sem resposta. Fora do horário comercial, a perda é total.</p>
+        </div>
+        <div class="card col">
+          <span class="icon">📋</span>
+          <h3>Qualificação manual</h3>
+          <p class="muted mt-8">Coletar renda, tipo de imóvel, FGTS e dados do cliente consome horas de trabalho repetitivo do consultor.</p>
+        </div>
+        <div class="card col">
+          <span class="icon">📉</span>
+          <h3>Sem visibilidade</h3>
+          <p class="muted mt-8">Sem dashboard, o gestor não sabe quantos leads chegaram, em qual etapa pararam e qual consultor atendeu.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 3 — A SOLUÇÃO
+  ───────────────────────────────────────── -->
+  <div class="slide bg-blue">
+    <div class="max-900 w-full">
+      <div class="tag" style="opacity:.8;">A Solução</div>
+      <h2>Um assistente inteligente que<br/><span class="accent">nunca dorme e nunca perde um lead</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col">
+          <ul class="feat-list">
+            <li>Atende no WhatsApp 24h por dia, 7 dias por semana</li>
+            <li>Coleta e qualifica todos os dados do cliente automaticamente</li>
+            <li>Gera simulações de financiamento em segundos</li>
+            <li>Transfere para atendente humano quando necessário</li>
+            <li>Painel web com histórico completo e relatórios</li>
+            <li>Reengajamento automático via templates HSM</li>
+          </ul>
+        </div>
+        <div class="col">
+          <div class="card">
+            <div class="flow" style="flex-direction:column;align-items:flex-start;gap:10px;">
+              <div class="flow-step" style="width:100%;">📲 Cliente manda mensagem no WhatsApp</div>
+              <div class="flow-arrow" style="margin-left:16px;">↓</div>
+              <div class="flow-step" style="width:100%;">🤖 Bot coleta dados e simula financiamento</div>
+              <div class="flow-arrow" style="margin-left:16px;">↓</div>
+              <div class="flow-step" style="width:100%;">🧑‍💼 Consultor assume e fecha o negócio</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 4 — FUNCIONALIDADES
+  ───────────────────────────────────────── -->
+  <div class="slide bg-white">
+    <div class="max-900 w-full">
+      <div class="tag" style="color:var(--blue);">Funcionalidades</div>
+      <h2 style="color:var(--gray-900);">Tudo que a equipe precisa,<br/><span style="color:var(--blue);">em um só lugar</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col" style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#eff6ff;font-size:22px;">🤖</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Bot Inteligente</h3>
+              <p class="small" style="color:var(--gray-600);">Fluxo conversacional via n8n — imóvel, veículo, consórcio, consignado.</p>
+            </div>
+          </div>
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#f0fdf4;font-size:22px;">🧑‍💼</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Atendimento Humano</h3>
+              <p class="small" style="color:var(--gray-600);">Takeover em 1 clique. Histórico completo. Devolver ao bot quando quiser.</p>
+            </div>
+          </div>
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#fdf4ff;font-size:22px;">📊</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Simulações</h3>
+              <p class="small" style="color:var(--gray-600);">Tabela Price e SAC com múltiplos bancos. Resultado direto no chat.</p>
+            </div>
+          </div>
+        </div>
+        <div class="col" style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#fff7ed;font-size:22px;">📋</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Gestão de Leads</h3>
+              <p class="small" style="color:var(--gray-600);">Pipeline completo com status, histórico e filtros avançados.</p>
+            </div>
+          </div>
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#eff6ff;font-size:22px;">📈</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Dashboard & Relatórios</h3>
+              <p class="small" style="color:var(--gray-600);">Sessões ativas, conversões, volume de atendimentos por período.</p>
+            </div>
+          </div>
+          <div class="card-light row gap-16" style="align-items:center;">
+            <div class="badge" style="background:#f0fdf4;font-size:22px;">🔔</div>
+            <div>
+              <h3 style="color:var(--gray-900);">Reengajamento</h3>
+              <p class="small" style="color:var(--gray-600);">Templates HSM aprovados pela Meta para reabrir conversas expiradas.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 5 — PAINEL DE ATENDIMENTO
+  ───────────────────────────────────────── -->
+  <div class="slide bg-dark">
+    <div class="max-900 w-full">
+      <div class="tag accent">Painel Web</div>
+      <h2>Interface completa para<br/><span class="accent">gestores e atendentes</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="pill pill-blue" style="width:fit-content;">Conversas</div>
+          <ul class="feat-list">
+            <li>Lista de conversas com indicador de janela WhatsApp (24h)</li>
+            <li>Busca por nome ou número</li>
+            <li>Histórico de mensagens com scroll infinito</li>
+            <li>Envio de texto, imagem, PDF e áudio</li>
+            <li>Seleções do cliente exibidas em card lateral</li>
+          </ul>
+        </div>
+        <div class="col" style="display:flex;flex-direction:column;gap:12px;">
+          <div class="pill pill-green" style="width:fit-content;">Gestão</div>
+          <ul class="feat-list">
+            <li>Sessões do bot com filtro por data e nome</li>
+            <li>Clientes e leads com pipeline de status</li>
+            <li>Múltiplos usuários e permissões</li>
+            <li>Configurações: empresa, WhatsApp, toggles</li>
+            <li>Modo escuro nativo</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 6 — TECNOLOGIA
+  ───────────────────────────────────────── -->
+  <div class="slide bg-white">
+    <div class="max-900 w-full">
+      <div class="tag" style="color:var(--blue);">Stack Tecnológico</div>
+      <h2 style="color:var(--gray-900);">Arquitetura moderna e<br/><span style="color:var(--blue);">escalável</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col">
+          <h3 style="color:var(--gray-700);margin-bottom:16px;">Backend & Infra</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">Node.js + Bun</span>
+                <span class="pill pill-blue">API REST</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">PostgreSQL + Drizzle ORM</span>
+                <span class="pill pill-blue">Banco de dados</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">Redis</span>
+                <span class="pill pill-blue">Cache & sessões</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">n8n</span>
+                <span class="pill pill-blue">Fluxo do bot</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">Railway</span>
+                <span class="pill pill-blue">Deploy automático</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col">
+          <h3 style="color:var(--gray-700);margin-bottom:16px;">Frontend & Integrações</h3>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">React + TypeScript</span>
+                <span class="pill pill-green">Web App</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">TailwindCSS + shadcn/ui</span>
+                <span class="pill pill-green">UI</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">WhatsApp Business API</span>
+                <span class="pill pill-green">Meta Cloud API</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">SSE (tempo real)</span>
+                <span class="pill pill-green">Live updates</span>
+              </div>
+            </div>
+            <div class="card-light" style="padding:12px 16px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-weight:600;font-size:14px;">GitHub Actions CI/CD</span>
+                <span class="pill pill-green">Pipeline</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 7 — INFRAESTRUTURA
+  ───────────────────────────────────────── -->
+  <div class="slide bg-dark">
+    <div class="max-900 w-full">
+      <div class="tag accent">Infraestrutura</div>
+      <h2>Dois ambientes, deploy contínuo,<br/><span class="accent">zero downtime</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col">
+          <div class="card" style="border-color:rgba(59,130,246,.4);margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h3>🟢 Produção (PROD)</h3>
+              <span class="pill pill-green">Railway Pro</span>
+            </div>
+            <ul class="feat-list" style="gap:6px;">
+              <li>API + Web + PostgreSQL + Redis</li>
+              <li>Deploy automático via GitHub Actions</li>
+              <li>Custo estimado: <strong>R$ 120–160/mês</strong></li>
+            </ul>
+          </div>
+          <div class="card" style="border-color:rgba(148,163,184,.2);">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <h3>🟡 Staging (STG)</h3>
+              <span class="pill pill-gray">Railway Hobby</span>
+            </div>
+            <ul class="feat-list" style="gap:6px;">
+              <li>Ambiente de homologação e testes</li>
+              <li>Recursos reduzidos (256 MB RAM)</li>
+              <li>Custo estimado: <strong>R$ 50–60/mês</strong></li>
+            </ul>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card">
+            <h3 style="margin-bottom:16px;">Custo total mensal</h3>
+            <div style="display:flex;flex-direction:column;gap:12px;">
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span class="small">Railway (PROD + STG)</span>
+                  <span style="font-weight:700;">~R$ 220</span>
+                </div>
+                <div class="bar-wrap"><div class="bar" style="width:45%"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span class="small">WhatsApp API (Meta)</span>
+                  <span style="font-weight:700;">R$ 0–100</span>
+                </div>
+                <div class="bar-wrap"><div class="bar" style="width:20%;background:linear-gradient(90deg,#4ade80,#86efac);"></div></div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                  <span class="small">Domínios / extras</span>
+                  <span style="font-weight:700;">~R$ 10</span>
+                </div>
+                <div class="bar-wrap"><div class="bar" style="width:5%;background:linear-gradient(90deg,#a78bfa,#c4b5fd);"></div></div>
+              </div>
+              <div style="border-top:1px solid rgba(255,255,255,.15);padding-top:12px;display:flex;justify-content:space-between;">
+                <span style="font-weight:700;">Total fixo/mês</span>
+                <span style="font-weight:800;font-size:18px;color:#60a5fa;">~R$ 230–330</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 8 — PLANOS
+  ───────────────────────────────────────── -->
+  <div class="slide bg-white">
+    <div class="max-900 w-full">
+      <div class="tag" style="color:var(--blue);">Modelo Comercial</div>
+      <h2 style="color:var(--gray-900);">Planos mensais com<br/><span style="color:var(--blue);">receita recorrente</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-20">
+        <div class="col card-light" style="border:2px solid var(--gray-200);">
+          <div class="tag" style="color:var(--gray-600);">Essencial</div>
+          <div class="num" style="color:var(--blue);margin:8px 0;">R$ 497</div>
+          <div class="small" style="color:var(--gray-600);margin-bottom:16px;">/mês · ou R$ 4.970/ano</div>
+          <ul class="feat-list" style="gap:7px;">
+            <li style="color:var(--gray-700);">1 agente simultâneo</li>
+            <li style="color:var(--gray-700);">Até 500 sessões/mês</li>
+            <li style="color:var(--gray-700);">Simulações de financiamento</li>
+            <li style="color:var(--gray-700);">Dashboard básico</li>
+            <li style="color:var(--gray-700);">Suporte por e-mail</li>
+          </ul>
+        </div>
+        <div class="col card-blue" style="transform:scale(1.04);box-shadow:0 8px 32px rgba(37,99,235,.4);">
+          <div class="tag" style="opacity:.8;">Profissional ⭐</div>
+          <div class="num" style="margin:8px 0;">R$ 997</div>
+          <div class="small" style="margin-bottom:16px;opacity:.7;">/mês · ou R$ 9.970/ano</div>
+          <ul class="feat-list" style="gap:7px;">
+            <li>5 agentes simultâneos</li>
+            <li>Até 2.000 sessões/mês</li>
+            <li>Simulações + relatórios completos</li>
+            <li>Templates WhatsApp (3)</li>
+            <li>Suporte WhatsApp (24h)</li>
+            <li>Ambiente STG incluso</li>
+          </ul>
+        </div>
+        <div class="col card-light" style="border:2px solid var(--gray-200);">
+          <div class="tag" style="color:var(--gray-600);">Enterprise</div>
+          <div class="num" style="color:var(--gray-900);margin:8px 0;">Sob<br/>consulta</div>
+          <div class="small" style="color:var(--gray-600);margin-bottom:16px;">contrato anual</div>
+          <ul class="feat-list" style="gap:7px;">
+            <li style="color:var(--gray-700);">Agentes ilimitados</li>
+            <li style="color:var(--gray-700);">Sessões ilimitadas</li>
+            <li style="color:var(--gray-700);">Integrações personalizadas</li>
+            <li style="color:var(--gray-700);">Suporte dedicado (4h)</li>
+            <li style="color:var(--gray-700);">Instância exclusiva</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="mt-24" style="background:var(--gray-100);border-radius:10px;padding:12px 20px;display:flex;gap:24px;flex-wrap:wrap;">
+        <span style="font-size:13px;color:var(--gray-600);">➕ <strong>Setup:</strong> R$ 500–800 (taxa única de implantação)</span>
+        <span style="font-size:13px;color:var(--gray-600);">➕ <strong>Sessões extras:</strong> R$ 80 a cada 500 sessões acima do plano</span>
+        <span style="font-size:13px;color:var(--gray-600);">➕ <strong>Perfil verificado (Meta):</strong> R$ 1.200</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 9 — PROJEÇÃO FINANCEIRA
+  ───────────────────────────────────────── -->
+  <div class="slide bg-dark">
+    <div class="max-900 w-full">
+      <div class="tag accent">Projeção Financeira</div>
+      <h2>Receita líquida por sócio<br/><span class="accent">(divisão 50/50)</span></h2>
+      <div class="divider mt-24"></div>
+
+      <div class="mt-32">
+        <table>
+          <thead>
+            <tr style="background:rgba(255,255,255,.05);">
+              <th>Clientes</th>
+              <th>Plano médio</th>
+              <th>Receita bruta</th>
+              <th>Custos infra</th>
+              <th>Líquido total</th>
+              <th style="color:#60a5fa;">Por sócio (50%)</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td><td>Essencial</td><td>R$ 497</td><td>R$ 230</td><td>R$ 267</td>
+              <td style="color:#60a5fa;font-weight:700;">R$ 133</td>
+            </tr>
+            <tr>
+              <td>3</td><td>Essencial</td><td>R$ 1.491</td><td>R$ 280</td><td>R$ 1.211</td>
+              <td style="color:#60a5fa;font-weight:700;">R$ 605</td>
+            </tr>
+            <tr class="highlight">
+              <td><strong>5</strong></td><td>Profissional</td><td><strong>R$ 4.985</strong></td><td>R$ 420</td><td><strong>R$ 4.565</strong></td>
+              <td style="color:#4ade80;font-weight:800;">R$ 2.282</td>
+            </tr>
+            <tr>
+              <td>10</td><td>Misto</td><td>R$ 7.470</td><td>R$ 700</td><td>R$ 6.770</td>
+              <td style="color:#60a5fa;font-weight:700;">R$ 3.385</td>
+            </tr>
+            <tr>
+              <td>20</td><td>Misto</td><td>R$ 14.940</td><td>R$ 1.200</td><td>R$ 13.740</td>
+              <td style="color:#4ade80;font-weight:800;">R$ 6.870</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="row mt-24 gap-20">
+          <div class="card col" style="border-color:rgba(74,222,128,.3);">
+            <div class="small muted">Break-even infra</div>
+            <div style="font-size:28px;font-weight:800;color:#4ade80;margin:4px 0;">1 cliente</div>
+            <div class="small muted">Essencial já cobre Railway</div>
+          </div>
+          <div class="card col">
+            <div class="small muted">R$ 1.000/mês por sócio</div>
+            <div style="font-size:28px;font-weight:800;color:#60a5fa;margin:4px 0;">~4 clientes</div>
+            <div class="small muted">Plano Profissional</div>
+          </div>
+          <div class="card col">
+            <div class="small muted">R$ 3.000/mês por sócio</div>
+            <div style="font-size:28px;font-weight:800;color:#60a5fa;margin:4px 0;">~10 clientes</div>
+            <div class="small muted">Mix Essencial + Profissional</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 10 — PRÓXIMOS PASSOS
+  ───────────────────────────────────────── -->
+  <div class="slide bg-blue">
+    <div class="max-900 w-full">
+      <div class="tag" style="opacity:.8;">Roadmap</div>
+      <h2>Próximos passos</h2>
+      <div class="divider mt-24"></div>
+
+      <div class="row mt-32 gap-24">
+        <div class="col" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+              <span style="font-size:20px;">✅</span>
+              <span class="pill pill-green">Concluído</span>
+            </div>
+            <ul class="feat-list" style="gap:6px;">
+              <li>Bot qualificador multi-produto</li>
+              <li>Painel web completo (conversas, leads, sessões)</li>
+              <li>Atendimento humano com takeover</li>
+              <li>Templates HSM de reengajamento</li>
+              <li>Simulações de financiamento</li>
+              <li>Deploy PROD + STG no Railway</li>
+            </ul>
+          </div>
+        </div>
+        <div class="col" style="display:flex;flex-direction:column;gap:14px;">
+          <div class="card">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+              <span style="font-size:20px;">🚀</span>
+              <span class="pill pill-blue">Em planejamento</span>
+            </div>
+            <ul class="feat-list" style="gap:6px;">
+              <li>Multi-tenant (um bot por cliente)</li>
+              <li>Limites por plano (sessões, agentes)</li>
+              <li>Integração com CRMs (HubSpot, RD Station)</li>
+              <li>App mobile para atendentes</li>
+              <li>Relatórios de conversão avançados</li>
+              <li>Módulo de cobrança automática (billing)</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─────────────────────────────────────────
+       SLIDE 11 — ENCERRAMENTO
+  ───────────────────────────────────────── -->
+  <div class="slide bg-green center">
+    <div class="cover-glow" style="top:-100px;right:-100px;background:radial-gradient(circle,rgba(74,222,128,.3) 0%,transparent 70%);"></div>
+    <div style="position:relative;z-index:1;text-align:center;max-width:700px;">
+      <span style="font-size:64px;">🚀</span>
+      <h1 class="mt-16">Pronto para transformar<br/>a qualificação de leads?</h1>
+      <div class="divider mt-24" style="margin:24px auto;background:#4ade80;"></div>
+      <p class="mt-16" style="font-size:clamp(15px,2vw,20px);opacity:.85;">
+        O produto está em produção e pronto para receber os primeiros clientes.<br/>
+        A plataforma escala sem refatoração até dezenas de clientes simultâneos.
+      </p>
+      <div class="mt-48 row gap-24" style="justify-content:center;flex-wrap:wrap;">
+        <div class="card" style="padding:16px 28px;background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.2);min-width:160px;">
+          <div class="num" style="font-size:40px;">R$ 497</div>
+          <div class="small">plano de entrada</div>
+        </div>
+        <div class="card" style="padding:16px 28px;background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.2);min-width:160px;">
+          <div class="num" style="font-size:40px;">24h</div>
+          <div class="small">atendimento ininterrupto</div>
+        </div>
+        <div class="card" style="padding:16px 28px;background:rgba(0,0,0,.2);border-color:rgba(255,255,255,.2);min-width:160px;">
+          <div class="num" style="font-size:40px;">0</div>
+          <div class="small">leads perdidos fora do horário</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /deck -->
+
+<!-- ── NAVEGAÇÃO ── -->
+<div id="nav">
+  <button onclick="go(-1)" title="Anterior">←</button>
+  <span id="counter">1 / 11</span>
+  <button onclick="go(1)" title="Próximo">→</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide')
+  const counter = document.getElementById('counter')
+  let current = 0
+
+  function show(index) {
+    slides[current].classList.remove('active')
+    current = (index + slides.length) % slides.length
+    slides[current].classList.add('active')
+    counter.textContent = `${current + 1} / ${slides.length}`
+  }
+
+  function go(dir) { show(current + dir) }
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') go(1)
+    if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                     go(-1)
+  })
+
+  // swipe mobile
+  let touchStartX = 0
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX })
+  document.addEventListener('touchend',   (e) => {
+    const delta = touchStartX - e.changedTouches[0].clientX
+    if (Math.abs(delta) > 50) go(delta > 0 ? 1 : -1)
+  })
+</script>
+</body>
+</html>
