@@ -51,6 +51,29 @@ const REMINDER_MESSAGES: Record<string, string> = {
   default: 'Estamos aqui para ajudar! 😊 Como podemos continuar?',
 }
 
+type QuickMessage = { label: string; text: (ctx: ConversationItem | undefined, selections: Record<string, any>) => string }
+
+function buildQuickMessages(current: ConversationItem | undefined, selections: Record<string, any>): QuickMessage[] {
+  const name = current?.clientName?.split(' ')[0] ?? ''
+  const greeting = name ? `Olá ${name}!` : 'Olá!'
+  const product = selections['requestedProduct']?.value ?? ''
+  const productLabel: Record<string, string> = {
+    imobiliario: 'imóvel', veiculo: 'veículo', pessoal: 'crédito pessoal',
+    consignado: 'consignado', empresa: 'empresarial', equipamento: 'equipamento', rural: 'rural',
+  }
+
+  const all: QuickMessage[] = [
+    { label: '👋 Saudação', text: () => `${greeting} Como posso ajudar?` },
+    { label: '📋 Status', text: () => `Sua simulação de ${productLabel[product] ?? 'financiamento'} está em andamento. Em breve entraremos em contato!` },
+    { label: '🏦 Simulação', text: () => `Já comparamos as taxas dos principais bancos. Quando puder, me avise que envio os resultados!` },
+    { label: '📄 Documentos', text: () => `Para prosseguir com o ${productLabel[product] ?? 'financiamento'}, precisamos de RG, CPF, comprovante de renda e residência.` },
+    { label: '📞 Contato', text: () => `Prefere falar por telefone? Me diga o melhor horário que eu ligo!` },
+    { label: '⏰ Prazo', text: () => `Os prazos de financiamento variam de 12 a 420 meses. Já tem ideia de quantas parcelas?` },
+  ]
+
+  return all
+}
+
 function fmtTime(iso: string) {
   const d = new Date(iso)
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -358,6 +381,8 @@ export function ConversationsPage() {
   const waitingCount = conversations.filter((c) => c.waitingHuman).length
   const selectedHours = getHoursAgo(current?.lastInboundAt ?? null)
   const windowExpired = selectedHours !== null && selectedHours >= 24
+  const selections = contextToSelections(context ?? null)
+  const quickMessages = buildQuickMessages(current, selections)
 
   const filteredConversations = useMemo(() => {
     if (!search.trim()) return conversations
@@ -687,6 +712,19 @@ export function ConversationsPage() {
                         </button>
                       </div>
                     )}
+                    {/* Quick messages contextuais */}
+                    <div className="flex flex-wrap gap-1 mb-2">
+                      {quickMessages.map((qm) => (
+                        <button
+                          key={qm.label}
+                          type="button"
+                          onClick={() => { setMessage(qm.text(current, selections)); textareaRef.current?.focus() }}
+                          className="text-[11px] px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-400 bg-white dark:bg-gray-800 hover:bg-blue-50 dark:hover:bg-blue-950/40 hover:text-blue-600 dark:hover:text-blue-400 hover:border-blue-200 dark:hover:border-blue-800 transition-colors whitespace-nowrap"
+                        >
+                          {qm.label}
+                        </button>
+                      ))}
+                    </div>
                     <div className="flex items-end gap-2">
                       {/* Anexar arquivo */}
                       <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange}
