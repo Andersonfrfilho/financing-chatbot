@@ -549,6 +549,27 @@ export function SettingsPage() {
               className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               required
             />
+            {(() => {
+              const vars = createTemplate.bodyText.match(/\{\{(\d+)\}\}/g) ?? []
+              if (vars.length === 0) return null
+              const examples = ['Nome do cliente', 'Produto', 'Valor', 'Prazo', 'Banco']
+              return (
+                <div className="mt-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2">
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Variáveis detectadas</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[...new Set(vars.map(v => v.replace(/[\{\}]/g, '')))].sort().map((num) => (
+                      <span key={num} className="inline-flex items-center gap-1 text-[10px]">
+                        <code className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-mono">{`{{${num}}}`}</code>
+                        <span className="text-gray-400 dark:text-gray-500">= {examples[Number(num) - 1] ?? `Variável ${num}`}</span>
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
+                    Configure os valores reais em <strong>Template de Reengajamento → Variáveis</strong> após selecionar o template.
+                  </p>
+                </div>
+              )
+            })()}
           </div>
 
           <div>
