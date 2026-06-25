@@ -28,7 +28,7 @@ export const db = drizzle(pool, { schema })
 export async function checkDatabaseConnection(): Promise<void> {
   const client = await pool.connect()
   client.release()
-  console.log('[DB] Connected to PostgreSQL')
+  dbLog.info('Connected to PostgreSQL')
 }
 
 export async function ensureN8nDatabase(): Promise<void> {
@@ -38,7 +38,7 @@ export async function ensureN8nDatabase(): Promise<void> {
     const result = await client.query(`SELECT 1 FROM pg_database WHERE datname = 'n8n'`)
     if (result.rowCount === 0) {
       await client.query('CREATE DATABASE n8n')
-      console.log('[DB] Database "n8n" created')
+      dbLog.info('Database "n8n" created')
     }
   } finally {
     client.release()
@@ -54,16 +54,16 @@ export async function runMigrations(): Promise<void> {
       .filter((f) => f.endsWith('.sql'))
       .sort()
   } catch {
-    console.log('[DB] No migrations folder found — skipping')
+    dbLog.info('No migrations folder found — skipping')
     return
   }
 
   if (files.length === 0) {
-    console.log('[DB] No migration files found — skipping')
+    dbLog.info('No migration files found — skipping')
     return
   }
 
-  console.log(`[DB] Running ${files.length} migrations...`)
+  dbLog.info(`Running ${files.length} migrations...`)
 
   const client = await pool.connect()
   try {
@@ -72,13 +72,13 @@ export async function runMigrations(): Promise<void> {
       const sql = fs.readFileSync(filePath, 'utf-8')
       try {
         await client.query(sql)
-        console.log(`[DB]   OK  ${file}`)
+        dbLog.info(`Migration OK: ${file}`)
       } catch (error: unknown) {
         const message = error instanceof Error ? error.message : String(error)
         if (message.includes('already exists') || message.includes('multiple primary keys')) {
-          console.log(`[DB]   SKIP  ${file} (já aplicada)`)
+          dbLog.info(`Migration SKIP: ${file} (já aplicada)`)
         } else {
-          console.error(`[DB]   FAIL  ${file}: ${message}`)
+          dbLog.error(`Migration FAIL: ${file} — ${message}`)
         }
       }
     }
@@ -86,5 +86,5 @@ export async function runMigrations(): Promise<void> {
     client.release()
   }
 
-  console.log('[DB] Migrations completed')
+  dbLog.info('Migrations completed')
 }
