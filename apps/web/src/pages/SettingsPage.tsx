@@ -25,7 +25,7 @@ export function SettingsPage() {
   const [savingWhatsapp, setSavingWhatsapp] = useState(false)
   const [whatsappSuccess, setWhatsappSuccess] = useState(false)
 
-  const [createTemplate, setCreateTemplate] = useState({ name: '', category: 'UTILITY', language: 'pt_BR', bodyText: '' })
+  const [createTemplate, setCreateTemplate] = useState({ name: '', category: 'UTILITY', language: 'pt_BR', headerType: 'NONE' as 'NONE' | 'TEXT', headerText: '', bodyText: '', footerText: '' })
   const [creatingTemplate, setCreatingTemplate] = useState(false)
   const [createTemplateResult, setCreateTemplateResult] = useState<{ ok: boolean; message: string; status?: string } | null>(null)
 
@@ -118,7 +118,7 @@ export function SettingsPage() {
     try {
       const { data } = await api.post('/settings/whatsapp/templates', createTemplate)
       setCreateTemplateResult({ ok: true, message: data.message, status: data.status })
-      setCreateTemplate({ name: '', category: 'UTILITY', language: 'pt_BR', bodyText: '' })
+      setCreateTemplate({ name: '', category: 'UTILITY', language: 'pt_BR', headerType: 'NONE', headerText: '', bodyText: '', footerText: '' })
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] })
     } catch (err: any) {
       const message = err?.response?.data?.message || err?.message || 'Erro ao criar template'
@@ -510,6 +510,31 @@ export function SettingsPage() {
           </div>
 
           <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Cabeçalho (opcional)</label>
+            <p className="text-xs text-gray-400 mb-1.5">Texto destacado no topo da mensagem (até 60 caracteres)</p>
+            <div className="flex gap-2">
+              <select
+                value={createTemplate.headerType}
+                onChange={(e) => setCreateTemplate({ ...createTemplate, headerType: e.target.value as 'NONE' | 'TEXT' })}
+                className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+              >
+                <option value="NONE">Sem cabeçalho</option>
+                <option value="TEXT">Texto</option>
+              </select>
+              {createTemplate.headerType === 'TEXT' && (
+                <input
+                  type="text"
+                  value={createTemplate.headerText}
+                  onChange={(e) => setCreateTemplate({ ...createTemplate, headerText: e.target.value })}
+                  placeholder="Ex: Financiamento Imobiliário"
+                  maxLength={60}
+                  className="flex-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
+                />
+              )}
+            </div>
+          </div>
+
+          <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Corpo da mensagem
             </label>
@@ -526,12 +551,28 @@ export function SettingsPage() {
             />
           </div>
 
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Rodapé (opcional)</label>
+            <p className="text-xs text-gray-400 mb-1.5">Texto pequeno no final da mensagem (até 60 caracteres)</p>
+            <input
+              type="text"
+              value={createTemplate.footerText}
+              onChange={(e) => setCreateTemplate({ ...createTemplate, footerText: e.target.value })}
+              placeholder="Ex: Financiamento Bot · financimento.bot"
+              maxLength={60}
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+            />
+          </div>
+
           {/* Preview */}
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Pré-visualização</label>
             <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
               <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mb-2">📱 WhatsApp</p>
               <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                {createTemplate.headerType === 'TEXT' && createTemplate.headerText && (
+                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{createTemplate.headerText.replace(/\{\{1\}\}/g, 'João')}</p>
+                )}
                 {createTemplate.bodyText
                   ? createTemplate.bodyText
                       .replace(/\{\{1\}\}/g, 'João')
@@ -539,6 +580,9 @@ export function SettingsPage() {
                       .replace(/\{\{3\}\}/g, 'R$ 1.500')
                   : <span className="text-gray-400 italic">Digite o corpo da mensagem acima...</span>
                 }
+                {createTemplate.footerText && (
+                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{createTemplate.footerText}</p>
+                )}
               </div>
             </div>
           </div>

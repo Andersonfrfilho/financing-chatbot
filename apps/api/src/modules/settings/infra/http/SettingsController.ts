@@ -29,10 +29,13 @@ const whatsappSchema = z.object({
 })
 
 const createTemplateSchema = z.object({
-  name:     z.string().min(3).max(100),
-  category: z.enum(['MARKETING', 'UTILITY']),
-  language: z.string().min(2).max(10).default('pt_BR'),
-  bodyText: z.string().min(1).max(1024),
+  name:       z.string().min(3).max(100),
+  category:   z.enum(['MARKETING', 'UTILITY']),
+  language:   z.string().min(2).max(10).default('pt_BR'),
+  headerType: z.enum(['NONE', 'TEXT']).default('NONE'),
+  headerText: z.string().max(60).optional(),
+  bodyText:   z.string().min(1).max(1024),
+  footerText: z.string().max(60).optional(),
 })
 
 export class SettingsController {
@@ -180,11 +183,21 @@ export class SettingsController {
     }
 
     const url = `${GRAPH}/${version}/${wabaId}/message_templates`
+
+    const components: Array<{ type: string; text?: string }> = []
+    if (input.headerType === 'TEXT' && input.headerText) {
+      components.push({ type: 'HEADER', text: input.headerText })
+    }
+    components.push({ type: 'BODY', text: input.bodyText })
+    if (input.footerText) {
+      components.push({ type: 'FOOTER', text: input.footerText })
+    }
+
     const body = JSON.stringify({
       name: input.name,
       category: input.category,
       language: input.language,
-      components: [{ type: 'BODY', text: input.bodyText }],
+      components,
     })
 
     let resp: globalThis.Response
