@@ -60,4 +60,18 @@ export const conversations = {
   selectionsCard: {
     title: 'Suas Seleções',
   },
+  quickMessages: {
+    greeting:     '👋 Saudação',
+    status:       '📋 Status',
+    simulation:   '🏦 Simulação',
+    documents:    '📄 Documentos',
+    contact:      '📞 Contato',
+    deadline:     '⏰ Prazo',
+    greetingText: (name: string) => `${name ? `Olá ${name}!` : 'Olá!'} Como posso ajudar?`,
+    statusText:   (product: string) => `Sua simulação de ${product || 'financiamento'} está em andamento. Em breve entraremos em contato!`,
+    simulationText: () => `Já comparamos as taxas dos principais bancos. Quando puder, me avise que envio os resultados!`,
+    documentsText: (product: string) => `Para prosseguir com o ${product || 'financiamento'}, precisamos de RG, CPF, comprovante de renda e residência.`,
+    contactText:  () => `Prefere falar por telefone? Me diga o melhor horário que eu ligo!`,
+    deadlineText: () => `Os prazos de financiamento variam de 12 a 420 meses. Já tem ideia de quantas parcelas?`,
+  },
 } as const

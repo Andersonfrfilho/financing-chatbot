@@ -55,23 +55,20 @@ type QuickMessage = { label: string; text: (ctx: ConversationItem | undefined, s
 
 function buildQuickMessages(current: ConversationItem | undefined, selections: Record<string, any>): QuickMessage[] {
   const name = current?.clientName?.split(' ')[0] ?? ''
-  const greeting = name ? `Olá ${name}!` : 'Olá!'
   const product = selections['requestedProduct']?.value ?? ''
   const productLabel: Record<string, string> = {
     imobiliario: 'imóvel', veiculo: 'veículo', pessoal: 'crédito pessoal',
     consignado: 'consignado', empresa: 'empresarial', equipamento: 'equipamento', rural: 'rural',
   }
 
-  const all: QuickMessage[] = [
-    { label: '👋 Saudação', text: () => `${greeting} Como posso ajudar?` },
-    { label: '📋 Status', text: () => `Sua simulação de ${productLabel[product] ?? 'financiamento'} está em andamento. Em breve entraremos em contato!` },
-    { label: '🏦 Simulação', text: () => `Já comparamos as taxas dos principais bancos. Quando puder, me avise que envio os resultados!` },
-    { label: '📄 Documentos', text: () => `Para prosseguir com o ${productLabel[product] ?? 'financiamento'}, precisamos de RG, CPF, comprovante de renda e residência.` },
-    { label: '📞 Contato', text: () => `Prefere falar por telefone? Me diga o melhor horário que eu ligo!` },
-    { label: '⏰ Prazo', text: () => `Os prazos de financiamento variam de 12 a 420 meses. Já tem ideia de quantas parcelas?` },
+  return [
+    { label: text.quickMessages.greeting,   text: () => text.quickMessages.greetingText(name) },
+    { label: text.quickMessages.status,     text: () => text.quickMessages.statusText(productLabel[product] ?? '') },
+    { label: text.quickMessages.simulation, text: () => text.quickMessages.simulationText() },
+    { label: text.quickMessages.documents,  text: () => text.quickMessages.documentsText(productLabel[product] ?? '') },
+    { label: text.quickMessages.contact,    text: () => text.quickMessages.contactText() },
+    { label: text.quickMessages.deadline,   text: () => text.quickMessages.deadlineText() },
   ]
-
-  return all
 }
 
 function fmtTime(iso: string) {
@@ -231,8 +228,9 @@ function SendErrorMessage({ error, errors, fallback }: { error: unknown; errors:
 
 export function ConversationsPage() {
   const deepLinkNumber = new URLSearchParams(window.location.search).get('whatsapp')
+  const deepLinkMessage = new URLSearchParams(window.location.search).get('message')
   const [selected, setSelected] = useState<string | null>(deepLinkNumber)
-  const [message, setMessage] = useState('')
+  const [message, setMessage] = useState(deepLinkMessage ? decodeURIComponent(deepLinkMessage) : '')
   const [attached, setAttached] = useState<AttachedFile | null>(null)
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')

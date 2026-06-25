@@ -54,4 +54,5 @@ export const leads = {
     notes:             'Notas',
     notesPlaceholder:  'Anotações sobre o lead...',
   },
+  quickMessage: (name: string, product: string) => `Olá ${name}! Vi que você se interessou por ${product}. Como posso ajudar? 😊`,
 } as const

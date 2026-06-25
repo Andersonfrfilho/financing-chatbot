@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight, X, MessageSquare } from 'lucide-react'
 import { api } from '@/lib/api'
 import { leads as text } from '@/locales'
 import { Button, Input, Textarea, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
@@ -52,6 +52,12 @@ const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   proposal_sent: { label: text.status.proposal_sent, color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400' },
   won:           { label: text.status.won,           color: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' },
   lost:          { label: text.status.lost,          color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' },
+}
+
+function getLeadMessage(lead: Lead): string {
+  const name = lead.clientName?.split(' ')[0] ?? ''
+  const product = getProductLabel(lead)
+  return text.quickMessage(name, product)
 }
 
 const getDaysAgo = (date: string) => {
@@ -252,6 +258,17 @@ export function LeadsPage() {
                     <div className="flex gap-1">
                       <Button variant="ghost" size="sm" onClick={() => toggleVisible(lead.id)} title={visible ? 'Esconder' : 'Mostrar'}>
                         {visible ? <EyeOff size={14} /> : <Eye size={14} />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          const msg = encodeURIComponent(getLeadMessage(lead))
+                          window.location.href = `/conversations?whatsapp=${encodeURIComponent(lead.whatsappNumber)}&message=${msg}`
+                        }}
+                        title="WhatsApp"
+                      >
+                        <MessageSquare size={14} />
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => startEdit(lead)} title="Editar">
                         <Edit2 size={14} />
