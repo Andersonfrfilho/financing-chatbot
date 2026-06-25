@@ -3,7 +3,7 @@ import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { Card, Skeleton } from '@/components/ui'
 import { dashboard, common } from '@/locales'
-import { LEAD_STATUSES, FINANCING_LABELS } from '@/lib/constants'
+import { LEAD_STATUSES } from '@/lib/constants'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }

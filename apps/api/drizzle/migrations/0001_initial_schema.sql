@@ -2,63 +2,63 @@
 -- Enums
 -- ============================================================
 
-CREATE TYPE IF NOT EXISTS "person_type" AS ENUM ('pf', 'pj');
+CREATE TYPE "person_type" AS ENUM ('pf', 'pj');
 
-CREATE TYPE IF NOT EXISTS "civil_status" AS ENUM (
+CREATE TYPE "civil_status" AS ENUM (
   'single', 'married', 'divorced', 'widowed', 'stable_union'
 );
 
-CREATE TYPE IF NOT EXISTS "financing_type" AS ENUM (
+CREATE TYPE "financing_type" AS ENUM (
   'imobiliario', 'veiculo', 'pessoal', 'consignado', 'empresa', 'equipamento', 'rural'
 );
 
-CREATE TYPE IF NOT EXISTS "property_type" AS ENUM (
+CREATE TYPE "property_type" AS ENUM (
   'residential', 'commercial', 'land', 'rural'
 );
 
-CREATE TYPE IF NOT EXISTS "vehicle_type" AS ENUM (
+CREATE TYPE "vehicle_type" AS ENUM (
   'car', 'motorcycle', 'truck', 'other'
 );
 
-CREATE TYPE IF NOT EXISTS "seller_context" AS ENUM (
+CREATE TYPE "seller_context" AS ENUM (
   'dealer', 'dealership', 'private'
 );
 
-CREATE TYPE IF NOT EXISTS "vehicle_fuel" AS ENUM (
+CREATE TYPE "vehicle_fuel" AS ENUM (
   'flex', 'gasoline', 'diesel', 'electric', 'hybrid'
 );
 
-CREATE TYPE IF NOT EXISTS "purchase_intent" AS ENUM (
+CREATE TYPE "purchase_intent" AS ENUM (
   'researching', 'buying'
 );
 
-CREATE TYPE IF NOT EXISTS "real_estate_objective" AS ENUM (
+CREATE TYPE "real_estate_objective" AS ENUM (
   'financing', 'home_equity', 'portability'
 );
 
-CREATE TYPE IF NOT EXISTS "purchase_timeline" AS ENUM (
+CREATE TYPE "purchase_timeline" AS ENUM (
   'immediate', '3m', '6m', '12m', 'researching'
 );
 
-CREATE TYPE IF NOT EXISTS "employment_type" AS ENUM (
+CREATE TYPE "employment_type" AS ENUM (
   'clt', 'public_servant', 'self_employed', 'business_owner', 'retired'
 );
 
-CREATE TYPE IF NOT EXISTS "amortization_system" AS ENUM ('SAC', 'PRICE', 'NAO_APLICAVEL');
+CREATE TYPE "amortization_system" AS ENUM ('SAC', 'PRICE', 'NAO_APLICAVEL');
 
-CREATE TYPE IF NOT EXISTS "financing_modality" AS ENUM (
+CREATE TYPE "financing_modality" AS ENUM (
   'SFH', 'SFI', 'FGTS', 'MCMV', 'CDC', 'LEASING',
   'PESSOAL', 'CONSIGNADO_PUBLICO', 'CONSIGNADO_PRIVADO', 'CONSIGNADO_INSS',
   'CAPITAL_GIRO', 'DESCONTO_DUPLICATAS', 'RURAL', 'FINAME'
 );
 
-CREATE TYPE IF NOT EXISTS "rate_source" AS ENUM ('open_finance', 'manual');
+CREATE TYPE "rate_source" AS ENUM ('open_finance', 'manual');
 
-CREATE TYPE IF NOT EXISTS "lead_status" AS ENUM (
+CREATE TYPE "lead_status" AS ENUM (
   'new', 'qualified', 'disqualified', 'negotiating', 'proposal_sent', 'won', 'lost'
 );
 
-CREATE TYPE IF NOT EXISTS "conversation_state" AS ENUM (
+CREATE TYPE "conversation_state" AS ENUM (
   'greeting',
   'awaiting_financing_type',
   'awaiting_person_type',
