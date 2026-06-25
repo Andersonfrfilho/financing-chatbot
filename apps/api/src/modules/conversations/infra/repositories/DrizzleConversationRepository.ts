@@ -99,6 +99,7 @@ export class DrizzleConversationRepository {
 
   // Histórico paginado por cursor (created_at). Retorna em ordem cronológica (mais antigo → mais novo).
   async listMessages(whatsappNumber: string, before: Date | null, limit: number): Promise<ConversationMessage[]> {
+    const t0 = Date.now()
     const where = before
       ? and(eq(conversationMessages.whatsappNumber, whatsappNumber), lt(conversationMessages.createdAt, before))
       : eq(conversationMessages.whatsappNumber, whatsappNumber)
@@ -108,6 +109,7 @@ export class DrizzleConversationRepository {
       .where(where)
       .orderBy(desc(conversationMessages.createdAt))
       .limit(limit)
+    log.debug('listMessages', { ms: Date.now() - t0, rows: rows.length, before: before?.toISOString(), whatsappNumber })
     return rows.reverse()
   }
 
