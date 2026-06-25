@@ -13,6 +13,36 @@ type DashboardStats = {
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316']
 
+const STATE_LABELS: Record<string, string> = {
+  greeting: 'Boas-vindas',
+  awaiting_financing_type: 'Tipo financiamento',
+  awaiting_name: 'Nome',
+  awaiting_cpf: 'CPF',
+  awaiting_birth_date: 'Nascimento',
+  awaiting_civil_status: 'Estado civil',
+  awaiting_email: 'E-mail',
+  awaiting_city: 'Cidade',
+  awaiting_state: 'Estado',
+  awaiting_monthly_income: 'Renda',
+  awaiting_family_income: 'Renda familiar',
+  awaiting_fgts: 'FGTS',
+  awaiting_down_payment: 'Entrada',
+  awaiting_property_value: 'Valor imóvel',
+  awaiting_property_type: 'Tipo imóvel',
+  awaiting_vehicle_type: 'Tipo veículo',
+  awaiting_vehicle_value: 'Valor veículo',
+  awaiting_vehicle_year: 'Ano veículo',
+  awaiting_loan_amount: 'Valor empréstimo',
+  awaiting_term: 'Prazo',
+  simulation_ready: 'Simulação pronta',
+  human_handoff: 'Aguardando humano',
+  completed: 'Concluído',
+  abandoned: 'Abandonado',
+  in_flow: 'Em fluxo',
+  awaiting_menu: 'Aguardando menu',
+  new: 'Novo',
+}
+
 function DashboardSkeleton() {
   return (
     <div className="space-y-4 md:space-y-6">
@@ -56,9 +86,10 @@ export function DashboardPage() {
     name: (dashboard.statusLabels as Record<string, string>)[k] ?? k, value: v,
   }))
 
-  const financingChartData = Object.entries(stats.simulations.byFinancingType).map(([k, v]) => ({
-    name: (dashboard.financingLabels as Record<string, string>)[k] ?? k, value: v,
-  }))
+  const sessionsChartData = Object.entries(stats.sessions.byState)
+    .map(([k, v]) => ({ name: STATE_LABELS[k] ?? k.replace(/_/g, ' '), value: v }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 8)
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -93,14 +124,14 @@ export function DashboardPage() {
         </Card>
 
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.simulationsByModality}</h3>
-          {financingChartData.length > 0 ? (
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.sessionsByState}</h3>
+          {sessionsChartData.length > 0 ? (
             <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={financingChartData} margin={{ left: -20 }}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
+              <BarChart data={sessionsChartData} layout="vertical" margin={{ left: 0, right: 8 }}>
+                <XAxis type="number" tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 10 }} width={110} />
                 <Tooltip />
-                <Bar dataKey="value" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="value" fill="#8b5cf6" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
