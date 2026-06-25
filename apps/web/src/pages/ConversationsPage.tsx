@@ -251,6 +251,7 @@ export function ConversationsPage() {
 
   const openConversation = (n: string) => {
     setSelected(n)
+    setBefore(null)
     markRead.mutate(n)
   }
 
