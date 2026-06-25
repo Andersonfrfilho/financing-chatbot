@@ -571,10 +571,10 @@ export function SettingsPage() {
               {/* Barra superior do WhatsApp */}
               <div className="bg-[#075e54] dark:bg-[#075e54] px-4 py-2.5 flex items-center gap-2">
                 <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">
-                  FB
+                  {company?.company_name?.slice(0, 2).toUpperCase() || 'FB'}
                 </div>
                 <div>
-                  <p className="text-white text-xs font-semibold leading-tight">Financiamento Bot</p>
+                  <p className="text-white text-xs font-semibold leading-tight">{company?.company_name || 'Financiamento Bot'}</p>
                   <p className="text-white/60 text-[10px]">online</p>
                 </div>
               </div>
