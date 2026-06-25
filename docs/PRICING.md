@@ -2,11 +2,26 @@
 
 > Referência para definir planos comerciais e entender o custo operacional da plataforma.  
 > Valores em BRL (conversão aproximada USD → BRL a R$ 5,70). Atualizar conforme câmbio.  
-> **Premissa:** dois ambientes ativos (Staging + Produção) e divisão de 50% da receita líquida entre os sócios.
+> **Premissa:** dois ambientes ativos (Staging + Produção), divisão de 50% da receita líquida entre os sócios.
 
 ---
 
-## 1. Custos de Infraestrutura — Railway
+## 1. Cenário Base: 3 Usuários · 24/7 · Backup Seguro
+
+Este é o cenário de **um cliente real em produção** com 3 atendentes, disponibilidade contínua e backup diário do banco.
+
+### O que esse cenário exige
+
+| Requisito | Solução | Observação |
+|---|---|---|
+| 3 usuários simultâneos | Plano Railway Pro (sempre ligado) | Sem suspensão automática |
+| Disponibilidade 24/7 | Serviços com restart automático | Railway garante por padrão no Pro |
+| Backup seguro do banco | Railway Postgres backup diário + exportação externa | Detalhado abaixo |
+| Monitoramento de uptime | UptimeRobot (gratuito) ou Better Uptime | Alertas por e-mail/WhatsApp |
+
+---
+
+## 2. Custos de Infraestrutura — Railway
 
 O projeto roda com 4 serviços por ambiente: **API**, **Web (Nginx)**, **PostgreSQL** e **Redis**.  
 São **dois ambientes permanentes**: Staging (STG) e Produção (PROD).
@@ -19,9 +34,7 @@ São **dois ambientes permanentes**: Staging (STG) e Produção (PROD).
 | **Staging (STG)** | Hobby | US$ 5 (~R$ 28) |
 | **Total base** | | **~R$ 142/mês** |
 
-### Estimativa de consumo por ambiente
-
-#### Produção
+### Estimativa de consumo — Produção (3 usuários, 24/7)
 
 | Serviço | RAM | vCPU | Estimativa/mês |
 |---|---|---|---|
@@ -31,7 +44,9 @@ São **dois ambientes permanentes**: Staging (STG) e Produção (PROD).
 | Redis | 256 MB | 0,1 vCPU | ~R$ 15 |
 | **Subtotal PROD** | | | **~R$ 120–160/mês** |
 
-#### Staging (ambiente reduzido)
+> Com 3 usuários ativos simultaneamente o consumo de vCPU aumenta levemente nos picos de atendimento, mas o impacto no custo mensal é marginal (Railway cobra pelo uso médio, não pelo pico).
+
+### Estimativa de consumo — Staging (ambiente reduzido)
 
 | Serviço | RAM | vCPU | Estimativa/mês |
 |---|---|---|---|
@@ -41,91 +56,135 @@ São **dois ambientes permanentes**: Staging (STG) e Produção (PROD).
 | Redis | 128 MB | 0,1 vCPU | ~R$ 7 |
 | **Subtotal STG** | | | **~R$ 50–60/mês** |
 
-### Total Railway (PROD + STG)
-
-| | Mínimo | Máximo |
-|---|---|---|
-| Custo base (planos) | R$ 142 | R$ 142 |
-| Uso estimado | R$ 170 | R$ 220 |
-| **Total Railway/mês** | **~R$ 180** | **~R$ 250** |
-
-> STG roda com recursos menores e pode ser pausado nos fins de semana se necessário, reduzindo ~R$ 20/mês.
-
 ### Referência de preço Railway (2025)
 
 - vCPU: US$ 0,000463/min → ~R$ 0,0026/min
 - RAM: US$ 0,000231/GB/min → ~R$ 0,0013/GB/min
-- Egress: US$ 0,10/GB após 100 GB grátis/mês
+- Egress (tráfego saída): US$ 0,10/GB após 100 GB grátis/mês
 
 ---
 
-## 2. Custos WhatsApp Business API (Meta Cloud API)
+## 3. Backup Seguro do Banco de Dados
 
-A Meta cobra **por conversa** (janela de 24h), não por mensagem individual.
+### O que o Railway Pro já inclui
 
-### Categorias de conversa
+| Recurso | Disponibilidade |
+|---|---|
+| Backup automático diário | ✅ Incluído no Pro |
+| Retenção de 7 dias | ✅ Incluído no Pro |
+| Restore com 1 clique | ✅ Incluído no Pro |
+| Point-in-time recovery | ❌ Não disponível |
 
-| Categoria | Quando ocorre | Custo estimado (Brasil) |
+### Backup externo adicional (recomendado para dados críticos)
+
+Para proteção além do Railway, exportar o banco diariamente para armazenamento externo:
+
+| Solução | Custo/mês | Observação |
 |---|---|---|
-| **Service** (atendimento) | Cliente inicia a conversa | Grátis* |
-| **Utility** (transacional) | Template pós-24h — reengajamento | ~US$ 0,0200 (~R$ 0,11) |
-| **Marketing** | Templates promocionais | ~US$ 0,0625 (~R$ 0,36) |
-| **Authentication** | OTP / validação | ~US$ 0,0125 (~R$ 0,07) |
+| **Cloudflare R2** | ~R$ 0–10 | 10 GB grátis, ~R$ 0,012/GB adicional |
+| **AWS S3** | ~R$ 5–15 | Mais robusto, mais caro |
+| **Backblaze B2** | ~R$ 3–8 | Mais barato, S3-compatível |
 
-> \* **1.000 conversas de serviço por mês são gratuitas** (free tier Meta). Acima disso ~US$ 0,008 (~R$ 0,05) por conversa.
+> Script de backup: `pg_dump` agendado via cron no Railway ou GitHub Actions (1x/dia), arquivado comprimido no R2. Retenção de 30 dias custa menos de R$ 5/mês para bancos pequenos (<1 GB).
 
-### Estimativa por volume mensal
+### Custo total de backup
 
-| Volume de conversas/mês | Custo Meta estimado |
+| Item | Custo/mês |
 |---|---|
-| até 1.000 (service) | R$ 0 (free tier) |
-| 5.000 (service) | ~R$ 200 |
-| 5.000 (utility/reengajamento) | ~R$ 550 |
-| 10.000 misto | ~R$ 600–1.200 |
-
-> O custo da API WhatsApp é repassado ao cliente ou absorvido dependendo do plano contratado.
-
-### Número WhatsApp Business
-
-- **Número próprio do cliente** (recomendado): gratuito — cliente registra no Meta Business Manager.
-- **Via BSP** (Twilio, Zenvia, etc.): R$ 150–500/mês — não recomendado para começar.
+| Railway Pro backup (incluído) | R$ 0 |
+| Cloudflare R2 (backup externo) | ~R$ 5–10 |
+| **Total backup** | **~R$ 5–10/mês** |
 
 ---
 
-## 3. Perfil Verificado (Selo Verde ✅)
+## 4. Custo Total do Cenário (3 usuários · 24/7 · backup)
 
-O **Official Business Account (OBA)** exibe o nome da empresa com selo verde no WhatsApp.
-
-### Requisitos
-
-1. Meta Business Manager com verificação de CNPJ + site da empresa concluída.
-2. Volume de conversas relevante e histórico consistente.
-3. Solicitação via **WhatsApp Manager → Phone numbers → Request official business account**.
-
-### Custos
-
-| Item | Custo |
-|---|---|
-| Verificação Meta Business | **Gratuito** |
-| Selo OBA (Green Badge) | **Gratuito** |
-| Consultoria/facilitação (opcional) | R$ 500–2.000 |
-
-> O selo não é garantido — a Meta aprova conforme critérios internos. Empresas menores normalmente recebem **Business Account** (nome da empresa exibido, sem selo verde).
-
----
-
-## 4. Planos Comerciais
-
-### Custo operacional base (fixo, independente do número de clientes)
+### Custo nosso (o que pagamos para operar)
 
 | Item | Custo mensal |
 |---|---|
-| Railway PROD + STG | R$ 180–250 |
-| API WhatsApp (volume baixo) | R$ 0–100 |
-| Domínios / certificados | ~R$ 10 |
-| **Custo fixo base** | **~R$ 190–360/mês** |
+| Railway PROD (plano Pro + uso) | ~R$ 135–175 |
+| Railway STG (plano Hobby + uso) | ~R$ 55–70 |
+| Backup externo (R2/Backblaze) | ~R$ 5–10 |
+| Monitoramento uptime (UptimeRobot) | R$ 0 (gratuito) |
+| Domínio custom (se necessário) | ~R$ 5 |
+| **Total custo operacional/mês** | **~R$ 200–260/mês** |
 
-> A partir do segundo cliente, o custo fixo de infra é rateado — Railway comporta múltiplos clientes na mesma instância até certo volume.
+> Este valor é **fixo independente do cliente** — é o custo da nossa infraestrutura compartilhada. A partir do segundo cliente o custo é rateado.
+
+---
+
+## 5. Quanto Cobrar deste Cliente
+
+### Composição do preço
+
+O preço deve cobrir: **custo operacional + margem de lucro + suporte + desenvolvimento contínuo**.
+
+| Item | Valor |
+|---|---|
+| Custo operacional (rateado, 1 cliente) | ~R$ 230 |
+| Margem para suporte e manutenção | ~R$ 150 |
+| Margem de lucro (~55%) | ~R$ 370 |
+| **Preço sugerido/mês** | **R$ 750–997** |
+
+### Recomendação: Plano Profissional — R$ 997/mês
+
+Com 3 usuários, 24/7 e backup, o cliente se encaixa no **Plano Profissional**:
+
+| Item | Incluso |
+|---|---|
+| Usuários (agentes) | até 5 |
+| Sessões bot/mês | até 2.000 |
+| Disponibilidade | 24/7 com restart automático |
+| Backup | Railway Pro (7 dias) + externo (30 dias) |
+| Templates HSM | até 3 |
+| Monitoramento de uptime | ✅ |
+| Suporte | WhatsApp (resposta em 24h úteis) |
+| Ambiente de homologação (STG) | ✅ |
+
+### Alternativa — cobrar os custos variáveis separado
+
+Outra abordagem é separar a API do WhatsApp (custo variável por volume):
+
+| Componente | Valor |
+|---|---|
+| Plataforma (fixo) | R$ 797/mês |
+| API WhatsApp (repassado ao cliente) | custo Meta + 20% de taxa |
+| Sessões extras (acima de 2.000) | R$ 80 a cada 500 |
+
+Essa estrutura protege você de clientes com volume muito alto.
+
+---
+
+## 6. Retorno por Cliente (divisão 50/50)
+
+### Com 1 cliente Profissional (R$ 997/mês)
+
+| Item | Valor |
+|---|---|
+| Receita bruta | R$ 997 |
+| Custo Railway PROD + STG | − R$ 230 |
+| Backup externo | − R$ 8 |
+| **Receita líquida** | **R$ 759** |
+| Sócio A (50%) | **R$ 379** |
+| Sócio B (50%) | **R$ 379** |
+
+### Escala — receita líquida por sócio (50/50)
+
+| Clientes | Plano médio | Receita bruta | Custos infra | Líquido total | **Por sócio** |
+|---|---|---|---|---|---|
+| 1 | Profissional | R$ 997 | R$ 238 | R$ 759 | **R$ 379** |
+| 2 | Profissional | R$ 1.994 | R$ 290 | R$ 1.704 | **R$ 852** |
+| 3 | Profissional | R$ 2.991 | R$ 340 | R$ 2.651 | **R$ 1.325** |
+| 5 | Profissional | R$ 4.985 | R$ 440 | R$ 4.545 | **R$ 2.272** |
+| 10 | Misto | R$ 8.470 | R$ 720 | R$ 7.750 | **R$ 3.875** |
+| 20 | Misto | R$ 16.940 | R$ 1.300 | R$ 15.640 | **R$ 7.820** |
+
+> Custos escalam suavemente — Railway comporta múltiplos clientes na mesma instância até ~10 clientes. Acima disso convém avaliar instâncias dedicadas.
+
+---
+
+## 7. Planos Comerciais Completos
 
 ### Tabela de planos
 
@@ -133,73 +192,85 @@ O **Official Business Account (OBA)** exibe o nome da empresa com selo verde no 
 |---|---|---|---|
 | **Preço/mês** | **R$ 497** | **R$ 997** | **sob consulta** |
 | **Preço/ano** | R$ 4.970 (2 meses grátis) | R$ 9.970 (2 meses grátis) | — |
-| Agentes simultâneos | 1 | 5 | ilimitado |
+| Usuários (agentes) | 1 | 5 | ilimitado |
 | Sessões bot/mês | até 500 | até 2.000 | ilimitado |
+| Disponibilidade | 24/7 | 24/7 | 24/7 + SLA |
+| Backup banco | Railway 7 dias | Railway 7 dias + externo 30 dias | externo 90 dias |
 | Simulações de financiamento | ✓ | ✓ | ✓ |
 | Atendimento humano (takeover) | ✓ | ✓ | ✓ |
 | Relatórios e dashboard | básico | completo | personalizado |
 | Templates WhatsApp | 1 | 3 | ilimitado |
+| Criação de templates | — | ✓ (via painel) | ✓ |
+| Monitoramento de uptime | básico | ✓ | ✓ com alertas |
 | Suporte | e-mail (48h) | WhatsApp (24h) | dedicado (4h) |
 | Ambiente STG incluso | — | ✓ | ✓ |
 
 > **Sessões extras:** R$ 80 a cada 500 sessões acima do plano.
 
-### Taxa de setup (única, não dividida — cobre custo de implantação)
+### Taxa de setup (única)
 
 | Serviço | Valor |
 |---|---|
 | Configuração inicial + integração WhatsApp | R$ 800 |
-| Com número do cliente já registrado na Meta | R$ 500 |
+| Com número já registrado na Meta | R$ 500 |
 | Facilitação para perfil verificado (OBA) | R$ 1.200 |
+| Backup externo configurado e documentado | R$ 300 |
 
 ---
 
-## 5. Distribuição de Receita (Sociedade 50/50)
+## 8. Custos WhatsApp Business API (Meta Cloud API)
 
-A receita líquida após custos operacionais é dividida igualmente entre os sócios.
+A Meta cobra **por conversa** (janela de 24h), não por mensagem individual.
 
-### Exemplo com 1 cliente — Plano Essencial (R$ 497/mês)
+### Categorias de conversa
 
-| Item | Valor |
+| Categoria | Quando ocorre | Custo (Brasil) |
+|---|---|---|
+| **Service** (atendimento) | Cliente inicia a conversa | Grátis* |
+| **Utility** (transacional) | Template pós-24h — reengajamento | ~US$ 0,0200 (~R$ 0,11) |
+| **Marketing** | Templates promocionais | ~US$ 0,0625 (~R$ 0,36) |
+| **Authentication** | OTP / validação | ~US$ 0,0125 (~R$ 0,07) |
+
+> \* **1.000 conversas de serviço/mês gratuitas** (free tier Meta). Acima disso ~R$ 0,05 por conversa.
+
+### Estimativa por volume
+
+| Volume/mês | Custo Meta |
 |---|---|
-| Receita bruta | R$ 497 |
-| Custo Railway (rateado) | − R$ 120 |
-| Custo WhatsApp API (estimado) | − R$ 30 |
-| **Receita líquida** | **R$ 347** |
-| Sócio A (50%) | R$ 173 |
-| Sócio B (50%) | R$ 173 |
-
-### Escala — receita líquida por sócio
-
-| Clientes | Plano médio | Receita bruta | Custos | Líquido total | **Por sócio (50%)** |
-|---|---|---|---|---|---|
-| 1 | Essencial | R$ 497 | R$ 230 | R$ 267 | **R$ 133** |
-| 3 | Essencial | R$ 1.491 | R$ 420 | R$ 1.071 | **R$ 535** |
-| 5 | Profissional | R$ 4.985 | R$ 700 | R$ 4.285 | **R$ 2.142** |
-| 10 | Misto | R$ 7.470 | R$ 1.100 | R$ 6.370 | **R$ 3.185** |
-| 20 | Misto | R$ 14.940 | R$ 1.800 | R$ 13.140 | **R$ 6.570** |
-
-> Custos escalam suavemente pois a infra Railway é compartilhada. A partir de ~10 clientes convém avaliar instâncias dedicadas por cliente (Enterprise).
-
-### Setup fee — distribuição
-
-O setup fee é receita de serviço pontual. Sugestão: **70% vai para quem executou a implantação**, 30% dividido igualmente — ou dividir 50/50 se ambos participaram.
+| até 1.000 conversas | R$ 0 (free tier) |
+| 5.000 (service) | ~R$ 200 |
+| 5.000 (utility) | ~R$ 550 |
+| 10.000 misto | ~R$ 600–1.200 |
 
 ---
 
-## 6. Break-even
+## 9. Perfil Verificado (Selo Verde ✅)
 
-| Cenário | Clientes necessários |
+| Item | Custo |
 |---|---|
-| Cobrir custo fixo Railway (R$ 220/mês) | **1 cliente Essencial** |
-| Cada sócio receber R$ 1.000/mês líquido | **~4 clientes Profissional** |
-| Cada sócio receber R$ 3.000/mês líquido | **~9 clientes mistos** |
-| Cada sócio receber R$ 5.000/mês líquido | **~14 clientes mistos** |
+| Verificação Meta Business (CNPJ + site) | **Gratuito** |
+| Selo OBA (Green Badge) | **Gratuito** |
+| Consultoria/facilitação (opcional) | R$ 500–2.000 |
+
+> Não é garantido. A Meta aprova por critérios internos. Empresas menores normalmente recebem Business Account (nome visível, sem selo verde).
 
 ---
 
-## 7. Fontes de referência
+## 10. Break-even e Metas
+
+| Meta | Clientes necessários |
+|---|---|
+| Cobrir custo fixo de infra (R$ 238/mês) | **1 cliente Profissional** |
+| Cada sócio receber R$ 1.000/mês | **~3 clientes Profissional** |
+| Cada sócio receber R$ 3.000/mês | **~8 clientes mistos** |
+| Cada sócio receber R$ 5.000/mês | **~13 clientes mistos** |
+| Cada sócio receber R$ 10.000/mês | **~26 clientes mistos** |
+
+---
+
+## 11. Fontes de referência
 
 - Railway pricing: https://railway.com/pricing
 - Meta WhatsApp pricing (Brasil): https://developers.facebook.com/docs/whatsapp/pricing
-- WhatsApp Business Platform: https://business.whatsapp.com/products/platform-pricing
+- Cloudflare R2: https://developers.cloudflare.com/r2/pricing/
+- Backblaze B2: https://www.backblaze.com/b2/cloud-storage-pricing.html
