@@ -35,7 +35,7 @@ export function SettingsPage() {
     staleTime: 5 * 60 * 1000,
   })
 
-  type WhatsAppTemplate = { name: string; category: string; language: string; bodyText: string | null; variableCount: number }
+  type WhatsAppTemplate = { id: string; name: string; shortId: string; displayName: string; status: string; category: string; language: string; bodyText: string | null; variableCount: number }
   const { data: whatsappTemplates, isLoading: loadingTemplates, refetch: refetchTemplates, isError: templatesError } =
     useQuery<{ templates: WhatsAppTemplate[] }>({
       queryKey: ['whatsapp-templates'],
@@ -370,8 +370,8 @@ export function SettingsPage() {
               >
                 <option value="">— Selecione um template —</option>
                 {whatsappTemplates?.templates.map((template) => (
-                  <option key={`${template.name}-${template.language}`} value={template.name}>
-                    {template.name} ({template.language}) · {template.category}
+                  <option key={`${template.name}-${template.language}`} value={template.name} disabled={template.status !== 'APPROVED'}>
+                    {template.displayName} · {template.shortId} ({template.language}) {template.status !== 'APPROVED' ? `[${template.status}]` : ''}
                   </option>
                 ))}
               </select>

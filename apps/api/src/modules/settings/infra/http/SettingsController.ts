@@ -124,7 +124,7 @@ export class SettingsController {
       )
     }
 
-    const url = `${GRAPH}/${version}/${wabaId}/message_templates?fields=name,status,category,language,components&limit=100&access_token=${token}`
+    const url = `${GRAPH}/${version}/${wabaId}/message_templates?fields=id,name,status,category,language,components&limit=100&access_token=${token}`
     let resp: Response
     try {
       resp = await fetch(url, { signal: AbortSignal.timeout(10_000) })
@@ -138,6 +138,7 @@ export class SettingsController {
     }
 
     const data = (await resp.json()) as { data: Array<{
+      id: string
       name: string
       status: string
       category: string
@@ -146,12 +147,17 @@ export class SettingsController {
     }> }
 
     const templates = data.data
-      .filter((template) => template.status === 'APPROVED')
       .map((template) => {
         const body = template.components.find((component) => component.type === 'BODY')
         const variableCount = (body?.text?.match(/\{\{(\d+)\}\}/g) ?? []).length
+        const shortId = template.id ? template.id.slice(-8) : template.name.slice(0, 8)
+        const displayName = template.name.replace(/_/g, ' ')
         return {
+          id:            template.id,
           name:          template.name,
+          shortId,
+          displayName,
+          status:        template.status,
           category:      template.category,
           language:      template.language,
           bodyText:      body?.text ?? null,
@@ -203,6 +209,7 @@ export class SettingsController {
     }
 
     const data = await resp.json().catch(() => ({})) as { id?: string; name?: string; status?: string }
-    res.json({ ok: true, id: data.id, status: data.status ?? 'PENDING', message: 'Template enviado para aprovação do WhatsApp.' }, 201)
+    const shortId = data.id ? data.id.slice(-8) : ''
+    res.json({ ok: true, id: data.id, shortId, status: data.status ?? 'PENDING', message: 'Template enviado para aprovação do WhatsApp.' }, 201)
   }
 }
