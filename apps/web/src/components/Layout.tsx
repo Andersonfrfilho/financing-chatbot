@@ -40,10 +40,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const waitingCount = useWaitingNotifications()
   const [open, setOpen] = useState(false)
 
-  const { data: company } = useCompanySettings()
+  const { data: company, isLoading: companyLoading } = useCompanySettings()
   const companyName = company?.company_name || import.meta.env.VITE_COMPANY_NAME || 'Sistema'
   const companyLogo = company?.company_logo_url || import.meta.env.VITE_COMPANY_LOGO_URL || ''
-  const simEnabled = company?.simulations_enabled !== 'false'
+  const simEnabled = !companyLoading && company?.simulations_enabled !== 'false'
 
   async function handleLogout() {
     await api.post('/auth/logout').catch(() => {})
