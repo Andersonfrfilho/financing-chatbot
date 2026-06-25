@@ -566,23 +566,52 @@ export function SettingsPage() {
 
           {/* Preview */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Pré-visualização</label>
-            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
-              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mb-2">📱 WhatsApp</p>
-              <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
-                {createTemplate.headerType === 'TEXT' && createTemplate.headerText && (
-                  <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">{createTemplate.headerText.replace(/\{\{1\}\}/g, 'João')}</p>
-                )}
-                {createTemplate.bodyText
-                  ? createTemplate.bodyText
-                      .replace(/\{\{1\}\}/g, 'João')
-                      .replace(/\{\{2\}\}/g, 'Imóvel')
-                      .replace(/\{\{3\}\}/g, 'R$ 1.500')
-                  : <span className="text-gray-400 italic">Digite o corpo da mensagem acima...</span>
-                }
-                {createTemplate.footerText && (
-                  <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">{createTemplate.footerText}</p>
-                )}
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Pré-visualização</label>
+            <div className="rounded-2xl bg-[#e5ddd5] dark:bg-[#1a1a2e] border border-gray-300 dark:border-gray-600 overflow-hidden shadow-inner">
+              {/* Barra superior do WhatsApp */}
+              <div className="bg-[#075e54] dark:bg-[#075e54] px-4 py-2.5 flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center text-white text-xs font-bold">
+                  FB
+                </div>
+                <div>
+                  <p className="text-white text-xs font-semibold leading-tight">Financiamento Bot</p>
+                  <p className="text-white/60 text-[10px]">online</p>
+                </div>
+              </div>
+              {/* Chat area */}
+              <div className="px-3 py-4 space-y-3 min-h-[120px]">
+                <div className="flex justify-start max-w-[85%]">
+                  <div className="bg-white dark:bg-gray-700 rounded-lg rounded-tl-none px-3 py-2 shadow-sm">
+                    <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
+                      Este modelo de mensagem será usado como template no WhatsApp. O texto com {'{{1}}'} será substituído pelo valor real no envio.
+                    </p>
+                    <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 text-right">12:00</p>
+                  </div>
+                </div>
+                <div className="flex justify-end max-w-[85%] ml-auto">
+                  <div className="bg-[#dcf8c6] dark:bg-[#1b5e20] rounded-lg rounded-tr-none px-3 py-2 shadow-sm">
+                    {createTemplate.headerType === 'TEXT' && createTemplate.headerText && (
+                      <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">
+                        {createTemplate.headerText.replace(/\{\{1\}\}/g, 'João').replace(/\{\{2\}\}/g, 'Imóvel') || 'Cabeçalho'}
+                      </p>
+                    )}
+                    <p className="text-sm text-gray-800 dark:text-gray-100 leading-relaxed">
+                      {createTemplate.bodyText
+                        ? createTemplate.bodyText
+                            .replace(/\{\{1\}\}/g, 'João')
+                            .replace(/\{\{2\}\}/g, 'Imóvel')
+                            .replace(/\{\{3\}\}/g, 'R$ 1.500')
+                        : <span className="text-gray-400 italic">Digite o corpo da mensagem...</span>
+                      }
+                    </p>
+                    {createTemplate.footerText && (
+                      <p className="text-[10px] text-gray-400 dark:text-gray-400 mt-1">
+                        {createTemplate.footerText}
+                      </p>
+                    )}
+                    <p className="text-[9px] text-gray-400 dark:text-gray-400 mt-1 text-right">12:01 ✓</p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
