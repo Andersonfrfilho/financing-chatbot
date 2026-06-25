@@ -38,15 +38,6 @@ export const leads = {
     moto:         'Consórcio Moto',
     caminhao:     'Consórcio Caminhão',
   },
-  status: {
-    new:           'Novo',
-    qualified:     'Qualificado',
-    disqualified:  'Desqualificado',
-    negotiating:   'Em negociação',
-    proposal_sent: 'Proposta enviada',
-    won:           'Ganho',
-    lost:          'Perdido',
-  },
   edit: {
     title:             'Editar Lead',
     seller:            'Vendedor / Atribuído a',

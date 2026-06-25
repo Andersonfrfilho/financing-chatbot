@@ -8,6 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui'
 import { formatPhone, obfuscatePhone } from '@/lib/phone'
+import { LEAD_STATUSES, FINANCING_LABELS } from '@/lib/constants'
 import { useSortableData } from '@/hooks/useSortableData'
 
 type Lead = {
@@ -26,32 +27,16 @@ type Lead = {
 
 const getProductLabel = (lead: Lead): string => {
   const key = lead.requestedProduct || lead.financingType || ''
-  return (text.products as Record<string, string>)[key] ?? (key ? key.replace(/_/g, ' ') : text.noProduct)
+  return FINANCING_LABELS[key] ?? (key ? key.replace(/_/g, ' ') : text.noProduct)
 }
 
-const PRODUCT_COLORS: Record<string, string> = {
-  imobiliario: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
-  imovel:      'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400',
-  veiculo:     'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
-  carro:       'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
-  moto:        'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
-  caminhao:    'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400',
-  pessoal:     'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400',
-  consignado:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400',
-  consorcio:   'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400',
-  empresa:     'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
-  equipamento: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400',
-  rural:       'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-400',
-}
-
-const STATUS_LABELS: Record<string, { label: string; color: string }> = {
-  new:           { label: text.status.new,           color: 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400' },
-  qualified:     { label: text.status.qualified,     color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400' },
-  disqualified:  { label: text.status.disqualified,  color: 'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400' },
-  negotiating:   { label: text.status.negotiating,   color: 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400' },
-  proposal_sent: { label: text.status.proposal_sent, color: 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400' },
-  won:           { label: text.status.won,           color: 'bg-green-100 text-green-700 dark:bg-green-950/50 dark:text-green-400' },
-  lost:          { label: text.status.lost,          color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400' },
+const PRODUCT_COLOR_CACHE: Record<string, string> = {}
+function getProductColor(key: string): string {
+  if (PRODUCT_COLOR_CACHE[key]) return PRODUCT_COLOR_CACHE[key]
+  const colors = ['bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-400', 'bg-purple-100 text-purple-700 dark:bg-purple-950/50 dark:text-purple-400', 'bg-orange-100 text-orange-700 dark:bg-orange-950/50 dark:text-orange-400', 'bg-yellow-100 text-yellow-700 dark:bg-yellow-950/50 dark:text-yellow-400', 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400', 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950/50 dark:text-indigo-400', 'bg-lime-100 text-lime-700 dark:bg-lime-950/50 dark:text-lime-400']
+  const hash = key.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0)
+  PRODUCT_COLOR_CACHE[key] = colors[hash % colors.length]
+  return PRODUCT_COLOR_CACHE[key]
 }
 
 function getLeadMessage(lead: Lead): string {
@@ -170,7 +155,7 @@ export function LeadsPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">{text.allStatus}</SelectItem>
-            {Object.entries(STATUS_LABELS).map(([key, value]) => (
+            {Object.entries(LEAD_STATUSES).map(([key, value]) => (
               <SelectItem key={key} value={key}>{value.label}</SelectItem>
             ))}
           </SelectContent>
@@ -219,11 +204,11 @@ export function LeadsPage() {
           </TableHeader>
           <TableBody>
             {sorted?.map((lead) => {
-              const info = STATUS_LABELS[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
+              const info = LEAD_STATUSES[lead.status] ?? { label: lead.status, color: 'bg-gray-100 text-gray-600' }
               const visible = visibleLeads.has(lead.id)
               const productKey = lead.requestedProduct || lead.financingType || ''
               const productLabel = getProductLabel(lead)
-              const productColor = PRODUCT_COLORS[productKey] ?? 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
+              const productColor = getProductColor(productKey)
               return (
                 <TableRow key={lead.id}>
                   <TableCell className="font-mono text-xs whitespace-nowrap">
@@ -245,7 +230,7 @@ export function LeadsPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {Object.entries(STATUS_LABELS).map(([key, value]) => (
+                        {Object.entries(LEAD_STATUSES).map(([key, value]) => (
                           <SelectItem key={key} value={key}>{value.label}</SelectItem>
                         ))}
                       </SelectContent>

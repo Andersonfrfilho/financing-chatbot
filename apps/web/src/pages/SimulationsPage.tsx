@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableHeader, TableRow
 } from '@/components/ui'
 import { api } from '@/lib/api'
+import { FINANCING_LABELS } from '@/lib/constants'
 import { useSortableData } from '@/hooks/useSortableData'
 
 type Simulation = {
@@ -17,11 +18,6 @@ type Simulation = {
   termMonths: number
   createdAt: string
   bankNames?: string | null
-}
-
-const FINANCING_LABELS: Record<string, string> = {
-  imobiliario: 'Imóvel', veiculo: 'Veículo', pessoal: 'Pessoal',
-  consignado: 'Consignado', empresa: 'Empresa', equipamento: 'Equipamento', rural: 'Rural',
 }
 
 const formatBRL = (v: string | number) =>

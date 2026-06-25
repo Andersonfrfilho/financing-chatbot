@@ -14,15 +14,6 @@ export const dashboard = {
     leadsByStatus:         'Leads por Status',
     sessionsByState:       'Sessões por Estado',
   },
-  statusLabels: {
-    new:           'Novo',
-    qualified:     'Qualificado',
-    disqualified:  'Desqualificado',
-    negotiating:   'Em negociação',
-    proposal_sent: 'Proposta enviada',
-    won:           'Ganho',
-    lost:          'Perdido',
-  },
   financingLabels: {
     imobiliario: 'Imóvel',
     veiculo:     'Veículo',

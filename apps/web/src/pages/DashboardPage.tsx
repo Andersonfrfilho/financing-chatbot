@@ -3,6 +3,7 @@ import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { Card, Skeleton } from '@/components/ui'
 import { dashboard, common } from '@/locales'
+import { LEAD_STATUSES } from '@/lib/constants'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }
@@ -83,7 +84,7 @@ export function DashboardPage() {
   if (isLoading || !stats) return <DashboardSkeleton />
 
   const statusChartData = Object.entries(stats.leads.byStatus).map(([k, v]) => ({
-    name: (dashboard.statusLabels as Record<string, string>)[k] ?? k, value: v,
+    name: LEAD_STATUSES[k]?.label ?? k, value: v,
   }))
 
   const sessionsChartData = Object.entries(stats.sessions.byState)
