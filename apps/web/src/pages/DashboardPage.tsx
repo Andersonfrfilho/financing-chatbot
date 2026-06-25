@@ -92,9 +92,10 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
 
-  const financingChartData = Object.entries(stats.simulations.byFinancingType).map(([k, v]) => ({
-    name: FINANCING_LABELS[k] ?? k, value: v,
-  }))
+  const comparisonData = [
+    { name: 'Leads',     hoje: stats.leads.newToday,     semana: stats.leads.newThisWeek },
+    { name: 'Clientes',  hoje: stats.clients.newToday,   semana: stats.clients.newThisWeek },
+  ]
 
   return (
     <div className="space-y-4 md:space-y-6">
@@ -145,19 +146,16 @@ export function DashboardPage() {
         </Card>
 
         <Card className="p-4">
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.simulationsByModality}</h3>
-          {financingChartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={180}>
-              <BarChart data={financingChartData}>
-                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
-                <YAxis tick={{ fontSize: 10 }} />
-                <Tooltip />
-                <Bar dataKey="value" fill="#22c55e" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : (
-            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">{common.empty.noData}</p>
-          )}
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.todayVsWeek}</h3>
+          <ResponsiveContainer width="100%" height={180}>
+            <BarChart data={comparisonData}>
+              <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+              <YAxis tick={{ fontSize: 10 }} />
+              <Tooltip />
+              <Bar dataKey="hoje" name="Hoje" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="semana" name="Semana" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
         </Card>
 
         <Card className="p-4">

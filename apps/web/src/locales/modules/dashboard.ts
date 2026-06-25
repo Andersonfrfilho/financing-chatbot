@@ -13,7 +13,7 @@ export const dashboard = {
   charts: {
     leadsByStatus:           'Leads por Status',
     sessionsByState:         'Sessões por Estado',
-    simulationsByModality:   'Simulações por Modalidade',
+    todayVsWeek:             'Hoje vs Semana',
     weekly:                  'Resumo da Semana',
   },
   financingLabels: {
