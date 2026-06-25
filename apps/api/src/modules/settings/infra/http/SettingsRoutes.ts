@@ -26,4 +26,5 @@ export function registerSettingsRoutes(router: Router, controller: SettingsContr
   router.get('/api/settings/whatsapp',           authenticate, (req, res) => controller.getWhatsAppSettings(req, res))
   router.put('/api/settings/whatsapp',           authenticate, (req, res) => controller.updateWhatsAppSettings(req, res))
   router.get('/api/settings/whatsapp/templates', authenticate, (req, res) => controller.listWhatsAppTemplates(req, res))
+  router.post('/api/settings/whatsapp/templates', authenticate, (req, res) => controller.createWhatsAppTemplate(req, res))
 }

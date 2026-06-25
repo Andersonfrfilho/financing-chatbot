@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, RefreshCw, Trash2, SendHorizonal } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
@@ -24,6 +24,10 @@ export function SettingsPage() {
   const [whatsappTemplateVariables, setWhatsappTemplateVariables] = useState<string[]>([])
   const [savingWhatsapp, setSavingWhatsapp] = useState(false)
   const [whatsappSuccess, setWhatsappSuccess] = useState(false)
+
+  const [createTemplate, setCreateTemplate] = useState({ name: '', category: 'UTILITY', language: 'pt_BR', bodyText: '' })
+  const [creatingTemplate, setCreatingTemplate] = useState(false)
+  const [createTemplateResult, setCreateTemplateResult] = useState<{ ok: boolean; message: string; status?: string } | null>(null)
 
   const { data: whatsappSettings } = useQuery<{ whatsapp_template_name: string; whatsapp_template_language: string; whatsapp_template_variables: string[] }>({
     queryKey: ['whatsapp-settings'],
@@ -104,6 +108,23 @@ export function SettingsPage() {
       setTimeout(() => setWhatsappSuccess(false), 3000)
     } finally {
       setSavingWhatsapp(false)
+    }
+  }
+
+  async function handleCreateTemplate(e: React.FormEvent) {
+    e.preventDefault()
+    setCreatingTemplate(true)
+    setCreateTemplateResult(null)
+    try {
+      const { data } = await api.post('/settings/whatsapp/templates', createTemplate)
+      setCreateTemplateResult({ ok: true, message: data.message, status: data.status })
+      setCreateTemplate({ name: '', category: 'UTILITY', language: 'pt_BR', bodyText: '' })
+      queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] })
+    } catch (err: any) {
+      const message = err?.response?.data?.message || err?.message || 'Erro ao criar template'
+      setCreateTemplateResult({ ok: false, message })
+    } finally {
+      setCreatingTemplate(false)
     }
   }
 
@@ -432,6 +453,120 @@ export function SettingsPage() {
                 : <Save size={14} />
               }
               {savingWhatsapp ? 'Salvando...' : 'Salvar'}
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* Criar Novo Template */}
+      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <MessageSquare size={16} className="text-blue-600 dark:text-blue-400" />
+            Criar Template WhatsApp
+          </h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+            Cria um novo template e envia para aprovação do WhatsApp. Use {'{{1}}'}, {'{{2}}'} como placeholders para variáveis.
+          </p>
+        </div>
+        <form onSubmit={handleCreateTemplate} className="p-6 space-y-4">
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nome do template</label>
+            <p className="text-xs text-gray-400 mb-1.5">Apenas letras minúsculas, números e underscore (ex: reengajamento_cliente)</p>
+            <input
+              type="text"
+              value={createTemplate.name}
+              onChange={(e) => setCreateTemplate({ ...createTemplate, name: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '_') })}
+              placeholder="reengajamento_cliente"
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+              required
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+              <select
+                value={createTemplate.category}
+                onChange={(e) => setCreateTemplate({ ...createTemplate, category: e.target.value })}
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+              >
+                <option value="UTILITY">UTILITY (Transacional)</option>
+                <option value="MARKETING">MARKETING (Promocional)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Idioma</label>
+              <select
+                value={createTemplate.language}
+                onChange={(e) => setCreateTemplate({ ...createTemplate, language: e.target.value })}
+                className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
+              >
+                <option value="pt_BR">Português (Brasil)</option>
+                <option value="en_US">English (US)</option>
+                <option value="es_ES">Español</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Corpo da mensagem
+            </label>
+            <p className="text-xs text-gray-400 mb-1.5">
+              Use {'{{1}}'}, {'{{2}}'}, etc. para variáveis. Máximo 1024 caracteres.
+            </p>
+            <textarea
+              value={createTemplate.bodyText}
+              onChange={(e) => setCreateTemplate({ ...createTemplate, bodyText: e.target.value })}
+              placeholder="Olá {{1}}! 👋 Seu financiamento de {{2}} está disponível. Entre em contato para mais informações."
+              rows={4}
+              className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
+              required
+            />
+          </div>
+
+          {/* Preview */}
+          <div>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 block">Pré-visualização</label>
+            <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 px-4 py-3">
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium mb-2">📱 WhatsApp</p>
+              <div className="bg-white dark:bg-gray-800 rounded-lg px-3 py-2.5 text-sm text-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-600">
+                {createTemplate.bodyText
+                  ? createTemplate.bodyText
+                      .replace(/\{\{1\}\}/g, 'João')
+                      .replace(/\{\{2\}\}/g, 'Imóvel')
+                      .replace(/\{\{3\}\}/g, 'R$ 1.500')
+                  : <span className="text-gray-400 italic">Digite o corpo da mensagem acima...</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          {createTemplateResult && (
+            <div className={`rounded-xl px-4 py-3 text-sm ${
+              createTemplateResult.ok
+                ? 'bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400'
+                : 'bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400'
+            }`}>
+              {createTemplateResult.message}
+              {createTemplateResult.ok && (
+                <p className="text-xs mt-1 opacity-75">Status: {createTemplateResult.status}. O template ficará disponível após aprovação do WhatsApp (geralmente 1-2 minutos).</p>
+              )}
+            </div>
+          )}
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={creatingTemplate || !createTemplate.name || !createTemplate.bodyText}
+              className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-400 text-white font-semibold px-5 py-2.5 rounded-xl transition-colors text-sm"
+            >
+              {creatingTemplate
+                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <SendHorizonal size={14} />
+              }
+              {creatingTemplate ? 'Enviando...' : 'Enviar para Aprovação'}
             </button>
           </div>
         </form>

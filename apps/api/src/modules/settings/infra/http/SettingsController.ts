@@ -28,6 +28,13 @@ const whatsappSchema = z.object({
   whatsapp_template_variables: z.array(z.string().max(500)).default([]),
 })
 
+const createTemplateSchema = z.object({
+  name:     z.string().min(3).max(100),
+  category: z.enum(['MARKETING', 'UTILITY']),
+  language: z.string().min(2).max(10).default('pt_BR'),
+  bodyText: z.string().min(1).max(1024),
+})
+
 export class SettingsController {
   constructor(
     private readonly updateMaxAgentSessionsUseCase: UpdateMaxAgentSessionsUseCase,
@@ -153,5 +160,49 @@ export class SettingsController {
       })
 
     res.json({ templates }, 200)
+  }
+
+  async createWhatsAppTemplate(req: ParsedRequest, res: ResponseHelper): Promise<void> {
+    const input = validateBody(createTemplateSchema, req.body)
+
+    const wabaId = process.env.WHATSAPP_BUSINESS_ACCOUNT_ID
+    const token  = process.env.WHATSAPP_ACCESS_TOKEN
+    const version = process.env.WHATSAPP_API_VERSION ?? 'v21.0'
+
+    if (!wabaId || !token) {
+      throw new AppError('WHATSAPP_BUSINESS_ACCOUNT_ID ou WHATSAPP_ACCESS_TOKEN não configurados.', 503, 'WHATSAPP_CONFIG_MISSING')
+    }
+
+    const url = `${GRAPH}/${version}/${wabaId}/message_templates`
+    const body = JSON.stringify({
+      name: input.name,
+      category: input.category,
+      language: input.language,
+      components: [{ type: 'BODY', text: input.bodyText }],
+    })
+
+    let resp: globalThis.Response
+    try {
+      resp = await fetch(url, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body,
+        signal: AbortSignal.timeout(15_000),
+      })
+    } catch {
+      throw new AppError('Falha de rede ao criar template no WhatsApp.', 502, 'WHATSAPP_NETWORK_ERROR')
+    }
+
+    if (!resp.ok) {
+      const text = await resp.text().catch(() => '')
+      const status = resp.status
+      if (status === 400 && text.includes('duplicate')) {
+        throw new AppError('Já existe um template com este nome no WhatsApp.', 409, 'WHATSAPP_TEMPLATE_DUPLICATE')
+      }
+      throw new AppError(`WhatsApp recusou a criação do template (${status}): ${text.slice(0, 300)}`, 502, 'WHATSAPP_SEND_ERROR')
+    }
+
+    const data = await resp.json().catch(() => ({})) as { id?: string; name?: string; status?: string }
+    res.json({ ok: true, id: data.id, status: data.status ?? 'PENDING', message: 'Template enviado para aprovação do WhatsApp.' }, 201)
   }
 }
