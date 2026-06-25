@@ -11,8 +11,10 @@ export const dashboard = {
     newToday:      (n: number) => `+${n} hoje`,
   },
   charts: {
-    leadsByStatus:         'Leads por Status',
-    sessionsByState:       'Sessões por Estado',
+    leadsByStatus:           'Leads por Status',
+    sessionsByState:         'Sessões por Estado',
+    simulationsByModality:   'Simulações por Modalidade',
+    weekly:                  'Resumo da Semana',
   },
   financingLabels: {
     imobiliario: 'Imóvel',

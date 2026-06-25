@@ -3,7 +3,7 @@ import { api } from '@/lib/api'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts'
 import { Card, Skeleton } from '@/components/ui'
 import { dashboard, common } from '@/locales'
-import { LEAD_STATUSES } from '@/lib/constants'
+import { LEAD_STATUSES, FINANCING_LABELS } from '@/lib/constants'
 
 type DashboardStats = {
   leads: { total: number; byStatus: Record<string, number>; newToday: number; newThisWeek: number }
@@ -92,6 +92,10 @@ export function DashboardPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
 
+  const financingChartData = Object.entries(stats.simulations.byFinancingType).map(([k, v]) => ({
+    name: FINANCING_LABELS[k] ?? k, value: v,
+  }))
+
   return (
     <div className="space-y-4 md:space-y-6">
       <div>
@@ -138,6 +142,44 @@ export function DashboardPage() {
           ) : (
             <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">{common.empty.noData}</p>
           )}
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.simulationsByModality}</h3>
+          {financingChartData.length > 0 ? (
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={financingChartData}>
+                <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                <YAxis tick={{ fontSize: 10 }} />
+                <Tooltip />
+                <Bar dataKey="value" fill="#22c55e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <p className="text-gray-400 dark:text-gray-500 text-sm text-center py-8">{common.empty.noData}</p>
+          )}
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 mb-3 text-sm md:text-base">{dashboard.charts.weekly}</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
+              <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.leads.newThisWeek}</p>
+              <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">Leads esta semana</p>
+            </div>
+            <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-3 text-center">
+              <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.clients.newThisWeek}</p>
+              <p className="text-[11px] text-green-600 dark:text-green-400 mt-0.5">Clientes novos</p>
+            </div>
+            <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950/30 p-3 text-center">
+              <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.simulations.todayTotal}</p>
+              <p className="text-[11px] text-yellow-600 dark:text-yellow-400 mt-0.5">Simulações hoje</p>
+            </div>
+            <div className="rounded-lg bg-purple-50 dark:bg-purple-950/30 p-3 text-center">
+              <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.sessions.active}</p>
+              <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">Sessões ativas</p>
+            </div>
+          </div>
         </Card>
       </div>
     </div>
