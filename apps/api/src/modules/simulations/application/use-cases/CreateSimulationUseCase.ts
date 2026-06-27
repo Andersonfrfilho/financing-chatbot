@@ -277,6 +277,26 @@ export class CreateSimulationUseCase {
 
     if (!simulation) throw new Error('Falha ao criar simulação')
 
+    // Cria lead automaticamente quando a simulação vem do WhatsApp bot
+    if (whatsappNumber !== 'internal') {
+      const clientId = input.clientId ?? (
+        await this.db
+          .select({ id: schema.financingClients.id })
+          .from(schema.financingClients)
+          .where(eq(schema.financingClients.whatsappNumber, whatsappNumber))
+          .limit(1)
+          .then((rows) => rows[0]?.id ?? null)
+      )
+      if (clientId) {
+        await this.db.insert(schema.leads).values({
+          clientId,
+          simulationId: simulation.id,
+          whatsappNumber,
+          status:       'new',
+        })
+      }
+    }
+
     // Calcula e persiste resultados por banco
     const results: BankSimulationResult[] = []
     const resultValues: schema.NewSimulationResult[] = []
