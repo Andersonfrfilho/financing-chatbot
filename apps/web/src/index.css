@@ -62,19 +62,6 @@
 
 }
 
-/*
-  Zebra striping in @layer components so it sits ABOVE @layer base but
-  BELOW @layer utilities — meaning bg-blue-50 (selected) and hover:bg-*
-  (from utilities) override it, but it still shows on plain rows.
-*/
-@layer components {
-  .zebra-table tr:nth-child(even) {
-    background-color: rgb(249, 250, 251);
-  }
-  .dark .zebra-table tr:nth-child(even) {
-    background-color: rgba(31, 41, 55, 0.35);
-  }
-}
 
 @layer utilities {
   .scrollbar-thin {

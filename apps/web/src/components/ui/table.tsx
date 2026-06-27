@@ -27,9 +27,32 @@ TableHeader.displayName = "TableHeader"
 const TableBody = React.forwardRef<
   HTMLTableSectionElement,
   React.HTMLAttributes<HTMLTableSectionElement>
->(({ className, ...props }, ref) => (
-  <tbody ref={ref} className={cn("zebra-table [&_tr:last-child]:border-0", className)} {...props} />
-))
+>(({ className, children, ...props }, ref) => {
+  let rowIndex = 0
+
+  const zebraChildren = React.Children.map(children, (child) => {
+    if (!React.isValidElement(child)) return child
+
+    const childEl = child as React.ReactElement<{ className?: string }>
+    const childClass = childEl.props.className ?? ''
+    const hasStaticBg = childClass
+      .split(' ')
+      .some((token) => !token.includes(':') && token.startsWith('bg-') && token !== 'bg-transparent')
+    const isEvenRow = rowIndex++ % 2 === 1
+
+    if (!isEvenRow || hasStaticBg) return child
+
+    return React.cloneElement(childEl as React.ReactElement<any>, {
+      className: cn(childClass, 'bg-gray-50 dark:bg-gray-800/35'),
+    })
+  })
+
+  return (
+    <tbody ref={ref} className={cn('[&_tr:last-child]:border-0', className)} {...props}>
+      {zebraChildren}
+    </tbody>
+  )
+})
 TableBody.displayName = "TableBody"
 
 const TableFooter = React.forwardRef<
