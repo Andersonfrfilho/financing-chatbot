@@ -211,13 +211,15 @@ await scenario('Habitacional — Imóvel Pronto', [
   ['oi',          'awaiting_menu'],
   ['1',           'awaiting_hab_type'],
   ['1',           'in_flow'],
-  ['300000',      'in_flow'],
-  ['novo',        'in_flow'],
-  ['6000',        'in_flow'],
-  ['15/06/1990',  'in_flow'],
-  ['sim',         'in_flow'],
-  ['2',           'in_flow'],
-  ['nao',         'human_handoff'],
+  ['300000',      'in_flow'],       // valorImovel
+  ['60000',       'in_flow'],       // entrada (20%)
+  ['240',         'in_flow'],       // prazoMeses: 20 anos
+  ['novo',        'in_flow'],       // imovelCond
+  ['6000',        'in_flow'],       // rendaFamiliar
+  ['15/06/1990',  'in_flow'],       // nascimento
+  ['sim',         'in_flow'],       // fgts3anos
+  ['0',           'in_flow'],       // dependentes
+  ['nao',         'awaiting_post_sim_hab'],  // jaTemImovel → dispara simulação
 ])
 
 // ── 3. Habitacional → Construção ─────────────────────────────────────────────
@@ -228,10 +230,11 @@ await scenario('Habitacional — Construção', [
   ['proprio',     'in_flow'],
   ['80000',       'in_flow'],
   ['200000',      'in_flow'],
+  ['240',         'in_flow'],       // prazoMeses: 20 anos
   ['7000',        'in_flow'],
   ['20/03/1985',  'in_flow'],
   ['nao',         'in_flow'],
-  ['1',           'human_handoff'],
+  ['1',           'awaiting_post_sim_hab'],
 ])
 
 // ── 4. Habitacional → Terreno ────────────────────────────────────────────────
@@ -240,10 +243,11 @@ await scenario('Habitacional — Terreno', [
   ['1',           'awaiting_hab_type'],
   ['3',           'in_flow'],
   ['90000',       'in_flow'],
+  ['120',         'in_flow'],       // prazoMeses: 10 anos
   ['5000',        'in_flow'],
   ['10/03/1988',  'in_flow'],
   ['nao',         'in_flow'],
-  ['0',           'human_handoff'],
+  ['0',           'awaiting_post_sim_hab'],
 ])
 
 // ── 5. Consórcio (veículo) ───────────────────────────────────────────────────
