@@ -25,6 +25,8 @@ const createSimulationSchema = z.object({
   // Renda: usada no comprometimento de renda (capacidade de pagamento)
   monthlyIncome: z.number().min(0).optional(),
   coParticipantIncome: z.number().min(0).optional(),
+  // Caixa MCMV: prazo máximo por idade e taxa MIP
+  applicantAgeYears: z.number().int().min(18).max(80).optional(),
   metadata: z.record(z.unknown()).optional(),
 })
 

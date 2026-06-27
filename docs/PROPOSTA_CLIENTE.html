@@ -1,0 +1,1340 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Proposta Comercial — Plataforma de Atendimento via WhatsApp</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Space Grotesk', 'Segoe UI', system-ui, -apple-system, sans-serif;
+      background: #f5f7fa;
+      color: #1a1a2e;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      background: linear-gradient(135deg, #075e54 0%, #128c7e 60%, #25d366 100%);
+      color: #fff;
+      padding: 28px 28px 88px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .hero-logo {
+      height: 48px;
+      width: auto;
+      opacity: 0.55;
+      flex-shrink: 0;
+    }
+    .hero-brand-name {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+      text-align: left;
+      opacity: 0.85;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+    .hero-brand-ada {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .hero-brand-tech {
+      font-size: 0.68rem;
+      font-weight: 500;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.72);
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 40px;
+      background: #f5f7fa;
+      clip-path: ellipse(55% 100% at 50% 100%);
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.18);
+      border: 1px solid rgba(255,255,255,0.35);
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 5px 18px;
+      margin-bottom: 22px;
+    }
+    .hero h1 {
+      font-size: clamp(1.5rem, 5vw, 2.6rem);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      max-width: 640px;
+      margin: 0 auto 18px;
+      line-height: 1.25;
+    }
+    .hero p {
+      font-size: clamp(0.93rem, 2.5vw, 1.05rem);
+      font-weight: 400;
+      opacity: 0.9;
+      max-width: 520px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Content wrapper ── */
+    .content {
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 24px 80px;
+    }
+
+    /* ── Section ── */
+    .section {
+      background: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      margin-top: 28px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05), 0 4px 20px rgba(0,0,0,0.04);
+      border: 1px solid #f0f0f0;
+    }
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #075e54;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .section-title::after {
+      content: '';
+      flex: 1;
+      height: 1.5px;
+      background: linear-gradient(to right, #bbf7d0, transparent);
+      border-radius: 2px;
+    }
+
+    /* ── Benefits ── */
+    .benefits-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .benefit-item {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-radius: 12px;
+      padding: 14px 16px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.5;
+    }
+    .benefit-icon { font-size: 1.1rem; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Plans ── */
+    .plans-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+    .plan-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      padding: 28px 22px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .plan-card.featured {
+      border-color: #25d366;
+      background: #f0fdf4;
+    }
+    .plan-badge {
+      position: absolute;
+      top: -13px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #25d366;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 4px 14px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .plan-name { font-size: 1rem; font-weight: 700; color: #374151; margin-bottom: 4px; }
+    .plan-price {
+      font-size: 2rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: #075e54;
+      line-height: 1.1;
+      margin-bottom: 2px;
+    }
+    .plan-price span { font-size: 1rem; font-weight: 500; color: #6b7280; }
+    .plan-setup { font-size: 0.8rem; color: #6b7280; margin-bottom: 20px; }
+    .plan-divider { border: none; border-top: 1px solid #e5e7eb; margin: 16px 0; }
+    .plan-features { list-style: none; flex: 1; }
+    .plan-features li {
+      font-size: 0.86rem;
+      color: #374151;
+      padding: 5px 0;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      line-height: 1.4;
+    }
+    .plan-features li .check { color: #25d366; font-weight: 700; flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Founders ── */
+    .founders-card {
+      background: linear-gradient(135deg, #1e3a5f 0%, #0f2744 100%);
+      color: #fff;
+      border-radius: 16px;
+      padding: 40px;
+      margin-top: 28px;
+    }
+    .founders-tag {
+      display: inline-block;
+      background: #f59e0b;
+      color: #1a1a2e;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 5px 14px;
+      border-radius: 999px;
+      margin-bottom: 16px;
+    }
+    .founders-card h3 { font-size: 1.4rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 10px; }
+    .founders-card > p { opacity: 0.8; font-size: 0.93rem; margin-bottom: 28px; line-height: 1.6; }
+    .founders-steps {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+    .founders-step {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      padding: 18px;
+      text-align: center;
+    }
+    .founders-step-label { font-size: 0.68rem; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 8px; }
+    .founders-step-value { font-size: 1.3rem; font-weight: 800; }
+    .founders-step-value.highlight { color: #4ade80; }
+    .founders-step-sub { font-size: 0.71rem; opacity: 0.55; margin-top: 4px; }
+
+    /* ── Table scroll wrapper ── */
+    .table-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 10px;
+      border: 1px solid #e5e7eb;
+    }
+
+    /* ── Data table ── */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      min-width: 400px;
+    }
+    .data-table th {
+      background: #f0fdf4;
+      color: #075e54;
+      font-weight: 700;
+      text-align: left;
+      padding: 11px 16px;
+      border-bottom: 2px solid #bbf7d0;
+      white-space: nowrap;
+    }
+    .data-table td {
+      padding: 10px 16px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: top;
+      line-height: 1.55;
+    }
+    .data-table tr:last-child td { border-bottom: none; }
+    .data-table tr:hover td { background: #f9fafb; }
+
+    /* ── Vertical table (no horizontal scroll needed) ── */
+    .data-table.vertical { min-width: 0; }
+    .data-table.vertical td:first-child { font-weight: 600; width: 220px; white-space: nowrap; }
+
+    /* ── Note / info boxes ── */
+    .note-box {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.87rem;
+      color: #78350f;
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      line-height: 1.55;
+    }
+    .info-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 14px 18px;
+      font-size: 0.87rem;
+      color: #1e40af;
+      margin-top: 16px;
+      display: flex;
+      gap: 10px;
+      line-height: 1.55;
+    }
+
+    /* ── Steps ── */
+    .steps { display: flex; flex-direction: column; }
+    .step { display: flex; gap: 20px; position: relative; }
+    .step:not(:last-child)::before {
+      content: '';
+      position: absolute;
+      left: 19px;
+      top: 44px;
+      bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, #bbf7d0, #e5e7eb);
+    }
+    .step-number {
+      width: 40px;
+      height: 40px;
+      min-width: 40px;
+      border-radius: 50%;
+      background: #075e54;
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      z-index: 1;
+      box-shadow: 0 2px 8px rgba(7,94,84,0.3);
+    }
+    .step-number.small {
+      width: 32px;
+      height: 32px;
+      min-width: 32px;
+      font-size: 0.8rem;
+    }
+    .step:has(.step-number.small):not(:last-child)::before { left: 15px; top: 36px; }
+    .step-body { padding: 8px 0 28px; }
+    .step-body.compact { padding-bottom: 20px; }
+    .step-title { font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+    .step-desc { font-size: 0.9rem; color: #6b7280; line-height: 1.5; }
+    .step-time {
+      display: inline-block;
+      background: #f0fdf4;
+      color: #075e54;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 999px;
+      padding: 3px 12px;
+      margin-top: 8px;
+    }
+
+    /* ── Requirements list ── */
+    .requirements-list { list-style: none; }
+    .requirements-list li {
+      padding: 9px 0;
+      font-size: 0.92rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      border-bottom: 1px solid #f3f4f6;
+      line-height: 1.55;
+    }
+    .requirements-list li:last-child { border-bottom: none; }
+    .req-icon { color: #075e54; font-weight: 700; flex-shrink: 0; margin-top: 3px; }
+
+    /* ── Tier badges ── */
+    .tier-badge {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .tier-start { background: #dcfce7; color: #166534; }
+    .tier-mid   { background: #dbeafe; color: #1e40af; }
+    .tier-high  { background: #ede9fe; color: #5b21b6; }
+    .tier-top   { background: #fef3c7; color: #92400e; }
+    .free-badge {
+      display: inline-block;
+      background: #dcfce7;
+      color: #166534;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 999px;
+    }
+
+    /* ── Add-ons ── */
+    .addons-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .addon-card {
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      transition: box-shadow 0.15s, border-color 0.15s;
+    }
+    .addon-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.08); border-color: #d1d5db; }
+    .addon-icon { font-size: 1.5rem; margin-bottom: 10px; }
+    .addon-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .addon-desc { font-size: 0.84rem; color: #6b7280; margin-bottom: 14px; flex: 1; line-height: 1.5; }
+    .addon-price { font-size: 1.05rem; font-weight: 800; color: #075e54; }
+    .addon-price span { font-size: 0.8rem; font-weight: 500; color: #6b7280; }
+
+    /* ── Investment summary ── */
+    .investment-block {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .investment-block h4 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #374151;
+      margin-bottom: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .investment-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      padding: 7px 0;
+      font-size: 0.9rem;
+      border-bottom: 1px dashed #e5e7eb;
+    }
+    .investment-row:last-child { border-bottom: none; }
+    .investment-row .label { color: #6b7280; flex: 1; }
+    .investment-row .value { font-weight: 700; color: #1a1a2e; white-space: nowrap; }
+    .investment-row.total { padding-top: 12px; border-top: 2px solid #e5e7eb; border-bottom: none; }
+    .investment-row.total .label { color: #1a1a2e; font-weight: 700; font-size: 1rem; }
+    .investment-row.total .value { color: #075e54; font-size: 1.15rem; }
+
+    /* ── Two-col grids ── */
+    .two-col-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+    }
+    .feature-box {
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .feature-box.include {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+    }
+    .feature-box.custom {
+      background: #fffbeb;
+      border: 1px solid #fde68a;
+    }
+    .feature-box-title { font-weight: 700; margin-bottom: 10px; font-size: 0.93rem; }
+    .feature-box.include .feature-box-title { color: #075e54; }
+    .feature-box.custom .feature-box-title { color: #92400e; }
+    .feature-box ul { list-style: none; font-size: 0.87rem; color: #374151; line-height: 2; }
+    .feature-box-note { font-size: 0.82rem; color: #78350f; margin-top: 12px; }
+
+    /* ── Contract cards ── */
+    .contract-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .contract-card {
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      padding: 20px;
+    }
+    .contract-card.featured {
+      border-color: #25d366;
+      background: #f0fdf4;
+      position: relative;
+    }
+    .contract-card-badge {
+      position: absolute;
+      top: -12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #25d366;
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 3px 12px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .contract-card-name { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .contract-card-sub { font-size: 0.85rem; color: #6b7280; margin-bottom: 14px; }
+    .contract-card ul { list-style: none; font-size: 0.85rem; color: #374151; line-height: 2; }
+
+    /* ── FAQ ── */
+    .faq-item {
+      padding: 20px 0;
+      border-bottom: 1px solid #f3f4f6;
+    }
+    .faq-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .faq-question { font-weight: 700; color: #1a1a2e; margin-bottom: 8px; font-size: 0.97rem; }
+    .faq-answer { font-size: 0.9rem; color: #6b7280; line-height: 1.6; }
+
+    /* ── CTA ── */
+    .cta-section {
+      background: linear-gradient(135deg, #075e54, #128c7e);
+      color: #fff;
+      border-radius: 16px;
+      padding: 56px 40px;
+      text-align: center;
+      margin-top: 28px;
+    }
+    .cta-section h3 { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 12px; }
+    .cta-section p { opacity: 0.85; font-size: 0.97rem; margin-bottom: 32px; }
+    .cta-btn {
+      display: inline-block;
+      background: #fff;
+      color: #075e54;
+      font-weight: 700;
+      font-size: 0.95rem;
+      padding: 14px 40px;
+      border-radius: 999px;
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      transition: transform 0.15s, box-shadow 0.15s;
+      font-family: inherit;
+    }
+    .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 28px rgba(0,0,0,0.25); }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      padding: 32px 24px 28px;
+      border-top: 1px solid #e5e7eb;
+      background: #fff;
+      line-height: 1.8;
+    }
+    .footer img { height: 40px; margin-bottom: 10px; opacity: 0.75; display: block; margin-left: auto; margin-right: auto; }
+    .footer strong { color: #374151; font-size: 0.85rem; }
+
+    /* ── Prose helpers ── */
+    .subsection-title { font-size: 0.95rem; font-weight: 700; color: #374151; margin-bottom: 12px; }
+    .body-text { font-size: 0.93rem; color: #6b7280; margin-bottom: 20px; }
+    .body-text strong { color: #1a1a2e; }
+    .spacer { height: 24px; }
+    code.inline {
+      background: #f3f4f6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85rem;
+      font-family: ui-monospace, 'Cascadia Code', monospace;
+    }
+
+    /* ═══════════════════════════════════
+       Responsive — Tablet (≤ 768px)
+    ═══════════════════════════════════ */
+    @media (max-width: 768px) {
+      .hero-logo { height: 40px; margin-bottom: 32px; }
+
+      .hero { padding: 56px 20px 72px; }
+
+      .content { padding: 0 20px 60px; }
+      .section { padding: 32px 24px; }
+      .founders-card { padding: 32px 24px; }
+      .cta-section { padding: 44px 28px; }
+
+      .plans-grid { grid-template-columns: 1fr; max-width: 400px; margin-left: auto; margin-right: auto; }
+      .founders-steps { grid-template-columns: repeat(2, 1fr); }
+      .benefits-grid { grid-template-columns: 1fr; }
+      .addons-grid { grid-template-columns: 1fr; }
+
+      .data-table.vertical td:first-child { width: auto; white-space: normal; }
+    }
+
+    /* ═══════════════════════════════════
+       Responsive — Mobile (≤ 480px)
+    ═══════════════════════════════════ */
+    @media (max-width: 480px) {
+      .hero-logo { height: 36px; margin-bottom: 24px; }
+
+      .hero { padding: 44px 18px 60px; }
+      .hero::after { height: 28px; }
+
+      .content { padding: 0 14px 48px; }
+      .section { padding: 22px 16px; margin-top: 16px; border-radius: 14px; }
+      .founders-card { padding: 24px 18px; border-radius: 14px; margin-top: 16px; }
+      .cta-section { padding: 36px 20px; border-radius: 14px; margin-top: 16px; }
+
+      .section-title { font-size: 0.72rem; }
+
+      .plans-grid { max-width: 100%; }
+      .plan-price { font-size: 1.75rem; }
+      .founders-steps { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .founders-card h3 { font-size: 1.2rem; }
+      .founders-step { padding: 14px 10px; }
+      .founders-step-value { font-size: 1.1rem; }
+
+      .cta-section h3 { font-size: 1.3rem; }
+      .cta-btn { padding: 13px 28px; font-size: 0.9rem; }
+
+      .investment-row { flex-wrap: wrap; gap: 4px; }
+      .investment-row .value { margin-left: auto; }
+
+      .step { gap: 14px; }
+      .step-body { padding-bottom: 20px; }
+      .step-body.compact { padding-bottom: 16px; }
+
+      .two-col-grid { grid-template-columns: 1fr; }
+      .contract-grid { grid-template-columns: 1fr; }
+      .contract-card.featured { margin-top: 12px; }
+
+      .faq-question { font-size: 0.93rem; }
+
+      .data-table th, .data-table td { padding: 9px 12px; font-size: 0.85rem; }
+      .investment-block { padding: 18px; }
+    }
+
+    /* ── Print ── */
+    @media print {
+      body { background: #fff; }
+      .topbar { position: static; box-shadow: none; }
+      .section { box-shadow: none; break-inside: avoid; }
+      .founders-card, .cta-section { break-inside: avoid; }
+      .table-scroll { overflow: visible; border: none; }
+      .data-table { min-width: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="hero-brand">
+      <img src="ada-icon-white.png" alt="Ada Technology" class="hero-logo" />
+      <div class="hero-brand-name">
+        <span class="hero-brand-ada">AdA</span>
+        <span class="hero-brand-tech">Technology</span>
+      </div>
+    </div>
+    <div class="hero-badge">Proposta Comercial</div>
+    <h1>Plataforma Inteligente de Atendimento via WhatsApp</h1>
+    <p>Automatize o atendimento, qualifique clientes e aumente as vendas — sem perder o toque humano.</p>
+  </div>
+
+  <div class="content">
+
+    <!-- Benefícios -->
+    <div class="section">
+      <div class="section-title">O que sua empresa recebe</div>
+      <div class="benefits-grid">
+        <div class="benefit-item"><span class="benefit-icon">🕐</span>Atendimento automático 24 horas por dia, 7 dias por semana</div>
+        <div class="benefit-item"><span class="benefit-icon">🎯</span>Qualificação automática de clientes antes do atendente assumir</div>
+        <div class="benefit-item"><span class="benefit-icon">👥</span>Múltiplos atendentes com histórico centralizado e organizado</div>
+        <div class="benefit-item"><span class="benefit-icon">📊</span>Painel de gestão com indicadores de atendimento e conversão</div>
+        <div class="benefit-item"><span class="benefit-icon">🔒</span>Backup diário dos dados e monitoramento contínuo de disponibilidade</div>
+        <div class="benefit-item"><span class="benefit-icon">🔄</span>Atualizações testadas antes de chegar ao seu ambiente</div>
+      </div>
+    </div>
+
+    <!-- Planos -->
+    <div class="section">
+      <div class="section-title">Planos</div>
+      <div class="plans-grid">
+
+        <div class="plan-card featured">
+          <div class="plan-badge">Indicado para você</div>
+          <div class="plan-name">Start</div>
+          <div class="plan-price">R$ 497<span>/mês</span></div>
+          <div class="plan-setup">+ R$ 497 de setup (único)</div>
+          <hr class="plan-divider" />
+          <ul class="plan-features">
+            <li><span class="check">✓</span>Até 3 atendentes</li>
+            <li><span class="check">✓</span>Volume de conversas ilimitado*</li>
+            <li><span class="check">✓</span>Bot ativo 24h</li>
+            <li><span class="check">✓</span>Transferência para atendente humano</li>
+            <li><span class="check">✓</span>1 template WhatsApp</li>
+            <li><span class="check">✓</span>Dashboard básico</li>
+            <li><span class="check">✓</span>Suporte por e-mail (48h úteis)</li>
+          </ul>
+        </div>
+
+        <div class="plan-card">
+          <div class="plan-name">Growth</div>
+          <div class="plan-price">R$ 997<span>/mês</span></div>
+          <div class="plan-setup">+ R$ 997 de setup (único)</div>
+          <hr class="plan-divider" />
+          <ul class="plan-features">
+            <li><span class="check">✓</span>Até 5 atendentes</li>
+            <li><span class="check">✓</span>Volume de conversas ilimitado*</li>
+            <li><span class="check">✓</span>Bot ativo 24h</li>
+            <li><span class="check">✓</span>Transferência para atendente humano</li>
+            <li><span class="check">✓</span>Até 3 templates WhatsApp</li>
+            <li><span class="check">✓</span>Dashboard completo</li>
+            <li><span class="check">✓</span>Suporte via WhatsApp (24h úteis)</li>
+            <li><span class="check">✓</span>Backup externo 30 dias</li>
+            <li><span class="check">✓</span>Ambiente de homologação incluso</li>
+          </ul>
+        </div>
+
+        <div class="plan-card" style="border-style:dashed;">
+          <div class="plan-name" style="color:#6b7280;">Crescimento</div>
+          <div class="plan-price" style="font-size:1.25rem;color:#6b7280;margin-top:6px;">A definir</div>
+          <div class="plan-setup">Quando sua operação crescer além de 5 atendentes</div>
+          <hr class="plan-divider" />
+          <p style="font-size:0.87rem;color:#6b7280;line-height:1.6;">
+            Conforme a operação crescer — mais atendentes, mais volume, recursos específicos — definimos juntos um plano adequado ao momento da empresa.
+          </p>
+          <p style="font-size:0.83rem;color:#9ca3af;margin-top:16px;">
+            Sem compromisso agora. Você começa no Start e decide quando e se quer escalar.
+          </p>
+        </div>
+
+      </div>
+      <div class="note-box" style="margin-top:20px;">
+        <span>*</span>
+        <span>O volume de conversas não é limitado pela nossa plataforma. Os limites são definidos pela própria Meta (WhatsApp) conforme o histórico de uso do número — detalhado na seção de integração abaixo.</span>
+      </div>
+    </div>
+
+    <!-- Founders -->
+    <div class="founders-card">
+      <div class="founders-tag">Oferta de lançamento · Limitada a 10 clientes</div>
+      <h3>Quer começar já no Growth?</h3>
+      <p>Para quem decide entrar no plano completo desde o primeiro dia — até 5 atendentes, dashboard completo e suporte prioritário. Condição exclusiva de lançamento: implantação gratuita e primeiro mês no preço do Start.</p>
+      <div class="founders-steps">
+        <div class="founders-step">
+          <div class="founders-step-label">Implantação</div>
+          <div class="founders-step-value highlight">Grátis</div>
+          <div class="founders-step-sub">economia de R$ 997</div>
+        </div>
+        <div class="founders-step">
+          <div class="founders-step-label">1º mês</div>
+          <div class="founders-step-value highlight">R$ 497</div>
+          <div class="founders-step-sub">preço do Start</div>
+        </div>
+        <div class="founders-step">
+          <div class="founders-step-label">A partir do 2º mês</div>
+          <div class="founders-step-value highlight">R$ 997</div>
+          <div class="founders-step-sub">valor cheio do Growth</div>
+        </div>
+        <div class="founders-step">
+          <div class="founders-step-label">Economia total</div>
+          <div class="founders-step-value highlight">R$ 1.494</div>
+          <div class="founders-step-sub">setup + 1º mês</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resumo do investimento -->
+    <div class="section">
+      <div class="section-title">Resumo do investimento</div>
+      <p class="body-text">
+        Valores para um cliente com <strong>3 atendentes</strong> no plano Start.
+      </p>
+
+      <div class="investment-block">
+        <h4>Entrada (custo único)</h4>
+        <div class="investment-row">
+          <span class="label">Setup e implantação</span>
+          <span class="value">R$ 497</span>
+        </div>
+      </div>
+
+      <div class="investment-block">
+        <h4>Mensalidade da plataforma — Plano Start</h4>
+        <div class="investment-row">
+          <span class="label">Contrato mensal (a partir do 1º mês)</span>
+          <span class="value">R$ 497/mês</span>
+        </div>
+        <div class="investment-row">
+          <span class="label">Contrato anual <span class="free-badge" style="margin-left:4px;">2 meses grátis</span></span>
+          <span class="value">R$ 4.970/ano</span>
+        </div>
+      </div>
+
+      <div class="investment-block">
+        <h4>Custo variável — API WhatsApp (Meta)</h4>
+        <div class="investment-row">
+          <span class="label">Conversas iniciadas pelo cliente (serviço)</span>
+          <span class="value">Grátis até 1.000/mês</span>
+        </div>
+        <div class="investment-row">
+          <span class="label">Acima de 1.000 conversas de serviço</span>
+          <span class="value">~R$ 0,05 por conversa</span>
+        </div>
+        <div class="investment-row">
+          <span class="label">Mensagens ativas (templates)</span>
+          <span class="value">~R$ 0,11 a R$ 0,36 por conversa</span>
+        </div>
+      </div>
+
+      <div class="info-box">
+        <span>ℹ️</span>
+        <span>Para operações com volume predominantemente de atendimento receptivo (cliente inicia), o custo da API da Meta costuma ser zero ou muito baixo nos primeiros meses de operação.</span>
+      </div>
+    </div>
+
+    <!-- Serviços adicionais -->
+    <div class="section">
+      <div class="section-title">Serviços e recursos adicionais</div>
+      <p class="body-text">Podem ser contratados a qualquer momento, sem necessidade de troca de plano.</p>
+      <div class="addons-grid">
+
+        <div class="addon-card">
+          <div class="addon-icon">📈</div>
+          <div class="addon-name">Data Lake — Análise Histórica</div>
+          <div class="addon-desc">Armazena todos os eventos da operação (atendimentos, qualificações, conversões) em um banco analítico separado. Permite relatórios históricos ilimitados, funil de conversão por período e indicadores por atendente.</div>
+          <div class="addon-price">R$ 197<span>/mês</span></div>
+        </div>
+
+        <div class="addon-card">
+          <div class="addon-icon">🌐</div>
+          <div class="addon-name">Domínio Personalizado</div>
+          <div class="addon-desc">O painel de atendimento acessível pelo endereço da própria empresa (ex: <em>atendimento.empresa.com.br</em>). Inclui configuração de DNS e certificado SSL.</div>
+          <div class="addon-price">R$ 97<span>/mês</span></div>
+        </div>
+
+        <div class="addon-card">
+          <div class="addon-icon">📋</div>
+          <div class="addon-name">Templates Adicionais</div>
+          <div class="addon-desc">Criação e aprovação de templates de mensagem ativa (além dos incluídos no plano). Cada template passa pelo processo de aprovação da Meta.</div>
+          <div class="addon-price">R$ 97<span> por template</span></div>
+        </div>
+
+        <div class="addon-card">
+          <div class="addon-icon">📧</div>
+          <div class="addon-name">E-mail Transacional</div>
+          <div class="addon-desc">Notificações por e-mail para a equipe: novo atendimento recebido, lead qualificado, alerta de inatividade e relatório semanal automático.</div>
+          <div class="addon-price">R$ 47<span>/mês</span></div>
+        </div>
+
+        <div class="addon-card">
+          <div class="addon-icon">🔗</div>
+          <div class="addon-name">Integração com CRM</div>
+          <div class="addon-desc">Conexão da plataforma com CRMs externos (ex: RD Station, HubSpot, Pipedrive). Leads qualificados são enviados automaticamente ao sistema da empresa.</div>
+          <div class="addon-price">Sob consulta</div>
+        </div>
+
+        <div class="addon-card">
+          <div class="addon-icon">🛡️</div>
+          <div class="addon-name">Backup Estendido</div>
+          <div class="addon-desc">Retenção de backup por 90 dias em armazenamento externo seguro, com possibilidade de restauração de qualquer ponto do histórico.</div>
+          <div class="addon-price">R$ 67<span>/mês</span></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Limites e upgrade -->
+    <div class="section">
+      <div class="section-title">Limites e upgrade de plano</div>
+      <p class="body-text">
+        A empresa começa no plano que melhor se encaixa na operação atual.
+        <strong>Não há cobrança surpresa</strong> ao ultrapassar um limite — você é avisado e decide o próximo passo.
+      </p>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr><th>Situação</th><th>O que acontece</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Precisa de mais de 3 atendentes (Start)</td>
+              <td>Migração para o Growth</td>
+            </tr>
+            <tr>
+              <td>Precisa de mais de 5 atendentes (Growth)</td>
+              <td>Conversa para definir um plano adequado ao novo momento da operação — sem valores fixos predefinidos</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note-box">
+        <span>💡</span>
+        <span>A migração de plano não gera interrupção no serviço. O valor do setup já pago não é cobrado novamente.</span>
+      </div>
+    </div>
+
+    <!-- Limites da integração WhatsApp -->
+    <div class="section">
+      <div class="section-title">Limites da integração WhatsApp (Meta)</div>
+      <p class="body-text">
+        Os limites de volume de mensagens são controlados exclusivamente pela Meta, não pela nossa plataforma.
+        O número começa no Tier 1 e sobe automaticamente conforme o histórico de uso.
+      </p>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr><th>Nível</th><th>Limite diário</th><th>Como chegar</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="tier-badge tier-start">Tier 1</span></td>
+              <td>1.000 usuários únicos / dia</td>
+              <td>Número recém-ativado</td>
+            </tr>
+            <tr>
+              <td><span class="tier-badge tier-mid">Tier 2</span></td>
+              <td>10.000 usuários únicos / dia</td>
+              <td>Após volume consistente e qualidade de número Verde</td>
+            </tr>
+            <tr>
+              <td><span class="tier-badge tier-high">Tier 3</span></td>
+              <td>100.000 usuários únicos / dia</td>
+              <td>Crescimento progressivo de volume</td>
+            </tr>
+            <tr>
+              <td><span class="tier-badge tier-top">Tier 4</span></td>
+              <td>Ilimitado</td>
+              <td>Solicitação formal à Meta + histórico sólido</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="spacer"></div>
+      <p class="subsection-title">Qualidade do número</p>
+      <p class="body-text" style="margin-bottom:14px;">A Meta avalia continuamente a qualidade do número com base no feedback dos usuários. Isso afeta o limite de envio.</p>
+
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr><th>Status</th><th>O que significa</th><th>Impacto</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🟢 Verde</td>
+              <td>Boa qualidade de atendimento</td>
+              <td>Sem restrições — tier sobe normalmente</td>
+            </tr>
+            <tr>
+              <td>🟡 Amarelo</td>
+              <td>Reclamações moderadas</td>
+              <td>Tier pode ser reduzido temporariamente</td>
+            </tr>
+            <tr>
+              <td>🔴 Vermelho</td>
+              <td>Alto volume de bloqueios pelos destinatários</td>
+              <td>Envio de mensagens ativas suspenso</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note-box">
+        <span>💡</span>
+        <span>Para operações de atendimento receptivo (cliente que entra em contato primeiro), o risco de queda de qualidade é muito baixo. O sistema foi projetado para esse perfil de uso.</span>
+      </div>
+    </div>
+
+    <!-- Domínio e E-mail -->
+    <div class="section">
+      <div class="section-title">Domínio e e-mail</div>
+
+      <p class="subsection-title">Acesso ao painel</p>
+      <div class="table-scroll" style="margin-bottom:24px;">
+        <table class="data-table">
+          <thead>
+            <tr><th>Opção</th><th>Endereço</th><th>Custo</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Subdomínio padrão (incluso)</td>
+              <td><code class="inline">empresa.plataforma.com.br</code></td>
+              <td><span class="free-badge">Incluso no plano</span></td>
+            </tr>
+            <tr>
+              <td>Domínio personalizado (adicional)</td>
+              <td><code class="inline">atendimento.suaempresa.com.br</code></td>
+              <td>R$ 97/mês</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p class="body-text">
+        Em ambos os casos o acesso é via HTTPS com certificado SSL incluso. O domínio personalizado requer que a empresa aponte o DNS para nossa infraestrutura — o processo leva menos de 30 minutos.
+      </p>
+
+      <p class="subsection-title">E-mail</p>
+      <ul class="requirements-list">
+        <li>
+          <span class="req-icon">→</span>
+          <span><strong>Meta Business Manager:</strong> é necessário um e-mail corporativo para criar e verificar a conta da empresa junto à Meta. Recomendamos um e-mail no domínio da empresa (ex: contato@suaempresa.com.br), não uma conta pessoal.</span>
+        </li>
+        <li>
+          <span class="req-icon">→</span>
+          <span><strong>Notificações da plataforma:</strong> alertas de novos atendimentos, resumos diários e avisos de sistema são enviados para o e-mail(s) cadastrado(s) na conta.</span>
+        </li>
+        <li>
+          <span class="req-icon">→</span>
+          <span><strong>E-mail transacional (adicional):</strong> relatórios automáticos e notificações personalizadas para a equipe podem ser ativados como serviço adicional por R$ 47/mês.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- Processo de entrada -->
+    <div class="section">
+      <div class="section-title">Processo de entrada</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-body">
+            <div class="step-title">Reunião de briefing</div>
+            <div class="step-desc">Alinhamos o fluxo de atendimento, as perguntas do bot, os horários e as mensagens automáticas da empresa.</div>
+            <div class="step-time">Até 2 dias após o contrato</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-body">
+            <div class="step-title">Configuração técnica</div>
+            <div class="step-desc">Configuramos a plataforma, criamos os usuários e preparamos o ambiente de testes.</div>
+            <div class="step-time">3 a 5 dias úteis</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-body">
+            <div class="step-title">Aprovação do WhatsApp (Meta)</div>
+            <div class="step-desc">Iniciamos o processo de registro junto à Meta em paralelo à configuração. Cuidamos de toda a parte técnica.</div>
+            <div class="step-time">Paralelo à etapa anterior · 5 a 10 dias úteis</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">4</div>
+          <div class="step-body">
+            <div class="step-title">Validação com você</div>
+            <div class="step-desc">Você testa o fluxo completo no ambiente de homologação e aprovamos juntos antes de ir ao ar.</div>
+            <div class="step-time">1 a 2 dias</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number">5</div>
+          <div class="step-body">
+            <div class="step-title">Go-live</div>
+            <div class="step-desc">Plataforma em produção com o número oficial da empresa, pronta para receber clientes.</div>
+            <div class="step-time">Prazo total: 10 a 15 dias úteis</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Aprovação WhatsApp -->
+    <div class="section">
+      <div class="section-title">Aprovação do WhatsApp (Meta)</div>
+      <p class="body-text">
+        O WhatsApp Business API é regulado pela Meta. <strong>Cuidamos de toda a parte técnica</strong> — você só precisa fornecer as informações abaixo.
+      </p>
+
+      <p class="subsection-title">O que a empresa precisa fornecer</p>
+      <ul class="requirements-list" style="margin-bottom:28px;">
+        <li><span class="req-icon">→</span><span>CNPJ ativo</span></li>
+        <li><span class="req-icon">→</span><span>Site da empresa ou perfil profissional em rede social</span></li>
+        <li><span class="req-icon">→</span><span>E-mail corporativo para o Meta Business Manager</span></li>
+        <li><span class="req-icon">→</span><span>Número de telefone dedicado — não pode estar em uso no WhatsApp pessoal ou WhatsApp Business comum</span></li>
+      </ul>
+
+      <p class="subsection-title">Etapas do processo</p>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number small">1</div>
+          <div class="step-body compact">
+            <div class="step-title">Criação da conta Meta Business Manager</div>
+            <div class="step-desc">Criamos ou configuramos a conta com os dados da empresa.</div>
+            <div class="step-time">1 dia</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number small">2</div>
+          <div class="step-body compact">
+            <div class="step-title">Verificação do negócio pela Meta</div>
+            <div class="step-desc">A Meta valida o CNPJ e as informações da empresa. Cumprindo os requisitos, a aprovação é a regra.</div>
+            <div class="step-time">2 a 7 dias úteis</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number small">3</div>
+          <div class="step-body compact">
+            <div class="step-title">Registro do número de telefone</div>
+            <div class="step-desc">O número é migrado para a API oficial. Ele passa a funcionar exclusivamente pela plataforma — o WhatsApp pessoal ou Business comum desse número é desativado.</div>
+            <div class="step-time">1 a 2 dias</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number small">4</div>
+          <div class="step-body compact">
+            <div class="step-title">Aprovação dos templates de mensagem</div>
+            <div class="step-desc">Cada template de mensagem ativa precisa de aprovação individual da Meta antes de ser usado.</div>
+            <div class="step-time">24 a 72 horas por template</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-number small">5</div>
+          <div class="step-body compact">
+            <div class="step-title">Número ativo na plataforma</div>
+            <div class="step-desc">Após as aprovações, o número funciona normalmente. O nome da empresa aparece nas conversas mesmo sem o número salvo na agenda do cliente.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Novas funcionalidades -->
+    <div class="section">
+      <div class="section-title">Evolução da plataforma e novas funcionalidades</div>
+      <p class="body-text">
+        A plataforma evolui continuamente. É importante entender o que está incluso, o que é cobrado à parte e como funciona a priorização de melhorias conforme o plano contratado.
+      </p>
+
+      <div class="two-col-grid" style="margin-bottom:32px;">
+        <div class="feature-box include">
+          <div class="feature-box-title">✓ Incluso na mensalidade</div>
+          <ul>
+            <li>→ Atualizações de segurança e estabilidade</li>
+            <li>→ Melhorias de performance e interface</li>
+            <li>→ Novas funcionalidades disponíveis a todos os clientes</li>
+            <li>→ Ajustes no fluxo do bot (textos, horários, perguntas)</li>
+            <li>→ Suporte técnico dentro do plano contratado</li>
+          </ul>
+        </div>
+        <div class="feature-box custom">
+          <div class="feature-box-title">↗ Desenvolvimento sob medida</div>
+          <ul>
+            <li>→ Funcionalidade exclusiva para a sua empresa</li>
+            <li>→ Integração com sistema interno específico</li>
+            <li>→ Fluxo de atendimento totalmente novo</li>
+            <li>→ Relatório ou dashboard personalizado</li>
+            <li>→ Automações fora do escopo padrão</li>
+          </ul>
+          <p class="feature-box-note">Orçado por escopo, entregue com prazo definido.</p>
+        </div>
+      </div>
+
+      <p class="subsection-title">Solicitações de melhoria com avaliação garantida</p>
+      <p class="body-text" style="margin-bottom:16px;">
+        Qualquer cliente pode sugerir melhorias. O plano define quantas sugestões por mês recebem <strong>avaliação prioritária</strong> com prazo e canal de retorno garantidos. Sugestões aprovadas entram no roadmap e beneficiam todos os clientes sem custo adicional.
+      </p>
+
+      <div class="table-scroll" style="margin-bottom:16px;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Plano</th>
+              <th>Solicitações prioritárias / mês</th>
+              <th>Prazo de resposta</th>
+              <th>Canal</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Start</strong></td>
+              <td>1 por mês</td>
+              <td>Avaliação na fila geral — sem prazo fixo</td>
+              <td>E-mail</td>
+            </tr>
+            <tr>
+              <td><strong>Growth</strong></td>
+              <td>3 por mês</td>
+              <td>Retorno de avaliação em até 10 dias úteis</td>
+              <td>WhatsApp + e-mail</td>
+            </tr>
+            <tr>
+              <td><strong>Crescimento</strong></td>
+              <td>Ilimitado</td>
+              <td>Retorno em até 5 dias úteis + reunião mensal de produto</td>
+              <td>Canal dedicado + reunião</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note-box">
+        <span>💡</span>
+        <span>Avaliada não significa aprovada — a equipe analisa viabilidade técnica e impacto para a base de clientes antes de qualquer compromisso. Funcionalidades aprovadas não têm custo adicional. Funcionalidades reprovadas ou exclusivas seguem o processo de desenvolvimento sob medida.</span>
+      </div>
+    </div>
+
+    <!-- Contrato e política -->
+    <div class="section">
+      <div class="section-title">Contrato e política de uso</div>
+
+      <p class="subsection-title">Modalidades de contrato</p>
+      <div class="contract-grid">
+
+        <div class="contract-card">
+          <div class="contract-card-name">Mensal</div>
+          <div class="contract-card-sub">Flexibilidade total após o período mínimo</div>
+          <ul>
+            <li>→ Prazo mínimo: 3 meses</li>
+            <li>→ Renovação automática mês a mês</li>
+            <li>→ Cancelamento com 30 dias de aviso</li>
+            <li>→ Sem desconto adicional</li>
+          </ul>
+        </div>
+
+        <div class="contract-card featured">
+          <div class="contract-card-badge">Melhor custo-benefício</div>
+          <div class="contract-card-name">Anual</div>
+          <div class="contract-card-sub">Comprometimento de 12 meses com desconto</div>
+          <ul>
+            <li>→ Prazo: 12 meses</li>
+            <li>→ <strong style="color:#075e54;">2 meses grátis</strong> (paga 10, usa 12)</li>
+            <li>→ Start anual: <strong>R$ 4.970/ano</strong> <span style="color:#9ca3af;font-size:0.8rem;">(vs R$ 5.964 no mensal)</span></li>
+            <li>→ Growth anual: <strong>R$ 9.970/ano</strong> <span style="color:#9ca3af;font-size:0.8rem;">(vs R$ 11.964 no mensal)</span></li>
+            <li>→ Cancelamento antecipado: multa proporcional aos meses restantes</li>
+          </ul>
+        </div>
+
+      </div>
+
+      <p class="subsection-title">Política de reajuste</p>
+      <div class="table-scroll" style="margin-bottom:16px;">
+        <table class="data-table vertical">
+          <tbody>
+            <tr>
+              <td>Índice de reajuste</td>
+              <td>IPCA (Índice de Preços ao Consumidor Amplo) acumulado dos últimos 12 meses</td>
+            </tr>
+            <tr>
+              <td>Frequência</td>
+              <td>Uma vez por ano, na data de aniversário do contrato</td>
+            </tr>
+            <tr>
+              <td>Aviso prévio</td>
+              <td>30 dias antes da aplicação do reajuste, com comunicação por e-mail</td>
+            </tr>
+            <tr>
+              <td>Primeiro reajuste</td>
+              <td>Somente após 12 meses de serviço ativo — o valor contratado é fixo no primeiro ano</td>
+            </tr>
+            <tr>
+              <td>Alterações extraordinárias</td>
+              <td>Em caso de mudanças tributárias, regulatórias ou variações significativas de infraestrutura que impactem o custo operacional, a revisão de preço será comunicada com 60 dias de antecedência, com possibilidade de rescisão sem multa caso o cliente não concorde</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="info-box" style="margin-bottom:28px;">
+        <span>ℹ️</span>
+        <span>O contrato anual é protegido contra reajuste durante toda a vigência — o valor pago na assinatura vale pelos 12 meses, independente de variações do IPCA no período.</span>
+      </div>
+
+      <p class="subsection-title">Demais condições</p>
+      <div class="table-scroll">
+        <table class="data-table vertical">
+          <tbody>
+            <tr>
+              <td>Portabilidade de dados</td>
+              <td>Exportação completa do histórico de atendimentos disponível a qualquer momento, em formato padrão (CSV/JSON)</td>
+            </tr>
+            <tr>
+              <td>Privacidade (LGPD)</td>
+              <td>Os dados dos seus clientes pertencem exclusivamente à sua empresa. Não compartilhamos, vendemos ou utilizamos essas informações para nenhuma outra finalidade</td>
+            </tr>
+            <tr>
+              <td>Número WhatsApp</td>
+              <td>Em caso de encerramento, o número pode ser migrado de volta ao WhatsApp Business comum — o histórico de conversas fica disponível para exportação</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- FAQ -->
+    <div class="section">
+      <div class="section-title">Perguntas frequentes</div>
+
+      <div class="faq-item">
+        <div class="faq-question">Preciso ter um CNPJ para contratar?</div>
+        <div class="faq-answer">Sim. A API oficial do WhatsApp exige verificação de negócio pela Meta, o que requer CNPJ ativo. Pessoa física não consegue registrar um número na API oficial.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">Meu número do WhatsApp atual para de funcionar?</div>
+        <div class="faq-answer">Depende de qual número você vai usar. Se migrar o número atual para a plataforma, ele sai do WhatsApp pessoal/Business comum e passa a funcionar exclusivamente pela nossa plataforma. Por isso recomendamos usar um número dedicado para o atendimento da empresa.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">Os atendentes precisam instalar algum aplicativo?</div>
+        <div class="faq-answer">Não. O painel de atendimento funciona direto no navegador — computador, tablet ou celular. Não há instalação de aplicativo.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">E se a plataforma ficar fora do ar?</div>
+        <div class="faq-answer">A infraestrutura é monitorada continuamente com restart automático em caso de falha. Em situações de instabilidade, a equipe técnica é notificada imediatamente. O histórico de atendimentos é preservado em backup diário e não é perdido.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">Posso mudar as mensagens e o fluxo do bot depois?</div>
+        <div class="faq-answer">Sim. Ajustes no fluxo — textos, perguntas, horários, mensagens automáticas — estão inclusos na mensalidade. Basta nos comunicar o que precisa ser alterado.</div>
+      </div>
+
+      <div class="faq-item">
+        <div class="faq-question">Quanto tempo demora para o bot estar funcionando?</div>
+        <div class="faq-answer">O prazo total estimado é de 10 a 15 dias úteis após o contrato. A maior parte desse tempo é o processo de aprovação da Meta — a configuração técnica da nossa parte leva de 3 a 5 dias.</div>
+      </div>
+
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-section">
+      <h3>Pronto para começar?</h3>
+      <p>Entre em contato para tirar dúvidas ou contratar. Responderemos em até 24 horas úteis.</p>
+      <a href="mailto:contato@adatechnology.com.br" class="cta-btn">Entrar em contato</a>
+    </div>
+
+  </div>
+
+  <div class="footer">
+    <img src="ada-logo-light.png" alt="Ada Technology" />
+    <strong>Ada Technology</strong><br/>
+    © 2026 Ada Technology. Todos os direitos reservados.<br/>
+    Documento confidencial gerado exclusivamente para apresentação comercial.
+  </div>
+
+</body>
+</html>

@@ -10,7 +10,6 @@ import { SessionsPage } from '@/pages/SessionsPage'
 import { ConversationsPage } from '@/pages/ConversationsPage'
 import { UsersPage } from '@/pages/UsersPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { useCompanySettings } from '@/hooks/useCompanySettings'
 
 const ROUTES: Record<string, React.ComponentType> = {
   '/': DashboardPage,
@@ -26,7 +25,6 @@ const ROUTES: Record<string, React.ComponentType> = {
 export default function App() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const path = window.location.pathname
-  const { data: company } = useCompanySettings()
 
   if (path === '/reset-password') {
     return <ResetPasswordPage />
@@ -36,10 +34,7 @@ export default function App() {
     return <LoginPage />
   }
 
-  let PageComponent = ROUTES[path] ?? DashboardPage
-  if (path === '/simulations' && company?.simulations_enabled === 'false') {
-    PageComponent = DashboardPage
-  }
+  const PageComponent = ROUTES[path] ?? DashboardPage
 
   return (
     <Layout>

@@ -31,6 +31,18 @@
 **Impacto no bot:** Fluxo conversacional ramificado por `financing_type` após coleta de dados pessoais comuns.
 **Data:** 2026-06-19
 
+### ADR-006: Motor de simulação Caixa — cálculo local (sem web scraping)
+
+**Decisão:** Implementar SAC com parâmetros extraídos do bundle Angular da Caixa, sem automação do simulador web.
+**Motivo:** Análise 2026-06-26 confirmou que:
+- `habitacao.caixa.gov.br` está atrás de ShieldSquare (bot protection)
+- `portaldeempreendimentos.caixa.gov.br/simulador/` usa Apache Tapestry com form state HMAC assinado
+- `app.novosimulador.caixa.gov.br/api/v1/` requer SSO Keycloak interno (inacessível)
+- A Caixa faz os cálculos **client-side**: todos os parâmetros estão no bundle Angular (versão 1.15.12.0)
+**Fonte dos dados:** `simuladorhabitacao.caixa.gov.br/main.4404e704734ce83c.js`
+**Risco:** Parâmetros podem mudar quando Caixa atualizar o bundle. Mitigação: job diário de check de hash (CAIXA-21).
+**Data:** 2026-06-26
+
 ### ADR-004: Criptografia de dados sensíveis
 
 **Decisão:** CPF, renda e dados financeiros criptografados em repouso usando AES-256.
@@ -49,7 +61,8 @@ _Nenhum bloqueio ativo._
 ## Pendências
 
 - [ ] Confirmar qual corretor/estabelecimento é o cliente piloto
-- [ ] Mapear URLs concretas de Open Finance para Caixa, Santander, BB, Itaú
+- [x] Mapear URLs concretas de Open Finance para Caixa — **resolvido:** Caixa não usa Open Finance para simulação; cálculo é local com parâmetros do bundle Angular (ver ADR-006)
+- [ ] Mapear URLs Open Finance para Santander, BB, Itaú
 - [ ] Definir se o projeto será multi-tenant v1 ou single-tenant
 - [ ] Confirmar plano Railway para deploy
 

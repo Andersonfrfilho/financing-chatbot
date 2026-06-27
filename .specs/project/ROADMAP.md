@@ -24,7 +24,8 @@
 | ID | Feature | Prioridade | Status |
 |----|---------|-----------|--------|
 | F-005 | Módulo Open Finance — busca e cache de taxas (Fase 1) | Crítica | Pendente |
-| F-006 | Motor SAC: parcela inicial, final, total juros, CET | Crítica | Pendente |
+| F-005a | Motor de Simulação Caixa — SAC local com parâmetros do bundle Angular | Crítica | **Spec pronta** → `.specs/features/motor-simulacao-caixa/` |
+| F-006 | Motor SAC genérico: parcela inicial, final, total juros, CET | Crítica | Pendente |
 | F-007 | Motor PRICE: parcela fixa, total juros, CET | Crítica | Pendente |
 | F-008 | Comparativo multi-banco via API REST | Alta | Pendente |
 | F-009 | Testes unitários do motor de simulação | Crítica | Pendente |

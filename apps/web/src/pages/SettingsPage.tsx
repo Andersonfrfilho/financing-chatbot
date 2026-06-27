@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Save, Building2, Mail, Phone, Image, Calculator, MessageSquare, Plus, RefreshCw, Trash2, SendHorizonal } from 'lucide-react'
+import { Save, Building2, Mail, Phone, Image, MessageSquare, Plus, RefreshCw, Trash2, SendHorizonal } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
@@ -14,7 +14,6 @@ export function SettingsPage() {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [emailResetEnabled, setEmailResetEnabled] = useState(false)
-  const [simulationsEnabled, setSimulationsEnabled] = useState(true)
   const [saving, setSaving] = useState(false)
   const [savingToggle, setSavingToggle] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -51,7 +50,6 @@ export function SettingsPage() {
       setEmail(company.company_email || '')
       setPhone(company.company_phone || '')
       setEmailResetEnabled(company.email_reset_enabled === 'true')
-      setSimulationsEnabled(company.simulations_enabled !== 'false')
     }
   }, [company])
 
@@ -125,17 +123,6 @@ export function SettingsPage() {
       setCreateTemplateResult({ ok: false, message })
     } finally {
       setCreatingTemplate(false)
-    }
-  }
-
-  async function toggleSimulations(val: boolean) {
-    setSavingToggle(true)
-    try {
-      await api.put('/settings/simulations-enabled', { enabled: val })
-      setSimulationsEnabled(val)
-      queryClient.invalidateQueries({ queryKey: ['company-settings'] })
-    } finally {
-      setSavingToggle(false)
     }
   }
 
@@ -666,49 +653,6 @@ export function SettingsPage() {
         </form>
       </section>
 
-      {/* Feature toggles */}
-      <section className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
-          <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
-            <Calculator size={16} className="text-blue-600 dark:text-blue-400" />
-            Funcionalidades
-          </h2>
-        </div>
-        <div className="p-6">
-          <div className="flex items-start gap-4">
-            <div className="flex-1">
-              <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Simulações de financiamento
-              </p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Habilita a página de simulações no menu lateral. Desative se a funcionalidade ainda não estiver pronta.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={() => toggleSimulations(!simulationsEnabled)}
-              disabled={savingToggle}
-              className={`
-                relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none
-                ${simulationsEnabled
-                  ? 'bg-blue-600 dark:bg-blue-500'
-                  : 'bg-gray-200 dark:bg-gray-700'
-                }
-                ${savingToggle ? 'opacity-50 cursor-not-allowed' : ''}
-              `}
-              role="switch"
-              aria-checked={simulationsEnabled}
-            >
-              <span
-                className={`
-                  pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out
-                  ${simulationsEnabled ? 'translate-x-5' : 'translate-x-0'}
-                `}
-              />
-            </button>
-          </div>
-        </div>
-      </section>
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { eq } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
@@ -7,6 +8,7 @@ import { SacCalculatorService } from '../services/SacCalculatorService'
 import { PriceCalculatorService } from '../services/PriceCalculatorService'
 import { MarketRatesService } from '../services/MarketRatesService'
 import { FipeService } from '../services/FipeService'
+import { CaixaMcmvCalculatorService } from '../services/CaixaMcmvCalculatorService'
 import { GetBankRatesUseCase } from '@/modules/open-finance/application/use-cases/GetBankRatesUseCase'
 import { FetchAndCacheBankRatesUseCase } from '@/modules/open-finance/application/use-cases/FetchAndCacheBankRatesUseCase'
 import { BcbOlindaProviderImplementation } from '@/modules/open-finance/infra/providers/BcbOlindaProviderImplementation'
@@ -73,8 +75,26 @@ export interface SimulationInput {
   // Renda (comprometimento de renda / capacidade de pagamento)
   monthlyIncome?: number
   coParticipantIncome?: number
+  // Proponente (Caixa MCMV: prazo máximo por idade e taxa MIP)
+  applicantAgeYears?: number
   // Extra
   metadata?: Record<string, unknown>
+}
+
+export interface CaixaMcmvBreakdown {
+  mcmvFaixa: number
+  totalMip: number
+  totalDfi: number
+  tac: number
+  effectiveTermMonths: number
+  incomeCommitmentPercent: number
+  firstInstallmentBreakdown: {
+    amortization: number
+    interest: number
+    mip: number
+    dfi: number
+    tac: number
+  }
 }
 
 export interface BankSimulationResult {
@@ -84,7 +104,8 @@ export interface BankSimulationResult {
   modality: FinancingModality
   rateAnnual: number
   sac: { firstInstallment: number; lastInstallment: number; totalInterest: number; totalCost: number }
-  price: { fixedInstallment: number; totalInterest: number; totalCost: number }
+  price?: { fixedInstallment: number; totalInterest: number; totalCost: number }
+  caixaMcmv?: CaixaMcmvBreakdown
 }
 
 export interface SimulationOutput {
@@ -102,6 +123,7 @@ export class CreateSimulationUseCase {
   private readonly priceCalculator = new PriceCalculatorService()
   private readonly marketRates = new MarketRatesService()
   private readonly fipe = new FipeService()
+  private readonly caixaMcmvCalculator = new CaixaMcmvCalculatorService()
 
   constructor(
     private readonly db: NodePgDatabase<typeof schema>,
@@ -176,9 +198,26 @@ export class CreateSimulationUseCase {
       ? this.calcVehicleRiskSpread(input, fipeLtv, { financedAmount, referenceRateAnnual })
       : 0
 
+    // Quando Caixa MCMV pode ser calculado localmente, remove Caixa do pool Open Finance
+    // para evitar duplicata — o resultado MCMV é mais preciso que taxas genéricas do BCB
+    const familyMonthlyIncome = (input.monthlyIncome ?? 0) + (input.coParticipantIncome ?? 0)
+    const canRunCaixaMcmv = (
+      input.financingType === 'imobiliario' &&
+      input.applicantAgeYears !== undefined &&
+      input.propertyValue !== undefined &&
+      familyMonthlyIncome > 0
+    )
+    if (canRunCaixaMcmv) {
+      for (const key of allRates.filter((r) => r.bankCode === 'CAIXA').map((r) => r.bankCode)) {
+        log.debug('Removendo Caixa do pool Open Finance: será calculado via MCMV local', { bankCode: key })
+      }
+    }
+
     // Agrupa por banco: pega a menor taxa por banco, aplicando base + spread
     const bestRateByBank = new Map<string, typeof allRates[0]>()
     for (const rate of allRates) {
+      if (canRunCaixaMcmv && rate.bankCode === 'CAIXA') continue
+
       // Usa a taxa real do banco do DB se for realista (BCB OLINDA já corrigido),
       // caso contrário usa mercado BCB SGS ± diferencial por banco
       const bankDiff = BANK_MARKET_DIFFERENTIAL[rate.bankCode] ?? 0
@@ -293,6 +332,72 @@ export class CreateSimulationUseCase {
           totalCost:          priceResult.totalCost.toFixed(2),
         },
       )
+    }
+
+    // Caixa MCMV: cálculo local com parâmetros do bundle Angular (ADR-006)
+    if (canRunCaixaMcmv) {
+      try {
+        const [caixaBank] = await this.db
+          .select()
+          .from(schema.banks)
+          .where(eq(schema.banks.code, 'CAIXA'))
+
+        if (caixaBank) {
+          const caixaMcmvResult = this.caixaMcmvCalculator.calculate({
+            propertyValue: input.propertyValue!,
+            financedAmount,
+            termMonths: input.termMonths,
+            familyMonthlyIncome,
+            applicantAgeYears: input.applicantAgeYears!,
+          })
+
+          results.push({
+            bankId: caixaBank.id,
+            bankCode: 'CAIXA',
+            bankName: caixaBank.name,
+            modality: 'MCMV',
+            rateAnnual: caixaMcmvResult.annualRate,
+            sac: {
+              firstInstallment: caixaMcmvResult.firstInstallment,
+              lastInstallment: caixaMcmvResult.lastInstallment,
+              totalInterest: caixaMcmvResult.totalInterest,
+              totalCost: caixaMcmvResult.totalCost,
+            },
+            caixaMcmv: {
+              mcmvFaixa: caixaMcmvResult.mcmvFaixa,
+              totalMip: caixaMcmvResult.totalMip,
+              totalDfi: caixaMcmvResult.totalDfi,
+              tac: caixaMcmvResult.tac,
+              effectiveTermMonths: caixaMcmvResult.effectiveTermMonths,
+              incomeCommitmentPercent: caixaMcmvResult.incomeCommitmentPercent,
+              firstInstallmentBreakdown: caixaMcmvResult.firstInstallmentBreakdown,
+            },
+          })
+
+          resultValues.push({
+            simulationId: simulation.id,
+            bankId: caixaBank.id,
+            amortizationSystem: 'SAC',
+            firstInstallment: caixaMcmvResult.firstInstallment.toFixed(2),
+            lastInstallment: caixaMcmvResult.lastInstallment.toFixed(2),
+            totalInterest: caixaMcmvResult.totalInterest.toFixed(2),
+            totalCost: caixaMcmvResult.totalCost.toFixed(2),
+          })
+
+          log.info('Caixa MCMV calculado', {
+            mcmvFaixa: caixaMcmvResult.mcmvFaixa,
+            annualRate: caixaMcmvResult.annualRate,
+            firstInstallment: caixaMcmvResult.firstInstallment,
+            effectiveTermMonths: caixaMcmvResult.effectiveTermMonths,
+          })
+        } else {
+          log.warn('Banco Caixa não encontrado no banco de dados (code=CAIXA) — resultado MCMV omitido')
+        }
+      } catch (caixaError) {
+        log.warn('Falha no cálculo Caixa MCMV — resultado omitido', {
+          reason: caixaError instanceof Error ? caixaError.message : String(caixaError),
+        })
+      }
     }
 
     if (resultValues.length > 0) {
