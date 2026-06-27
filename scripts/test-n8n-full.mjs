@@ -239,6 +239,43 @@ await scenario('Habitacional — Imóvel Pronto (entrada via lista %)', [
   ['nao',         'awaiting_post_sim_hab'],
 ])
 
+// ── 2c. Validação entrada — zero e negativo rejeitados ───────────────────────
+await scenario('Validação entrada — zero rejeitado', [
+  ['oi',          'awaiting_menu'],
+  ['1',           'awaiting_hab_type'],
+  ['1',           'in_flow'],
+  ['300000',      'in_flow'],       // valorImovel
+  ['outro',       'in_flow'],       // entradaEscolha: digitar
+  ['0',           'in_flow'],       // entrada 0 → inválido, re-pergunta
+  ['-5000',       'in_flow'],       // entrada negativa → inválido, re-pergunta
+  ['60000',       'in_flow'],       // entrada válida (20%)
+  ['240',         'in_flow'],
+  ['novo',        'in_flow'],
+  ['6000',        'in_flow'],
+  ['15/06/1990',  'in_flow'],
+  ['sim',         'in_flow'],
+  ['0',           'in_flow'],
+  ['nao',         'awaiting_post_sim_hab'],
+])
+
+// ── 2d. Validação entrada — abaixo de 20% rejeitado ──────────────────────────
+await scenario('Validação entrada — abaixo de 20% rejeitado', [
+  ['oi',          'awaiting_menu'],
+  ['1',           'awaiting_hab_type'],
+  ['1',           'in_flow'],
+  ['300000',      'in_flow'],       // valorImovel (20% = 60000)
+  ['outro',       'in_flow'],       // entradaEscolha: digitar
+  ['30000',       'in_flow'],       // entrada < 20% (30000 < 60000) → rejeitado
+  ['60000',       'in_flow'],       // entrada válida (20% exato)
+  ['240',         'in_flow'],
+  ['novo',        'in_flow'],
+  ['6000',        'in_flow'],
+  ['15/06/1990',  'in_flow'],
+  ['sim',         'in_flow'],
+  ['0',           'in_flow'],
+  ['nao',         'awaiting_post_sim_hab'],
+])
+
 // ── 3. Habitacional → Construção ─────────────────────────────────────────────
 await scenario('Habitacional — Construção', [
   ['oi',          'awaiting_menu'],
