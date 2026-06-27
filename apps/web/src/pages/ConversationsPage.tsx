@@ -85,6 +85,13 @@ function getHoursAgo(iso: string | null): number | null {
   return (Date.now() - new Date(iso).getTime()) / (1000 * 60 * 60)
 }
 
+function formatStalledDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  const remaining = minutes % 60
+  return remaining > 0 ? `${hours}h:${String(remaining).padStart(2, '0')}m` : `${hours}h`
+}
+
 type WindowStatus = 'active' | 'approaching' | 'warning' | 'expired'
 
 function getWindowStatus(hours: number | null): WindowStatus {
@@ -523,12 +530,17 @@ export function ConversationsPage() {
             const minAgo = getMinutesAgo(c.lastAt)
             const hoursSinceInbound = getHoursAgo(c.lastInboundAt)
             const minSinceInbound = hoursSinceInbound !== null ? Math.floor(hoursSinceInbound * 60) : null
-            const window = getWindowStatus(hoursSinceInbound)
+            const windowStatus = getWindowStatus(hoursSinceInbound)
             const isStalled = c.mode === 'bot' && (minSinceInbound !== null ? minSinceInbound > 30 : minAgo > 30)
+            const stalledMinutes = minSinceInbound ?? minAgo
+            const stalledBorder = windowStatus === 'active'
+              ? 'border-l-4 border-l-green-400 dark:border-l-green-500 animate-status-pulse'
+              : WINDOW_BORDER[windowStatus]
+            const borderClass = c.waitingHuman ? 'border-l-4 border-l-yellow-400' : isStalled ? stalledBorder : WINDOW_BORDER[windowStatus]
             return (
               <div
                 key={c.whatsappNumber}
-                className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50 dark:bg-blue-950/60' : selectedBulk.has(c.whatsappNumber) ? 'bg-blue-100 dark:bg-blue-950/80' : ''} ${c.waitingHuman ? 'border-l-4 border-l-yellow-400' : WINDOW_BORDER[window]}`}
+                className={`border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors ${selected === c.whatsappNumber ? 'bg-blue-50 dark:bg-blue-950/60' : selectedBulk.has(c.whatsappNumber) ? 'bg-blue-100 dark:bg-blue-950/80' : ''} ${borderClass}`}
               >
                 <div className="w-full text-left p-3 flex items-start gap-2">
                   <input
@@ -561,7 +573,7 @@ export function ConversationsPage() {
                   </div>
                   {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">⏳ aguardando atendimento</span>}
                   {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
-                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {minSinceInbound ?? minAgo}m</span>}
+                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {formatStalledDuration(stalledMinutes)}</span>}
                 </button>
               </div>
               {isStalled && (
