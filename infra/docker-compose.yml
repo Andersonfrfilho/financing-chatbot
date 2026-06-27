@@ -87,6 +87,7 @@ services:
       - ALLOWED_ORIGINS=http://localhost:5173
       - ENCRYPTION_KEY=${ENCRYPTION_KEY}
       - API_INTERNAL_TOKEN=${API_INTERNAL_TOKEN}
+      - SIMULATION_ALLOWED_BANKS=${SIMULATION_ALLOWED_BANKS:-CAIXA}
     ports:
       - "3333:3333"
     networks:
