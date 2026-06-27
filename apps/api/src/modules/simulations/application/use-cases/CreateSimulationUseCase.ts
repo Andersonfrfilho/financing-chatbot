@@ -407,9 +407,19 @@ export class CreateSimulationUseCase {
     // Ordena por menor parcela SAC
     results.sort((a, b) => a.sac.firstInstallment - b.sac.firstInstallment)
 
+    // Filtra bancos permitidos (SIMULATION_ALLOWED_BANKS=CAIXA,BB — vazio = todos)
+    const allowedBanksRaw = process.env.SIMULATION_ALLOWED_BANKS ?? ''
+    const allowedBanks = allowedBanksRaw
+      .split(',')
+      .map((code) => code.trim().toUpperCase())
+      .filter(Boolean)
+    const filteredResults = allowedBanks.length > 0
+      ? results.filter((result) => allowedBanks.includes(result.bankCode.toUpperCase()))
+      : results
+
     log.info('Simulação concluída', {
       simulationId: simulation.id,
-      resultsCount: results.length,
+      resultsCount: filteredResults.length,
       vehicleRiskSpread: input.financingType === 'veiculo'
         ? this.calcVehicleRiskSpread(input)
         : undefined,
@@ -419,11 +429,11 @@ export class CreateSimulationUseCase {
       await this.wsHub.publishBroadcast('global', WS_EVENTS.SIMULATION_COMPLETED, {
         simulationId: simulation.id,
         whatsappNumber: input.whatsappNumber,
-        banksCompared: results.length,
+        banksCompared: filteredResults.length,
       })
     }
 
-    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results, fipeValue, fipeLtv, marketBaseRateAnnual }
+    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results: filteredResults, fipeValue, fipeLtv, marketBaseRateAnnual }
   }
 
   // Lookup FIPE: tenta encontrar o valor de mercado do veículo
