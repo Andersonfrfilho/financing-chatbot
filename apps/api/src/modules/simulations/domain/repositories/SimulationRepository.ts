@@ -1,12 +1,16 @@
 import type { FinancingSimulation } from '@/infra/database/schema'
 
 export type SimulationFilters = {
-  search?:        string
-  financingType?: string
-  startDate?:     string
-  endDate?:       string
-  page?:          number
-  limit?:         number
+  search?:           string
+  financingType?:    string
+  startDate?:        string
+  endDate?:          string
+  minFinanced?:      number
+  maxFinanced?:      number
+  minTermMonths?:    number
+  maxTermMonths?:    number
+  page?:             number
+  limit?:            number
 }
 
 export type SimulationListItem = Pick<FinancingSimulation, 'id' | 'financingType' | 'requestedAmount' | 'termMonths' | 'createdAt'> & {

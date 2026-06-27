@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { simulations as text } from '@/locales'
-import { ChevronLeft, ChevronRight, X, Download, Copy, Check } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Download, Copy, Check, Filter } from 'lucide-react'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -29,6 +29,11 @@ type Simulation = {
 const formatBRL = (v: string | number | null | undefined) =>
   v ? Number(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : '—'
 
+const parseBRL = (s: string) => {
+  const cleaned = s.replace(/[^\d,]/g, '').replace(',', '.')
+  return cleaned ? Number(cleaned) : undefined
+}
+
 const formatPhone = (phone: string | null | undefined) => {
   if (!phone) return '—'
   const digits = phone.replace(/\D/g, '')
@@ -36,9 +41,10 @@ const formatPhone = (phone: string | null | undefined) => {
   return phone
 }
 
-function exportToCSV(rows: Simulation[]) {
-  const headers = ['Data', 'Cliente', 'WhatsApp', 'Modalidade', 'Valor Imóvel', 'Valor Financiado', 'Entrada', 'Prazo (meses)', 'Bancos', 'Melhor 1ª Parcela']
-  const lines = rows.map((s) => [
+const CSV_HEADERS = ['Data', 'Cliente', 'WhatsApp', 'Modalidade', 'Valor Imóvel', 'Valor Financiado', 'Entrada', 'Prazo (meses)', 'Bancos', 'Melhor 1ª Parcela (SAC)']
+
+function rowToCSV(s: Simulation): string[] {
+  return [
     new Date(s.createdAt).toLocaleDateString('pt-BR'),
     s.clientName ?? '',
     s.whatsappNumber ?? '',
@@ -49,15 +55,24 @@ function exportToCSV(rows: Simulation[]) {
     String(s.termMonths),
     s.bankNames ?? '',
     s.bestRateAnnual ? Number(s.bestRateAnnual).toFixed(2) : '',
-  ].map((v) => `"${v}"`).join(','))
-  const csv = [headers.join(','), ...lines].join('\n')
+  ]
+}
+
+function downloadCSV(rows: Simulation[], filename: string) {
+  const lines = rows.map((s) => rowToCSV(s).map((v) => `"${v}"`).join(','))
+  const csv = [CSV_HEADERS.join(','), ...lines].join('\n')
   const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
   const url = URL.createObjectURL(blob)
-  const a = document.createElement('a')
-  a.href = url
-  a.download = `simulacoes_${new Date().toISOString().slice(0, 10)}.csv`
-  a.click()
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = filename
+  anchor.click()
   URL.revokeObjectURL(url)
+}
+
+function copyToClipboard(rows: Simulation[]) {
+  const lines = [CSV_HEADERS.join('\t'), ...rows.map((s) => rowToCSV(s).join('\t'))]
+  navigator.clipboard.writeText(lines.join('\n'))
 }
 
 export function SimulationsPage() {
@@ -66,31 +81,51 @@ export function SimulationsPage() {
   const [financingType, setFinancingType] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
+  const [minFinancedInput, setMinFinancedInput] = useState('')
+  const [maxFinancedInput, setMaxFinancedInput] = useState('')
+  const [minTermMonths, setMinTermMonths] = useState('')
+  const [maxTermMonths, setMaxTermMonths] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const [copied, setCopied] = useState<string | null>(null)
+  const [showValueFilters, setShowValueFilters] = useState(false)
+  const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [copiedPhone, setCopiedPhone] = useState<string | null>(null)
+  const [copiedRows, setCopiedRows] = useState(false)
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
     return () => clearTimeout(timer)
   }, [search])
 
-  const hasFilters = debouncedSearch || financingType || startDate || endDate
-  const clearFilters = () => {
+  const minFinanced = parseBRL(minFinancedInput)
+  const maxFinanced = parseBRL(maxFinancedInput)
+
+  const hasFilters = debouncedSearch || financingType || startDate || endDate || minFinanced || maxFinanced || minTermMonths || maxTermMonths
+
+  function clearFilters() {
     setSearch('')
     setFinancingType('')
     setStartDate('')
     setEndDate('')
+    setMinFinancedInput('')
+    setMaxFinancedInput('')
+    setMinTermMonths('')
+    setMaxTermMonths('')
+    setPage(1)
   }
 
   const { data, isLoading } = useQuery<{ data: Simulation[]; total: number }>({
-    queryKey: ['simulations', debouncedSearch, financingType, startDate, endDate, page, limit],
+    queryKey: ['simulations', debouncedSearch, financingType, startDate, endDate, minFinanced, maxFinanced, minTermMonths, maxTermMonths, page, limit],
     queryFn: () => api.get('/simulations', {
       params: {
-        search: debouncedSearch || undefined,
-        financingType: financingType || undefined,
-        startDate: startDate || undefined,
-        endDate: endDate || undefined,
+        search:        debouncedSearch  || undefined,
+        financingType: financingType    || undefined,
+        startDate:     startDate        || undefined,
+        endDate:       endDate          || undefined,
+        minFinanced:   minFinanced      ?? undefined,
+        maxFinanced:   maxFinanced      ?? undefined,
+        minTermMonths: minTermMonths    || undefined,
+        maxTermMonths: maxTermMonths    || undefined,
         page,
         limit,
       }
@@ -100,10 +135,38 @@ export function SimulationsPage() {
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Simulation>(data?.data, 'createdAt')
 
+  const allIds = useMemo(() => new Set(sorted?.map((s) => s.id) ?? []), [sorted])
+  const isAllSelected = allIds.size > 0 && [...allIds].every((id) => selected.has(id))
+  const selectedRows = useMemo(() => sorted?.filter((s) => selected.has(s.id)) ?? [], [sorted, selected])
+  const exportTarget = selectedRows.length > 0 ? selectedRows : (sorted ?? [])
+  const exportLabel = selectedRows.length > 0 ? `${selectedRows.length} selecionada${selectedRows.length > 1 ? 's' : ''}` : 'Todas'
+
+  function toggleRow(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll() {
+    if (isAllSelected) {
+      setSelected((prev) => { const next = new Set(prev); allIds.forEach((id) => next.delete(id)); return next })
+    } else {
+      setSelected((prev) => { const next = new Set(prev); allIds.forEach((id) => next.add(id)); return next })
+    }
+  }
+
   function handleCopyPhone(phone: string) {
     navigator.clipboard.writeText(phone)
-    setCopied(phone)
-    setTimeout(() => setCopied(null), 1500)
+    setCopiedPhone(phone)
+    setTimeout(() => setCopiedPhone(null), 1500)
+  }
+
+  function handleCopyRows() {
+    copyToClipboard(exportTarget)
+    setCopiedRows(true)
+    setTimeout(() => setCopiedRows(false), 1500)
   }
 
   if (isLoading) return (
@@ -115,68 +178,157 @@ export function SimulationsPage() {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <div className="flex items-start justify-between gap-4">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl md:text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle(data?.total ?? 0)}</p>
         </div>
-        {sorted && sorted.length > 0 && (
+        <div className="flex items-center gap-2">
+          {exportTarget.length > 0 && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCopyRows}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                {copiedRows ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
+                Copiar ({exportLabel})
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => downloadCSV(exportTarget, `simulacoes_${new Date().toISOString().slice(0,10)}.csv`)}
+                className="flex items-center gap-1.5 text-xs"
+              >
+                <Download size={14} />
+                CSV ({exportLabel})
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Filtros principais */}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <Input
+            type="search"
+            placeholder="Buscar cliente ou WhatsApp..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full sm:w-56"
+          />
+          <Select value={financingType} onValueChange={(v: string) => { setFinancingType(v); setPage(1) }}>
+            <SelectTrigger className="w-full sm:w-40">
+              <SelectValue placeholder="Modalidade" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="">Todas</SelectItem>
+              {Object.entries(FINANCING_LABELS).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Input
+            type="date"
+            value={startDate}
+            onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
+            className="w-full sm:w-36 text-xs"
+          />
+          <Input
+            type="date"
+            value={endDate}
+            onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
+            className="w-full sm:w-36 text-xs"
+          />
           <Button
-            variant="outline"
+            variant={showValueFilters ? 'default' : 'outline'}
             size="sm"
-            onClick={() => exportToCSV(sorted)}
-            className="flex items-center gap-1.5 text-xs shrink-0"
+            onClick={() => setShowValueFilters((v) => !v)}
+            className="flex items-center gap-1.5 text-xs"
           >
-            <Download size={14} />
-            Exportar CSV
+            <Filter size={13} />
+            Valores / Prazo
           </Button>
+          {hasFilters && (
+            <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">
+              <X size={14} /><span className="ml-1">Limpar</span>
+            </Button>
+          )}
+        </div>
+
+        {/* Filtros de valor — expansível */}
+        {showValueFilters && (
+          <div className="flex flex-wrap gap-2 items-center p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-500 whitespace-nowrap">Financiado R$</span>
+              <Input
+                type="text"
+                placeholder="Mín"
+                value={minFinancedInput}
+                onChange={(e) => { setMinFinancedInput(e.target.value); setPage(1) }}
+                className="w-28 text-xs"
+              />
+              <span className="text-xs text-gray-400">—</span>
+              <Input
+                type="text"
+                placeholder="Máx"
+                value={maxFinancedInput}
+                onChange={(e) => { setMaxFinancedInput(e.target.value); setPage(1) }}
+                className="w-28 text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-gray-500 whitespace-nowrap">Prazo (meses)</span>
+              <Input
+                type="number"
+                placeholder="Mín"
+                value={minTermMonths}
+                onChange={(e) => { setMinTermMonths(e.target.value); setPage(1) }}
+                className="w-20 text-xs"
+                min={6}
+                max={420}
+              />
+              <span className="text-xs text-gray-400">—</span>
+              <Input
+                type="number"
+                placeholder="Máx"
+                value={maxTermMonths}
+                onChange={(e) => { setMaxTermMonths(e.target.value); setPage(1) }}
+                className="w-20 text-xs"
+                min={6}
+                max={420}
+              />
+            </div>
+          </div>
         )}
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2 items-center">
-        <Input
-          type="search"
-          placeholder="Buscar cliente ou WhatsApp..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:w-56"
-        />
-        <Select value={financingType} onValueChange={(v: string) => { setFinancingType(v); setPage(1) }}>
-          <SelectTrigger className="w-full sm:w-40">
-            <SelectValue placeholder="Modalidade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="">Todas</SelectItem>
-            {Object.entries(FINANCING_LABELS).map(([k, v]) => (
-              <SelectItem key={k} value={k}>{v}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Input
-          type="date"
-          value={startDate}
-          onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
-        />
-        <Input
-          type="date"
-          value={endDate}
-          onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
-        />
-        {hasFilters && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">
-            <X size={14} />
-            <span className="ml-1">Limpar</span>
+      {/* Seleção em lote */}
+      {selected.size > 0 && (
+        <div className="flex items-center gap-3 px-3 py-2 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg text-sm">
+          <span className="text-blue-700 dark:text-blue-300 font-medium">{selected.size} selecionada{selected.size > 1 ? 's' : ''}</span>
+          <Button variant="ghost" size="sm" onClick={() => setSelected(new Set())} className="text-xs text-blue-600 dark:text-blue-400 h-6 px-2">
+            Limpar seleção
           </Button>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="border rounded-xl overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow>
+              <TableCell className="w-10 py-3">
+                <input
+                  type="checkbox"
+                  checked={isAllSelected}
+                  onChange={toggleAll}
+                  className="rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
+                  title="Selecionar todos desta página"
+                />
+              </TableCell>
               <SortableHead label="Data" field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
               <SortableHead label="Cliente" field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
               <SortableHead label="Modalidade" field="financingType" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
@@ -189,53 +341,68 @@ export function SimulationsPage() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sorted?.map((sim) => (
-              <TableRow key={sim.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                <TableCell className="hidden sm:table-cell text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
-                  {new Date(sim.createdAt).toLocaleDateString('pt-BR')}
-                </TableCell>
-                <TableCell>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                      {sim.clientName ?? '—'}
-                    </p>
-                    {sim.whatsappNumber && (
-                      <button
-                        onClick={() => handleCopyPhone(sim.whatsappNumber!)}
-                        className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        title="Copiar número"
-                      >
-                        {copied === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />}
-                        {formatPhone(sim.whatsappNumber)}
-                      </button>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 whitespace-nowrap">
-                    {FINANCING_LABELS[sim.financingType] ?? sim.financingType}
-                  </span>
-                </TableCell>
-                <TableCell className="hidden md:table-cell text-sm font-medium whitespace-nowrap">
-                  {formatBRL(sim.requestedAmount)}
-                </TableCell>
-                <TableCell className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
-                  {formatBRL(sim.financedAmount)}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">
-                  {formatBRL(sim.downPaymentAmount)}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">
-                  {sim.termMonths} meses
-                </TableCell>
-                <TableCell className="hidden xl:table-cell text-xs text-gray-600 dark:text-gray-400 max-w-[180px] truncate" title={sim.bankNames ?? undefined}>
-                  {sim.bankNames ?? '—'}
-                </TableCell>
-                <TableCell className="hidden lg:table-cell text-sm font-medium whitespace-nowrap">
-                  {sim.bestRateAnnual ? formatBRL(sim.bestRateAnnual) : '—'}
-                </TableCell>
-              </TableRow>
-            ))}
+            {sorted?.map((sim) => {
+              const isSelected = selected.has(sim.id)
+              return (
+                <TableRow
+                  key={sim.id}
+                  className={`cursor-pointer transition-colors ${isSelected ? 'bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50' : 'hover:bg-gray-50 dark:hover:bg-gray-800/50'}`}
+                  onClick={() => toggleRow(sim.id)}
+                >
+                  <TableCell className="w-10" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => toggleRow(sim.id)}
+                      className="rounded border-gray-300 dark:border-gray-600 text-blue-600 cursor-pointer"
+                    />
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap">
+                    {new Date(sim.createdAt).toLocaleDateString('pt-BR')}
+                  </TableCell>
+                  <TableCell onClick={(e) => e.stopPropagation()}>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {sim.clientName ?? '—'}
+                      </p>
+                      {sim.whatsappNumber && (
+                        <button
+                          onClick={() => handleCopyPhone(sim.whatsappNumber!)}
+                          className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                          title="Copiar número"
+                        >
+                          {copiedPhone === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />}
+                          {formatPhone(sim.whatsappNumber)}
+                        </button>
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 whitespace-nowrap">
+                      {FINANCING_LABELS[sim.financingType] ?? sim.financingType}
+                    </span>
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell text-sm font-medium whitespace-nowrap">
+                    {formatBRL(sim.requestedAmount)}
+                  </TableCell>
+                  <TableCell className="text-sm font-semibold text-emerald-700 dark:text-emerald-400 whitespace-nowrap">
+                    {formatBRL(sim.financedAmount)}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">
+                    {formatBRL(sim.downPaymentAmount)}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">
+                    {sim.termMonths} meses
+                  </TableCell>
+                  <TableCell className="hidden xl:table-cell text-xs text-gray-600 dark:text-gray-400 max-w-[180px] truncate" title={sim.bankNames ?? undefined}>
+                    {sim.bankNames ?? '—'}
+                  </TableCell>
+                  <TableCell className="hidden lg:table-cell text-sm font-medium whitespace-nowrap">
+                    {sim.bestRateAnnual ? formatBRL(sim.bestRateAnnual) : '—'}
+                  </TableCell>
+                </TableRow>
+              )
+            })}
           </TableBody>
         </Table>
         {!data?.data.length && <p className="text-center text-gray-400 dark:text-gray-500 py-8 text-sm">{text.empty}</p>}

@@ -44,8 +44,12 @@ export class SimulationController {
       financingType: q['financingType'],
       startDate:     q['startDate'],
       endDate:       q['endDate'],
-      page:          q['page']  ? Number(q['page'])  : undefined,
-      limit:         q['limit'] ? Number(q['limit']) : undefined,
+      minFinanced:   q['minFinanced']   ? Number(q['minFinanced'])   : undefined,
+      maxFinanced:   q['maxFinanced']   ? Number(q['maxFinanced'])   : undefined,
+      minTermMonths: q['minTermMonths'] ? Number(q['minTermMonths']) : undefined,
+      maxTermMonths: q['maxTermMonths'] ? Number(q['maxTermMonths']) : undefined,
+      page:          q['page']          ? Number(q['page'])          : undefined,
+      limit:         q['limit']         ? Number(q['limit'])         : undefined,
     })
     response.json(result)
   }

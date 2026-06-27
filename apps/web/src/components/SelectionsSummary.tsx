@@ -53,10 +53,67 @@ const FIELD_ICONS: Record<string, string> = {
   installments: '#️⃣',
   downPayment: '💵',
   totalAmount: '💸',
+  entrada: '💵',
+  prazoMeses: '📆',
+  entradaEscolha: '🔀',
+  fgtsValor: '📋',
+  clientId: '🪪',
+}
+
+const FIELD_LABELS: Record<string, string> = {
+  entrada: 'Entrada',
+  prazoMeses: 'Prazo',
+  entradaEscolha: 'Tipo de Entrada',
+  fgtsValor: 'Valor FGTS',
+  valorImovel: 'Valor do Imóvel',
+  rendaFamiliar: 'Renda Familiar',
+  rendaMensal: 'Renda Mensal',
+  valorDesejado: 'Valor Desejado',
+  valorCarta: 'Valor da Carta',
+  valorTerreno: 'Valor do Terreno',
+  valorConstrucao: 'Valor da Construção',
+  valorCredito: 'Valor do Crédito',
+  totalAmount: 'Valor Total',
+  downPayment: 'Entrada',
+  installments: 'Parcelas',
+  clientId: 'ID do Cliente',
+}
+
+const CURRENCY_FIELDS = new Set([
+  'valorImovel', 'rendaFamiliar', 'rendaMensal', 'valorDesejado', 'valorCarta',
+  'valorTerreno', 'valorConstrucao', 'valorCredito', 'totalAmount', 'downPayment',
+  'entrada', 'fgtsValor',
+])
+
+const MONTHS_FIELDS = new Set(['prazoMeses', 'installments'])
+
+const ENTRY_TYPE_LABELS: Record<string, string> = {
+  proprio: 'Recursos Próprios',
+  fgts: 'FGTS',
+  combinado: 'FGTS + Próprio',
+  outro: 'Outro',
 }
 
 function getFieldIcon(step: string): string {
   return FIELD_ICONS[step] || '✓'
+}
+
+function getFieldLabel(step: string, originalLabel: string): string {
+  return FIELD_LABELS[step] ?? originalLabel
+}
+
+function formatMoneyValue(raw: string): string {
+  const number = parseFloat(raw.replace(',', '.'))
+  if (isNaN(number)) return raw
+  return number.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+}
+
+function formatMonthsValue(raw: string): string {
+  const months = parseInt(raw, 10)
+  if (isNaN(months)) return raw
+  const years = Math.floor(months / 12)
+  const yearLabel = years === 1 ? 'ano' : 'anos'
+  return years > 0 ? `${years} ${yearLabel} - ${months} meses` : `${months} meses`
 }
 
 export function SelectionsSummary({ selections, compact = false }: SelectionsSummaryProps) {
@@ -64,6 +121,9 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
   const [expanded, setExpanded] = useState(false)
 
   function formatValue(step: string, value: string): string {
+    if (CURRENCY_FIELDS.has(step)) return formatMoneyValue(value)
+    if (MONTHS_FIELDS.has(step)) return formatMonthsValue(value)
+    if (step === 'entradaEscolha') return ENTRY_TYPE_LABELS[value.toLowerCase()] ?? value
     if (!valueLabels) return value
     return valueLabels[step]?.[value.toLowerCase()] ?? value
   }
@@ -92,7 +152,7 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
               {sel.status === 'pending' && '⏳'}
               {sel.status === 'editing' && '✎'}
             </span>
-            <span className="font-medium">{sel.label}:</span>
+            <span className="font-medium">{getFieldLabel(sel.step, sel.label)}:</span>
             <span>{formatValue(sel.step, sel.value)}</span>
           </div>
         ))}
@@ -170,7 +230,7 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
                 <div className="flex items-center justify-center gap-1 mb-1">
                   <span className="text-base leading-none">{getFieldIcon(sel.step)}</span>
                   <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-none">
-                    {sel.label}
+                    {getFieldLabel(sel.step, sel.label)}
                   </p>
                   <span className={`flex-shrink-0 text-xs font-semibold leading-none ${
                     sel.status === 'completed' ? 'text-green-600 dark:text-green-400' :

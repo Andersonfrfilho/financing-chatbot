@@ -23,6 +23,18 @@ export class DrizzleSimulationRepository implements SimulationRepository {
     if (filters.endDate) {
       conditions.push(lte(financingSimulations.createdAt, new Date(filters.endDate)))
     }
+    if (filters.minFinanced != null) {
+      conditions.push(sql`${financingSimulations.financedAmount}::numeric >= ${filters.minFinanced}`)
+    }
+    if (filters.maxFinanced != null) {
+      conditions.push(sql`${financingSimulations.financedAmount}::numeric <= ${filters.maxFinanced}`)
+    }
+    if (filters.minTermMonths != null) {
+      conditions.push(gte(financingSimulations.termMonths, filters.minTermMonths))
+    }
+    if (filters.maxTermMonths != null) {
+      conditions.push(lte(financingSimulations.termMonths, filters.maxTermMonths))
+    }
 
     const where = conditions.length > 0 ? and(...conditions) : undefined
 
