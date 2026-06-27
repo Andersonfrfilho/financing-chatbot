@@ -212,7 +212,7 @@ await scenario('Habitacional — Imóvel Pronto', [
   ['1',           'awaiting_hab_type'],
   ['1',           'in_flow'],
   ['300000',      'in_flow'],       // valorImovel
-  ['60000',       'in_flow'],       // entrada (20%)
+  ['60000',       'in_flow'],       // entradaEscolha: digita valor direto (20%)
   ['240',         'in_flow'],       // prazoMeses: 20 anos
   ['novo',        'in_flow'],       // imovelCond
   ['6000',        'in_flow'],       // rendaFamiliar
@@ -220,6 +220,23 @@ await scenario('Habitacional — Imóvel Pronto', [
   ['sim',         'in_flow'],       // fgts3anos
   ['0',           'in_flow'],       // dependentes
   ['nao',         'awaiting_post_sim_hab'],  // jaTemImovel → dispara simulação
+])
+
+// ── 2b. Habitacional → Imóvel Pronto (via opção % da lista) ──────────────────
+await scenario('Habitacional — Imóvel Pronto (entrada via lista %)', [
+  ['oi',          'awaiting_menu'],
+  ['1',           'awaiting_hab_type'],
+  ['1',           'in_flow'],
+  ['300000',      'in_flow'],       // valorImovel
+  ['outro',       'in_flow'],       // entradaEscolha: clica "Digitar valor"
+  ['75000',       'in_flow'],       // entrada manual: R$ 75.000 (25%)
+  ['240',         'in_flow'],       // prazoMeses
+  ['novo',        'in_flow'],       // imovelCond
+  ['6000',        'in_flow'],       // rendaFamiliar
+  ['15/06/1990',  'in_flow'],       // nascimento
+  ['sim',         'in_flow'],       // fgts3anos
+  ['0',           'in_flow'],       // dependentes
+  ['nao',         'awaiting_post_sim_hab'],
 ])
 
 // ── 3. Habitacional → Construção ─────────────────────────────────────────────
