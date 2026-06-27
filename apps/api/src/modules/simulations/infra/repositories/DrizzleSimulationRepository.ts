@@ -41,9 +41,9 @@ export class DrizzleSimulationRepository implements SimulationRepository {
     const bankAgg = db
       .select({
         simulationId: simulationResults.simulationId,
-        names:        sql<string>`string_agg(DISTINCT ${banks.name}, ', ')`,
-        bestRate:     sql<number>`min(${simulationResults.firstInstallment}::numeric)`,
-        count:        sql<number>`count(DISTINCT ${simulationResults.bankId})`,
+        names:        sql<string>`string_agg(DISTINCT ${banks.name}, ', ')`.as('names'),
+        bestRate:     sql<number>`min(${simulationResults.firstInstallment}::numeric)`.as('best_rate'),
+        banksCount:   sql<number>`count(DISTINCT ${simulationResults.bankId})`.as('banks_count'),
       })
       .from(simulationResults)
       .innerJoin(banks, eq(simulationResults.bankId, banks.id))
@@ -64,7 +64,7 @@ export class DrizzleSimulationRepository implements SimulationRepository {
           createdAt:         financingSimulations.createdAt,
           bankNames:         bankAgg.names,
           bestRateAnnual:    bankAgg.bestRate,
-          banksCount:        bankAgg.count,
+          banksCount:        bankAgg.banksCount,
         })
         .from(financingSimulations)
         .leftJoin(financingClients, eq(financingSimulations.whatsappNumber, financingClients.whatsappNumber))
