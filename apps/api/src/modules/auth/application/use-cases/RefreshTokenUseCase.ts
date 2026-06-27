@@ -5,7 +5,7 @@ import { UnauthorizedError } from '@/shared/errors/AppError'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
 const JWT_REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET ?? 'changeme_refresh_32chars')
-const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m'
+const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '9h'
 
 interface RefreshOutput {
   accessToken: string

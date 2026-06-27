@@ -6,8 +6,8 @@ import { UnauthorizedError } from '@/shared/errors/AppError'
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
 const JWT_REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET ?? 'changeme_refresh_32chars')
-const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '15m'
-const REFRESH_EXPIRES_IN_SECONDS = 7 * 24 * 60 * 60
+const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '9h'
+const REFRESH_EXPIRES_IN_SECONDS = Number(process.env.JWT_REFRESH_EXPIRES_IN_SECONDS ?? 7 * 24 * 60 * 60)
 
 interface LoginInput {
   email: string
