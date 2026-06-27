@@ -10,7 +10,13 @@ export type SimulationFilters = {
 }
 
 export type SimulationListItem = Pick<FinancingSimulation, 'id' | 'financingType' | 'requestedAmount' | 'termMonths' | 'createdAt'> & {
-  bankNames: string | null
+  financedAmount:    string | null
+  downPaymentAmount: string | null
+  whatsappNumber:    string | null
+  clientName:        string | null
+  bankNames:         string | null
+  bestRateAnnual:    number | null
+  banksCount:        number
 }
 
 export interface SimulationRepository {
