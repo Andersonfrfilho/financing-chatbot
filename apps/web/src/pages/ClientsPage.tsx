@@ -36,7 +36,7 @@ export function ClientsPage() {
   const [createdBefore, setCreatedBefore] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const { isPrivate } = usePrivacyStore()
+  const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [visibleClients, setVisibleClients] = useState<Set<string>>(new Set())
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -173,6 +173,15 @@ export function ClientsPage() {
           onChange={(e) => { setCreatedBefore(e.target.value); setPage(1) }}
           className="w-full sm:w-36 text-xs"
         />
+        <Button
+          variant={isPrivate ? 'outline' : 'default'}
+          size="sm"
+          onClick={togglePrivacy}
+          className="gap-1.5 text-xs ml-auto"
+        >
+          {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
+          {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+        </Button>
       </div>
 
       {/* Tabela */}

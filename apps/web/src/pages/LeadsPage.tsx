@@ -62,7 +62,7 @@ export function LeadsPage() {
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const { isPrivate } = usePrivacyStore()
+  const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [visibleLeads, setVisibleLeads] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ notes: '', assignedTo: '' })
@@ -187,6 +187,15 @@ export function LeadsPage() {
             <span className="ml-1">{text.filters.clearAll}</span>
           </Button>
         )}
+        <Button
+          variant={isPrivate ? 'outline' : 'default'}
+          size="sm"
+          onClick={togglePrivacy}
+          className="gap-1.5 text-xs ml-auto"
+        >
+          {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
+          {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+        </Button>
       </div>
 
       {/* Tabela */}

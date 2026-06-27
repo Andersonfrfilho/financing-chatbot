@@ -28,7 +28,7 @@ export function SessionsPage() {
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const { isPrivate } = usePrivacyStore()
+  const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
 
@@ -151,6 +151,15 @@ export function SessionsPage() {
             <span className="ml-1">{text.filters.clearAll}</span>
           </Button>
         )}
+        <Button
+          variant={isPrivate ? 'outline' : 'default'}
+          size="sm"
+          onClick={togglePrivacy}
+          className="gap-1.5 text-xs ml-auto"
+        >
+          {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
+          {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+        </Button>
       </div>
 
       <div className="border rounded-xl overflow-x-auto">

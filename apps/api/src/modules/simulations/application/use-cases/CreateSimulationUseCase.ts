@@ -298,10 +298,14 @@ export class CreateSimulationUseCase {
     }
 
     // Calcula e persiste resultados por banco
+    const allowedBanksRaw = process.env.SIMULATION_ALLOWED_BANKS ?? ''
+    const allowedBanks = allowedBanksRaw.split(',').map((code) => code.trim().toUpperCase()).filter(Boolean)
+
     const results: BankSimulationResult[] = []
     const resultValues: schema.NewSimulationResult[] = []
 
     for (const rate of bestRateByBank.values()) {
+      if (allowedBanks.length > 0 && !allowedBanks.includes(rate.bankCode.toUpperCase())) continue
       const sacResult = this.sacCalculator.calculate({
         financedAmount,
         annualRate: rate.rateAnnual,
@@ -355,7 +359,7 @@ export class CreateSimulationUseCase {
     }
 
     // Caixa MCMV: cálculo local com parâmetros do bundle Angular (ADR-006)
-    if (canRunCaixaMcmv) {
+    if (canRunCaixaMcmv && (allowedBanks.length === 0 || allowedBanks.includes('CAIXA'))) {
       try {
         const [caixaBank] = await this.db
           .select()
@@ -427,19 +431,9 @@ export class CreateSimulationUseCase {
     // Ordena por menor parcela SAC
     results.sort((a, b) => a.sac.firstInstallment - b.sac.firstInstallment)
 
-    // Filtra bancos permitidos (SIMULATION_ALLOWED_BANKS=CAIXA,BB — vazio = todos)
-    const allowedBanksRaw = process.env.SIMULATION_ALLOWED_BANKS ?? ''
-    const allowedBanks = allowedBanksRaw
-      .split(',')
-      .map((code) => code.trim().toUpperCase())
-      .filter(Boolean)
-    const filteredResults = allowedBanks.length > 0
-      ? results.filter((result) => allowedBanks.includes(result.bankCode.toUpperCase()))
-      : results
-
     log.info('Simulação concluída', {
       simulationId: simulation.id,
-      resultsCount: filteredResults.length,
+      resultsCount: results.length,
       vehicleRiskSpread: input.financingType === 'veiculo'
         ? this.calcVehicleRiskSpread(input)
         : undefined,
@@ -449,11 +443,11 @@ export class CreateSimulationUseCase {
       await this.wsHub.publishBroadcast('global', WS_EVENTS.SIMULATION_COMPLETED, {
         simulationId: simulation.id,
         whatsappNumber: input.whatsappNumber,
-        banksCompared: filteredResults.length,
+        banksCompared: results.length,
       })
     }
 
-    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results: filteredResults, fipeValue, fipeLtv, marketBaseRateAnnual }
+    return { simulationId: simulation.id, financedAmount, termMonths: input.termMonths, results: results, fipeValue, fipeLtv, marketBaseRateAnnual }
   }
 
   // Lookup FIPE: tenta encontrar o valor de mercado do veículo

@@ -87,7 +87,7 @@ export function SimulationsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null)
   const [copiedRows, setCopiedRows] = useState(false)
-  const { isPrivate } = usePrivacyStore()
+  const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -255,6 +255,15 @@ export function SimulationsPage() {
               <X size={14} /><span className="ml-1">Limpar</span>
             </Button>
           )}
+          <Button
+            variant={isPrivate ? 'outline' : 'default'}
+            size="sm"
+            onClick={togglePrivacy}
+            className="gap-1.5 text-xs ml-auto"
+          >
+            {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
+            {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+          </Button>
         </div>
 
         {/* Filtros de valor — expansível */}

@@ -59,6 +59,15 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  /* Zebra striping — in @layer base so Tailwind utility classes always override */
+  tbody tr:nth-child(even) {
+    background-color: rgb(249 250 251);
+  }
+
+  .dark tbody tr:nth-child(even) {
+    background-color: rgb(31 41 55 / 0.35);
+  }
 }
 
 @layer utilities {
