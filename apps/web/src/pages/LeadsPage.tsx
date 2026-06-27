@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Eye, EyeOff, Edit2, ChevronLeft, ChevronRight, X, MessageSquare } from 'lucide-react'
 import { api } from '@/lib/api'
+import { usePrivacyStore } from '@/store/privacyStore'
 import { leads as text } from '@/locales'
 import { Button, Input, Textarea, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -61,6 +62,7 @@ export function LeadsPage() {
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
+  const { isPrivate } = usePrivacyStore()
   const [visibleLeads, setVisibleLeads] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ notes: '', assignedTo: '' })
@@ -212,9 +214,11 @@ export function LeadsPage() {
               return (
                 <TableRow key={lead.id}>
                   <TableCell className="font-mono text-xs whitespace-nowrap">
-                    {visible ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
+                    {(!isPrivate || visible) ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-sm">{lead.clientName || '—'}</TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm">
+                    {(!isPrivate || visible) ? (lead.clientName || '—') : '••••• •••••'}
+                  </TableCell>
                   <TableCell className="hidden md:table-cell">
                     {productKey
                       ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${productColor}`}>{productLabel}</span>

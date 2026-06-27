@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Eye, EyeOff, Trash2, Edit2, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
+import { usePrivacyStore } from '@/store/privacyStore'
 import { clients as text } from '@/locales'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -35,7 +36,7 @@ export function ClientsPage() {
   const [createdBefore, setCreatedBefore] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
-  const [showAllData, setShowAllData] = useState(false)
+  const { isPrivate } = usePrivacyStore()
   const [visibleClients, setVisibleClients] = useState<Set<string>>(new Set())
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -100,7 +101,7 @@ export function ClientsPage() {
     setEditingId(client.id)
   }
 
-  const isVisible = (id: string) => showAllData || visibleClients.has(id)
+  const isVisible = (id: string) => !isPrivate || visibleClients.has(id)
 
   if (isLoading) return (
     <div className="space-y-4 md:space-y-6">
@@ -124,10 +125,6 @@ export function ClientsPage() {
           <Button size="sm" onClick={() => setCreating(true)}>
             <Plus size={14} />
             <span className="ml-1 hidden sm:inline">{text.actions.create}</span>
-          </Button>
-          <Button variant={showAllData ? 'default' : 'outline'} size="sm" onClick={() => setShowAllData(!showAllData)}>
-            {showAllData ? <EyeOff size={14} /> : <Eye size={14} />}
-            <span className="ml-1 hidden sm:inline">{showAllData ? 'Esconder' : 'Mostrar'}</span>
           </Button>
           {selectedClients.size > 0 && (
             <Button variant="destructive" size="sm" onClick={() => { if (confirm(`Deletar ${selectedClients.size} cliente(s)?`)) deleteMultiple.mutate(Array.from(selectedClients)) }} disabled={deleteMultiple.isPending}>

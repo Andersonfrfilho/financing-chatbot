@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { usePrivacyStore } from '@/store/privacyStore'
 import { sessions as text } from '@/locales'
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -27,6 +28,7 @@ export function SessionsPage() {
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
   const [limit, setLimit] = useState(20)
+  const { isPrivate } = usePrivacyStore()
   const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
   const qc = useQueryClient()
 
@@ -165,10 +167,12 @@ export function SessionsPage() {
           <TableBody>
             {sorted?.map((session) => {
               const info = stateLabels?.[session.currentState] ?? { label: session.currentState, color: 'bg-gray-100 text-gray-600' }
-              const visible = visibleSessions.has(session.id)
+              const visible = !isPrivate || visibleSessions.has(session.id)
               return (
                 <TableRow key={session.id}>
-                  <TableCell className="font-medium text-sm">{session.clientName || '—'}</TableCell>
+                  <TableCell className="font-medium text-sm">
+                    {visible ? (session.clientName || '—') : '••••• •••••'}
+                  </TableCell>
                   <TableCell className="hidden sm:table-cell font-mono text-xs whitespace-nowrap">
                     {visible ? formatPhone(session.whatsappNumber) : obfuscatePhone(session.whatsappNumber)}
                   </TableCell>

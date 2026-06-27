@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { Menu, X } from 'lucide-react'
+import { Menu, X, Eye, EyeOff } from 'lucide-react'
 import { useLocation } from '@/hooks/useRouter'
 import { useAuthStore } from '@/store/authStore'
 import { useWaitingNotifications } from '@/hooks/useWaitingNotifications'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
+import { usePrivacyStore } from '@/store/privacyStore'
 import { api } from '@/lib/api'
 import { ThemeToggle } from './ThemeToggle'
 import { AdaTechLogoFull } from './AdaTechLogo'
@@ -38,6 +39,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, clearAuth } = useAuthStore()
   const location = useLocation()
   const waitingCount = useWaitingNotifications()
+  const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [open, setOpen] = useState(false)
 
   const { data: company } = useCompanySettings()
@@ -149,12 +151,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
               <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate capitalize">{user?.role?.name}</p>
             </div>
           </div>
-          <button
-            onClick={handleLogout}
-            className="w-full text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-colors font-medium"
-          >
-            Sair
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={togglePrivacy}
+              title={isPrivate ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais'}
+              className={`flex items-center gap-1.5 flex-1 text-xs py-2 px-3 rounded-lg border transition-colors font-medium ${
+                isPrivate
+                  ? 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  : 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400'
+              }`}
+            >
+              {isPrivate ? <EyeOff size={13} /> : <Eye size={13} />}
+              {isPrivate ? 'Privado' : 'Visível'}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="flex-1 text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-colors font-medium"
+            >
+              Sair
+            </button>
+          </div>
 
           {/* AdA Technology copyright */}
           <div className="flex items-center gap-1.5 pt-1 border-t border-gray-100 dark:border-gray-800">
@@ -188,6 +204,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </span>
             </a>
           )}
+          <button
+            onClick={togglePrivacy}
+            title={isPrivate ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais'}
+            className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+          >
+            {isPrivate ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
           <ThemeToggle />
           <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-400 font-bold text-sm flex-shrink-0">
             {user?.name?.charAt(0).toUpperCase()}

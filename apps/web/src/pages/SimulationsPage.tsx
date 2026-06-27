@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import { simulations as text } from '@/locales'
-import { ChevronLeft, ChevronRight, X, Download, Copy, Check, Filter } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X, Download, Copy, Check, Filter, Eye, EyeOff } from 'lucide-react'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -10,6 +10,7 @@ import {
 import { api } from '@/lib/api'
 import { FINANCING_LABELS } from '@/lib/constants'
 import { useSortableData } from '@/hooks/useSortableData'
+import { usePrivacyStore } from '@/store/privacyStore'
 
 type Simulation = {
   id: string
@@ -91,6 +92,8 @@ export function SimulationsPage() {
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [copiedPhone, setCopiedPhone] = useState<string | null>(null)
   const [copiedRows, setCopiedRows] = useState(false)
+  const { isPrivate } = usePrivacyStore()
+  const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -343,6 +346,7 @@ export function SimulationsPage() {
           <TableBody>
             {sorted?.map((sim) => {
               const isSelected = selected.has(sim.id)
+              const isRowVisible = !isPrivate || visibleRows.has(sim.id)
               return (
                 <TableRow
                   key={sim.id}
@@ -361,20 +365,29 @@ export function SimulationsPage() {
                     {new Date(sim.createdAt).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                        {sim.clientName ?? '—'}
-                      </p>
-                      {sim.whatsappNumber && (
-                        <button
-                          onClick={() => handleCopyPhone(sim.whatsappNumber!)}
-                          className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                          title="Copiar número"
-                        >
-                          {copiedPhone === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />}
-                          {formatPhone(sim.whatsappNumber)}
-                        </button>
-                      )}
+                    <div className="min-w-0 flex items-start gap-1.5">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                          {isRowVisible ? (sim.clientName ?? '—') : '••••• •••••'}
+                        </p>
+                        {sim.whatsappNumber && (
+                          <button
+                            onClick={() => isRowVisible && handleCopyPhone(sim.whatsappNumber!)}
+                            className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                            title={isRowVisible ? 'Copiar número' : undefined}
+                          >
+                            {isRowVisible && (copiedPhone === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />)}
+                            {isRowVisible ? formatPhone(sim.whatsappNumber) : '•••• •••••••••'}
+                          </button>
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setVisibleRows((prev) => { const next = new Set(prev); next.has(sim.id) ? next.delete(sim.id) : next.add(sim.id); return next }) }}
+                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5"
+                        title={isRowVisible ? 'Ocultar' : 'Mostrar'}
+                      >
+                        {isRowVisible ? <EyeOff size={12} /> : <Eye size={12} />}
+                      </button>
                     </div>
                   </TableCell>
                   <TableCell>
