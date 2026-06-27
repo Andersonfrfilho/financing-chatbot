@@ -170,9 +170,7 @@ export function SessionsPage() {
               const visible = !isPrivate || visibleSessions.has(session.id)
               return (
                 <TableRow key={session.id}>
-                  <TableCell className="font-medium text-sm">
-                    {visible ? (session.clientName || '—') : '••••• •••••'}
-                  </TableCell>
+                  <TableCell className="font-medium text-sm">{session.clientName || '—'}</TableCell>
                   <TableCell className="hidden sm:table-cell font-mono text-xs whitespace-nowrap">
                     {visible ? formatPhone(session.whatsappNumber) : obfuscatePhone(session.whatsappNumber)}
                   </TableCell>

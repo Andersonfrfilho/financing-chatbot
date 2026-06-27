@@ -8,6 +8,7 @@ import {
   Table, TableBody, TableCell, TableHeader, TableRow
 } from '@/components/ui'
 import { api } from '@/lib/api'
+import { formatPhone, obfuscatePhone } from '@/lib/phone'
 import { FINANCING_LABELS } from '@/lib/constants'
 import { useSortableData } from '@/hooks/useSortableData'
 import { usePrivacyStore } from '@/store/privacyStore'
@@ -35,12 +36,6 @@ const parseBRL = (s: string) => {
   return cleaned ? Number(cleaned) : undefined
 }
 
-const formatPhone = (phone: string | null | undefined) => {
-  if (!phone) return '—'
-  const digits = phone.replace(/\D/g, '')
-  if (digits.length === 13) return `+${digits.slice(0,2)} (${digits.slice(2,4)}) ${digits[4]} ${digits.slice(5,9)}-${digits.slice(9)}`
-  return phone
-}
 
 const CSV_HEADERS = ['Data', 'Cliente', 'WhatsApp', 'Modalidade', 'Valor Imóvel', 'Valor Financiado', 'Entrada', 'Prazo (meses)', 'Bancos', 'Melhor 1ª Parcela (SAC)']
 
@@ -365,29 +360,27 @@ export function SimulationsPage() {
                     {new Date(sim.createdAt).toLocaleDateString('pt-BR')}
                   </TableCell>
                   <TableCell onClick={(e) => e.stopPropagation()}>
-                    <div className="min-w-0 flex items-start gap-1.5">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                          {isRowVisible ? (sim.clientName ?? '—') : '••••• •••••'}
-                        </p>
-                        {sim.whatsappNumber && (
-                          <button
-                            onClick={() => isRowVisible && handleCopyPhone(sim.whatsappNumber!)}
-                            className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                            title={isRowVisible ? 'Copiar número' : undefined}
-                          >
-                            {isRowVisible && (copiedPhone === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />)}
-                            {isRowVisible ? formatPhone(sim.whatsappNumber) : '•••• •••••••••'}
-                          </button>
-                        )}
-                      </div>
-                      <button
-                        onClick={(e) => { e.stopPropagation(); setVisibleRows((prev) => { const next = new Set(prev); next.has(sim.id) ? next.delete(sim.id) : next.add(sim.id); return next }) }}
-                        className="flex-shrink-0 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors mt-0.5"
-                        title={isRowVisible ? 'Ocultar' : 'Mostrar'}
-                      >
-                        {isRowVisible ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </button>
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                        {sim.clientName ?? '—'}
+                      </p>
+                      {sim.whatsappNumber && (
+                        <button
+                          onClick={() => isRowVisible && handleCopyPhone(sim.whatsappNumber!)}
+                          className="flex items-center gap-1 text-xs text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                        >
+                          {isRowVisible && (copiedPhone === sim.whatsappNumber ? <Check size={10} className="text-green-500" /> : <Copy size={10} />)}
+                          {isRowVisible ? formatPhone(sim.whatsappNumber) : obfuscatePhone(sim.whatsappNumber)}
+                          {isPrivate && (
+                            <span
+                              onClick={(e) => { e.stopPropagation(); setVisibleRows((prev) => { const next = new Set(prev); next.has(sim.id) ? next.delete(sim.id) : next.add(sim.id); return next }) }}
+                              className="ml-1 text-gray-300 hover:text-gray-500 dark:hover:text-gray-300"
+                            >
+                              {isRowVisible ? <EyeOff size={10} /> : <Eye size={10} />}
+                            </span>
+                          )}
+                        </button>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>

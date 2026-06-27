@@ -216,9 +216,7 @@ export function LeadsPage() {
                   <TableCell className="font-mono text-xs whitespace-nowrap">
                     {(!isPrivate || visible) ? formatPhone(lead.whatsappNumber) : obfuscatePhone(lead.whatsappNumber)}
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell text-sm">
-                    {(!isPrivate || visible) ? (lead.clientName || '—') : '••••• •••••'}
-                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-sm">{lead.clientName || '—'}</TableCell>
                   <TableCell className="hidden md:table-cell">
                     {productKey
                       ? <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold whitespace-nowrap ${productColor}`}>{productLabel}</span>
