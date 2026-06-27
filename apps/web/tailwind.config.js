@@ -57,4 +57,5 @@ export default {
     },
   },
   plugins: [],
+  safelist: ['animate-status-pulse', 'zebra-table'],
 }

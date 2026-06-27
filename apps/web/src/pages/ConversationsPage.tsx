@@ -97,7 +97,7 @@ function getWindowStatus(hours: number | null): WindowStatus {
 
 const WINDOW_BORDER: Record<WindowStatus, string> = {
   active:      'border-l-4 border-l-green-200 dark:border-l-green-800',
-  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600',
+  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600 animate-status-pulse',
   warning:     'border-l-4 border-l-red-500 dark:border-l-red-500 animate-status-pulse',
   expired:     'border-l-4 border-l-gray-300 dark:border-l-gray-600',
 }
@@ -522,8 +522,9 @@ export function ConversationsPage() {
             {filteredConversations.map((c) => {
             const minAgo = getMinutesAgo(c.lastAt)
             const hoursSinceInbound = getHoursAgo(c.lastInboundAt)
+            const minSinceInbound = hoursSinceInbound !== null ? Math.floor(hoursSinceInbound * 60) : null
             const window = getWindowStatus(hoursSinceInbound)
-            const isStalled = c.mode === 'bot' && minAgo > 30
+            const isStalled = c.mode === 'bot' && (minSinceInbound !== null ? minSinceInbound > 30 : minAgo > 30)
             return (
               <div
                 key={c.whatsappNumber}
@@ -560,7 +561,7 @@ export function ConversationsPage() {
                   </div>
                   {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">⏳ aguardando atendimento</span>}
                   {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
-                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {minAgo}m</span>}
+                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {minSinceInbound ?? minAgo}m</span>}
                 </button>
               </div>
               {isStalled && (

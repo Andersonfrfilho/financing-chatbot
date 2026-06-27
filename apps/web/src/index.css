@@ -60,13 +60,19 @@
     @apply bg-background text-foreground;
   }
 
-  /* Zebra striping — in @layer base so Tailwind utility classes always override */
-  tbody tr:nth-child(even) {
-    background-color: rgb(249 250 251);
-  }
+}
 
-  .dark tbody tr:nth-child(even) {
-    background-color: rgb(31 41 55 / 0.35);
+/*
+  Zebra striping in @layer components so it sits ABOVE @layer base but
+  BELOW @layer utilities — meaning bg-blue-50 (selected) and hover:bg-*
+  (from utilities) override it, but it still shows on plain rows.
+*/
+@layer components {
+  .zebra-table tr:nth-child(even) {
+    background-color: rgb(249, 250, 251);
+  }
+  .dark .zebra-table tr:nth-child(even) {
+    background-color: rgba(31, 41, 55, 0.35);
   }
 }
 
