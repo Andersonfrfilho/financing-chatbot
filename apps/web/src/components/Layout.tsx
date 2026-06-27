@@ -196,7 +196,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Página */}
         <main className="flex-1 overflow-auto min-h-0">
-          <div className="p-4 md:p-8 h-full">{children}</div>
+          <div className="p-4 md:p-8 pb-12 min-h-full">{children}</div>
         </main>
       </div>
     </div>
