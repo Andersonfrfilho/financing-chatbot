@@ -80,11 +80,11 @@ export function SettingsPage() {
     }
   }
 
-  async function toggleEmailReset(val: boolean) {
+  async function toggleEmailReset(enabled: boolean) {
     setSavingToggle(true)
     try {
-      await api.put('/settings/email-reset-enabled', { enabled: val })
-      setEmailResetEnabled(val)
+      await api.put('/settings/email-reset-enabled', { enabled })
+      setEmailResetEnabled(enabled)
       queryClient.invalidateQueries({ queryKey: ['company-settings'] })
     } finally {
       setSavingToggle(false)
@@ -118,8 +118,8 @@ export function SettingsPage() {
       setCreateTemplateResult({ ok: true, message: data.message, status: data.status })
       setCreateTemplate({ name: '', category: 'UTILITY', language: 'pt_BR', headerType: 'NONE', headerText: '', bodyText: '', footerText: '' })
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] })
-    } catch (err: any) {
-      const message = err?.response?.data?.message || err?.message || 'Erro ao criar template'
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Erro ao criar template'
       setCreateTemplateResult({ ok: false, message })
     } finally {
       setCreatingTemplate(false)

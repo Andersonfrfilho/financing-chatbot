@@ -30,7 +30,7 @@ export function SessionsPage() {
   const [limit, setLimit] = useState(20)
   const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [visibleSessions, setVisibleSessions] = useState<Set<string>>(new Set())
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -83,7 +83,7 @@ export function SessionsPage() {
 
   const resetSession = useMutation({
     mutationFn: (number: string) => api.delete(`/sessions/${number}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['sessions'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sessions'] }),
   })
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Session>(data?.data, 'lastActivity')

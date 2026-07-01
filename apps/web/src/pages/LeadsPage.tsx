@@ -66,7 +66,7 @@ export function LeadsPage() {
   const [visibleLeads, setVisibleLeads] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({ notes: '', assignedTo: '' })
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -103,13 +103,13 @@ export function LeadsPage() {
 
   const updateStatus = useMutation({
     mutationFn: ({ id, newStatus }: { id: string; newStatus: string }) => api.patch(`/leads/${id}`, { status: newStatus }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['leads'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['leads'] }),
   })
 
   const updateLead = useMutation({
     mutationFn: ({ id, notes, assignedTo }: { id: string; notes?: string; assignedTo?: string }) =>
       api.patch(`/leads/${id}`, { notes, assignedTo }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['leads'] }); setEditingId(null) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['leads'] }); setEditingId(null) },
   })
 
   const toggleVisible = (id: string) => {
@@ -259,8 +259,8 @@ export function LeadsPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => {
-                          const msg = encodeURIComponent(getLeadMessage(lead))
-                          window.location.href = `/conversations?whatsapp=${encodeURIComponent(lead.whatsappNumber)}&message=${msg}`
+                          const encodedMessage = encodeURIComponent(getLeadMessage(lead))
+                          window.location.href = `/conversations?whatsapp=${encodeURIComponent(lead.whatsappNumber)}&message=${encodedMessage}`
                         }}
                         title="WhatsApp"
                       >

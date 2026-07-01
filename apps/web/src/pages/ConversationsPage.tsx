@@ -51,7 +51,7 @@ const REMINDER_MESSAGES: Record<string, string> = {
   default: 'Estamos aqui para ajudar! 😊 Como podemos continuar?',
 }
 
-type QuickMessage = { label: string; text: (ctx: ConversationItem | undefined, selections: Record<string, any>) => string }
+type QuickMessage = { label: string; text: (conversationData: ConversationItem | undefined, selections: Record<string, any>) => string }
 
 function buildQuickMessages(current: ConversationItem | undefined, selections: Record<string, any>): QuickMessage[] {
   const name = current?.clientName?.split(' ')[0] ?? ''
@@ -185,31 +185,31 @@ const CTX_ORDER = [
   'downPayment', 'installments', 'totalAmount',
 ]
 
-function fmtMoney(val: string): string {
-  const num = parseFloat(String(val).replace(/[^\d.]/g, ''))
-  if (isNaN(num)) return val
+function fmtMoney(value: string): string {
+  const num = parseFloat(String(value).replace(/[^\d.]/g, ''))
+  if (isNaN(num)) return value
   return num.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 }
 
-function fmtValue(key: string, val: string): string {
-  if (MONEY_FIELDS.has(key)) return fmtMoney(val)
-  const lower = val.toLowerCase().trim()
+function fmtValue(key: string, value: string): string {
+  if (MONEY_FIELDS.has(key)) return fmtMoney(value)
+  const lower = value.toLowerCase().trim()
   if (BOOL_CHOICES[lower]) return BOOL_CHOICES[lower]
-  return val
+  return value
 }
 
-function contextToSelections(ctx: Record<string, unknown> | null): Record<string, any> {
-  if (!ctx) return {}
+function contextToSelections(contextData: Record<string, unknown> | null): Record<string, any> {
+  if (!contextData) return {}
 
   const selections: Record<string, any> = {}
-  Object.entries(ctx).forEach(([key, value]) => {
+  Object.entries(contextData).forEach(([key, rawValue]) => {
     if (HIDDEN_FIELDS.has(key)) return
-    const strVal = value != null && value !== '' ? String(value) : ''
-    if (!strVal) return
+    const stringValue = rawValue != null && rawValue !== '' ? String(rawValue) : ''
+    if (!stringValue) return
     selections[key] = {
       step: key,
       label: CTX_LABELS[key] || key,
-      value: fmtValue(key, strVal),
+      value: fmtValue(key, stringValue),
       selectedAt: new Date().toISOString(),
       status: 'completed' as const,
       order: CTX_ORDER.indexOf(key) >= 0 ? CTX_ORDER.indexOf(key) : 999,
@@ -252,7 +252,7 @@ export function ConversationsPage() {
   const [windowFilter, setWindowFilter] = useState<WindowStatus | 'all'>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
   const { data: list, isLoading: listLoading } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
     queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
@@ -260,7 +260,7 @@ export function ConversationsPage() {
 
   const markRead = useMutation({
     mutationFn: (n: string) => api.post(`/conversations/${encodeURIComponent(n)}/read`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['conversations'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
   })
 
   const openConversation = (n: string) => {
@@ -284,8 +284,8 @@ export function ConversationsPage() {
   })
 
   const refresh = () => {
-    qc.invalidateQueries({ queryKey: ['conversations'] })
-    qc.invalidateQueries({ queryKey: ['conversation', selected] })
+    queryClient.invalidateQueries({ queryKey: ['conversations'] })
+    queryClient.invalidateQueries({ queryKey: ['conversation', selected] })
   }
 
   const takeover = useMutation({
@@ -308,7 +308,7 @@ export function ConversationsPage() {
     },
     onSuccess: () => {
       setSelected(null)
-      qc.invalidateQueries({ queryKey: ['conversations'] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
     },
   })
   const send = useMutation({
@@ -354,7 +354,7 @@ export function ConversationsPage() {
       }
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['conversations'] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setSelectedBulk(new Set())
     },
   })
@@ -365,7 +365,7 @@ export function ConversationsPage() {
       const reminderMsg = REMINDER_MESSAGES[conv?.currentState ?? 'default'] || REMINDER_MESSAGES.default
       return api.post(`/conversations/${encodeURIComponent(whatsapp)}/send`, { text: reminderMsg })
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['conversations'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
   })
 
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -389,17 +389,17 @@ export function ConversationsPage() {
     if (!selected) return
     const token = useAuthStore.getState().token
     if (!token) return
-    const es = new EventSource(`${SSE_BASE}/conversations/${encodeURIComponent(selected)}/stream?token=${encodeURIComponent(token)}`)
-    es.addEventListener('message', () => {
-      qc.invalidateQueries({ queryKey: ['conversation', selected] })
-      qc.invalidateQueries({ queryKey: ['conversations'] })
+    const eventSource = new EventSource(`${SSE_BASE}/conversations/${encodeURIComponent(selected)}/stream?token=${encodeURIComponent(token)}`)
+    eventSource.addEventListener('message', () => {
+      queryClient.invalidateQueries({ queryKey: ['conversation', selected] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
     })
     // Atualizar quando mensagem é lida (readAt recebido)
-    es.addEventListener('message-read', () => {
-      qc.invalidateQueries({ queryKey: ['conversation', selected] })
+    eventSource.addEventListener('message-read', () => {
+      queryClient.invalidateQueries({ queryKey: ['conversation', selected] })
     })
-    return () => es.close()
-  }, [selected, qc])
+    return () => eventSource.close()
+  }, [selected, queryClient])
 
   const conversations = list?.conversations ?? []
   const messages = history?.messages ?? []
@@ -459,7 +459,7 @@ export function ConversationsPage() {
               size="sm"
               onClick={async () => {
                 await api.post('/conversations/read-all').catch(() => {})
-                qc.invalidateQueries({ queryKey: ['conversations'] })
+                queryClient.invalidateQueries({ queryKey: ['conversations'] })
                 window.dispatchEvent(new Event('read-all'))
               }}
             >
@@ -508,7 +508,7 @@ export function ConversationsPage() {
                       for (const whatsapp of selectedBulk) {
                         api.post(`/conversations/${encodeURIComponent(whatsapp)}/finalize`).catch(() => {})
                       }
-                      qc.invalidateQueries({ queryKey: ['conversations'] })
+                      queryClient.invalidateQueries({ queryKey: ['conversations'] })
                       setSelectedBulk(new Set())
                     }
                   }}

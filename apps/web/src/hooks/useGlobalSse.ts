@@ -8,42 +8,42 @@ function connect(token: string): EventSource {
 }
 
 export function useGlobalSse() {
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
   const tokenRef = useRef<string | null>(null)
-  const esRef = useRef<EventSource | null>(null)
+  const eventSourceRef = useRef<EventSource | null>(null)
 
   useEffect(() => {
     const token = useAuthStore.getState().token
     if (!token) return
     tokenRef.current = token
 
-    const es = connect(token)
-    esRef.current = es
+    const eventSource = connect(token)
+    eventSourceRef.current = eventSource
 
-    es.addEventListener('data-changed', () => {
-      qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
-      qc.invalidateQueries({ queryKey: ['conversations'] })
+    eventSource.addEventListener('data-changed', () => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
     })
 
-    es.addEventListener('message', () => {
-      qc.invalidateQueries({ queryKey: ['conversations'] })
+    eventSource.addEventListener('message', () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] })
     })
 
-    es.onerror = () => {
-      es.close()
+    eventSource.onerror = () => {
+      eventSource.close()
       setTimeout(() => {
         if (!tokenRef.current) return
-        const newEs = connect(tokenRef.current)
-        esRef.current = newEs
-        newEs.addEventListener('data-changed', () => {
-          qc.invalidateQueries({ queryKey: ['dashboard-stats'] })
-          qc.invalidateQueries({ queryKey: ['conversations'] })
+        const newEventSource = connect(tokenRef.current)
+        eventSourceRef.current = newEventSource
+        newEventSource.addEventListener('data-changed', () => {
+          queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] })
+          queryClient.invalidateQueries({ queryKey: ['conversations'] })
         })
       }, 3000)
     }
 
     return () => {
-      es.close()
+      eventSource.close()
     }
-  }, [qc])
+  }, [queryClient])
 }

@@ -34,7 +34,7 @@ export function UsersPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
   const [editForm, setEditForm] = useState({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' })
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -71,7 +71,7 @@ export function UsersPage() {
 
   const createUser = useMutation({
     mutationFn: () => api.post('/users', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setShowCreate(false); setForm({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' }) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); setShowCreate(false); setForm({ name: '', email: '', password: '', passwordConfirm: '', roleId: '' }) },
   })
 
   const updateUser = useMutation({
@@ -80,12 +80,12 @@ export function UsersPage() {
       if (password) payload.password = password
       return api.put(`/users/${id}`, payload)
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['users'] }); setEditingId(null) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['users'] }); setEditingId(null) },
   })
 
   const toggleActive = useMutation({
     mutationFn: ({ id, active }: { id: string; active: boolean }) => api.put(`/users/${id}`, { active }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['users'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['users'] }),
   })
 
   const startEdit = (user: User) => {

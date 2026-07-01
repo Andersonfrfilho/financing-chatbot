@@ -39,8 +39,8 @@ export function ResetPasswordPage() {
     try {
       await api.post('/auth/reset-password', { token, password })
       setSuccess(true)
-    } catch (err: any) {
-      setError(err?.response?.data?.message ?? 'Token inválido ou expirado.')
+    } catch (error: any) {
+      setError(error?.response?.data?.message ?? 'Token inválido ou expirado.')
     } finally {
       setLoading(false)
     }

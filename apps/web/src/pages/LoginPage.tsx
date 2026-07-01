@@ -65,9 +65,9 @@ export function LoginPage() {
     try {
       await api.post('/auth/forgot-password', { email: forgotEmail })
       setView('forgot-sent')
-    } catch (err: any) {
-      const msg = err?.response?.data?.message
-      if (msg?.includes('não está habilitada')) {
+    } catch (error: any) {
+      const messageText = error?.response?.data?.message
+      if (messageText?.includes('não está habilitada')) {
         setForgotError('Recuperação por e-mail não está habilitada. Entre em contato com o administrador.')
       } else {
         setForgotError('Não foi possível enviar o e-mail. Tente novamente.')

@@ -64,7 +64,7 @@ export function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [priceInput, setPriceInput] = useState('0,00')
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -104,22 +104,22 @@ export function ProductsPage() {
 
   const createProduct = useMutation({
     mutationFn: () => api.post('/products', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); closeDialog() },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeDialog() },
   })
 
   const updateProduct = useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & typeof emptyForm) => api.put(`/products/${id}`, payload),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['products'] }); closeDialog() },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['products'] }); closeDialog() },
   })
 
   const deleteProduct = useMutation({
     mutationFn: (id: string) => api.delete(`/products/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['products'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   })
 
   const retrySync = useMutation({
     mutationFn: (id: string) => api.post(`/products/${id}/retry-sync`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['products'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   })
 
   const startEdit = (product: Product) => {

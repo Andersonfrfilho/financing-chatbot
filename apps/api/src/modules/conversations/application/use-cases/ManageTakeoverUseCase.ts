@@ -54,10 +54,10 @@ export class ManageTakeoverUseCase {
           waMessageId,
           status: 'sent',
         })
-      } catch (err) {
+      } catch (error) {
         logger.child('ManageTakeoverUseCase.takeover').error(LOG_EVENTS.TAKEOVER, {
           whatsapp, reason: 'Falha ao enviar mensagem de takeover',
-          error: err instanceof Error ? err.message : String(err),
+          error: error instanceof Error ? error.message : String(error),
         })
       }
     }

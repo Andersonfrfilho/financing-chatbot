@@ -39,7 +39,7 @@ export function CategoriesPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -69,22 +69,22 @@ export function CategoriesPage() {
 
   const createCategory = useMutation({
     mutationFn: () => api.post('/categories', form),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); setShowCreate(false); setForm(emptyForm) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categories'] }); setShowCreate(false); setForm(emptyForm) },
   })
 
   const updateCategory = useMutation({
     mutationFn: ({ id, ...payload }: { id: string } & typeof emptyForm) => api.put(`/categories/${id}`, payload),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['categories'] }); setEditingId(null) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categories'] }); setEditingId(null) },
   })
 
   const deleteCategory = useMutation({
     mutationFn: (id: string) => api.delete(`/categories/${id}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   })
 
   const retrySync = useMutation({
     mutationFn: (id: string) => api.post(`/categories/${id}/retry-sync`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories'] }),
   })
 
   const startEdit = (category: Category) => {

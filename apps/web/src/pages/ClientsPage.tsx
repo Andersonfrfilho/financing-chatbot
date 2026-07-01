@@ -43,7 +43,7 @@ export function ClientsPage() {
   const [editForm, setEditForm] = useState({ name: '', email: '', city: '', state: '', whatsappNumber: '', address: '' })
   const [creating, setCreating] = useState(false)
   const [createForm, setCreateForm] = useState({ name: '', whatsappNumber: '', email: '', city: '', state: '' })
-  const qc = useQueryClient()
+  const queryClient = useQueryClient()
 
   useEffect(() => {
     const timer = setTimeout(() => { setDebouncedSearch(search); setPage(1) }, 300)
@@ -70,23 +70,23 @@ export function ClientsPage() {
 
   const updateClient = useMutation({
     mutationFn: (payload: any) => api.put(`/clients/${payload.id}`, payload),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); setEditingId(null) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); setEditingId(null) },
   })
 
   const deleteClient = useMutation({
     mutationFn: (id: string) => api.delete(`/clients/${id}`),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); setSelectedClients(new Set()) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); setSelectedClients(new Set()) },
   })
 
   const deleteMultiple = useMutation({
     mutationFn: (ids: string[]) => Promise.all(ids.map((id) => api.delete(`/clients/${id}`))),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['clients'] }); setSelectedClients(new Set()) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clients'] }); setSelectedClients(new Set()) },
   })
 
   const createClient = useMutation({
     mutationFn: (payload: typeof createForm) => api.post('/clients', payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['clients'] })
+      queryClient.invalidateQueries({ queryKey: ['clients'] })
       setCreating(false)
       setCreateForm({ name: '', whatsappNumber: '', email: '', city: '', state: '' })
     },
