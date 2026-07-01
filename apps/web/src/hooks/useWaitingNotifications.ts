@@ -45,7 +45,7 @@ export function useWaitingNotifications(): number {
     }
 
     poll()
-    const id = setInterval(poll, 20_000)
+    const id = setInterval(poll, 10_000)
     return () => clearInterval(id)
   }, [])
 

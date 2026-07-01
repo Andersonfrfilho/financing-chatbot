@@ -248,7 +248,7 @@ export function ConversationsPage() {
   const { data: list, isLoading: listLoading } = useQuery<{ conversations: ConversationItem[] }>({
     queryKey: ['conversations', waitingOnly],
     queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
-    refetchInterval: 20_000,
+    refetchInterval: 10_000,
   })
 
   const markRead = useMutation({

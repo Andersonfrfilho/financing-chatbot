@@ -12,7 +12,7 @@ const pool = new Pool({
   connectionString: process.env.DATABASE_URL!,
   ssl: isProduction ? { rejectUnauthorized: false } : false,
   min: 2,                    // sempre manter 2 conexões abertas — evita reconexão do zero
-  max: 10,
+  max: 20,
   idleTimeoutMillis: 60000,  // fechar conexão ociosa após 60s (default era 10s)
   connectionTimeoutMillis: 5000,
   keepAlive: true,
