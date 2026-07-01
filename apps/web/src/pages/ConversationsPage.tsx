@@ -249,6 +249,7 @@ export function ConversationsPage() {
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedBulk, setSelectedBulk] = useState<Set<string>>(new Set())
+  const [windowFilter, setWindowFilter] = useState<WindowStatus | 'all'>('all')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const qc = useQueryClient()
@@ -340,8 +341,22 @@ export function ConversationsPage() {
     e.target.value = ''
   }
   const sendTemplate = useMutation({
-    mutationFn: () => api.post(`/conversations/${encodeURIComponent(selected!)}/send-template`, { clientName: current?.clientName }),
+    mutationFn: ({ whatsapp, clientName }: { whatsapp: string; clientName: string | null }) =>
+      api.post(`/conversations/${encodeURIComponent(whatsapp)}/send-template`, { clientName }),
     onSuccess: () => refresh(),
+  })
+
+  const bulkSendTemplate = useMutation({
+    mutationFn: async () => {
+      const expired = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired')
+      for (const c of expired) {
+        await api.post(`/conversations/${encodeURIComponent(c.whatsappNumber)}/send-template`, { clientName: c.clientName }).catch(() => {})
+      }
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['conversations'] })
+      setSelectedBulk(new Set())
+    },
   })
 
   const continueConversation = useMutation({
@@ -397,14 +412,20 @@ export function ConversationsPage() {
   const quickMessages = buildQuickMessages(current, selections)
 
   const filteredConversations = useMemo(() => {
-    if (!search.trim()) return conversations
-    const q = search.toLowerCase()
-    return conversations.filter((c) => {
-      const name = (c.clientName || c.whatsappNumber).toLowerCase()
-      const content = (c.lastContent || '').toLowerCase()
-      return name.includes(q) || content.includes(q) || c.whatsappNumber.includes(q)
-    })
-  }, [conversations, search])
+    let result = conversations
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      result = result.filter((c) => {
+        const name = (c.clientName || c.whatsappNumber).toLowerCase()
+        const content = (c.lastContent || '').toLowerCase()
+        return name.includes(q) || content.includes(q) || c.whatsappNumber.includes(q)
+      })
+    }
+    if (windowFilter !== 'all') {
+      result = result.filter((c) => getWindowStatus(getHoursAgo(c.lastInboundAt)) === windowFilter)
+    }
+    return result
+  }, [conversations, search, windowFilter])
 
   // Mantém a conversa aberta como lida ao chegar mensagem nova (polling)
   useEffect(() => {
@@ -466,6 +487,21 @@ export function ConversationsPage() {
                 </Button>
                 <Button
                   size="sm"
+                  variant="default"
+                  onClick={() => {
+                    const expiredCount = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length
+                    if (expiredCount === 0) { alert('Nenhuma conversa expirada selecionada'); return }
+                    if (confirm(`Enviar template para ${expiredCount} conversa(s) expirada(s)?`)) {
+                      bulkSendTemplate.mutate()
+                    }
+                  }}
+                  disabled={bulkSendTemplate.isPending}
+                  className="text-xs"
+                >
+                  {bulkSendTemplate.isPending ? 'Enviando...' : 'Enviar template'}
+                </Button>
+                <Button
+                  size="sm"
                   variant="destructive"
                   onClick={() => {
                     if (confirm(text.bulk.confirmFinalize(selectedBulk.size))) {
@@ -510,24 +546,32 @@ export function ConversationsPage() {
           {conversations.length > 0 && (
             <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
               <span className="font-medium">Janela:</span>
-              <span className="flex items-center gap-3 ml-1">
-                <span className="flex items-center gap-1 cursor-default" title={text.window.active}>
-                  <span className="w-2 h-2 rounded-sm bg-green-400 dark:bg-green-600 flex-shrink-0" />
-                  {'< 12h'}
-                </span>
-                <span className="flex items-center gap-1 cursor-default" title={text.window.approaching}>
-                  <span className="w-2 h-2 rounded-sm bg-yellow-400 dark:bg-yellow-500 flex-shrink-0" />
-                  12–21h
-                </span>
-                <span className="flex items-center gap-1 cursor-default" title={text.window.warning}>
-                  <span className="w-2 h-2 rounded-sm bg-red-500 flex-shrink-0" />
-                  21–24h
-                </span>
-                <span className="flex items-center gap-1 cursor-default" title={text.window.expired}>
-                  <span className="w-2 h-2 rounded-sm bg-gray-300 dark:bg-gray-600 flex-shrink-0" />
-                  {'> 24h'}
-                </span>
-              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setWindowFilter('all')}
+                  className={`px-1.5 py-0.5 rounded ${windowFilter === 'all' ? 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100' : ''}`}
+                >
+                  Todas
+                </button>
+                {(['active', 'approaching', 'warning', 'expired'] as WindowStatus[]).map((status) => (
+                  <button
+                    key={status}
+                    onClick={() => setWindowFilter(windowFilter === status ? 'all' : status)}
+                    className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${windowFilter === status ? 'ring-1 ring-offset-0' : ''}`}
+                    title={text.window[status]}
+                  >
+                    <span className={`w-2 h-2 rounded-sm ${
+                      status === 'active' ? 'bg-green-400 dark:bg-green-600' :
+                      status === 'approaching' ? 'bg-yellow-400 dark:bg-yellow-500' :
+                      status === 'warning' ? 'bg-red-500' :
+                      'bg-gray-300 dark:bg-gray-600'
+                    } flex-shrink-0`} />
+                    {status === 'active' ? '<12h' :
+                     status === 'approaching' ? '12-21h' :
+                     status === 'warning' ? '21-24h' : '>24h'}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -718,7 +762,7 @@ export function ConversationsPage() {
                         size="sm"
                         variant="outline"
                         className="w-full"
-                        onClick={() => sendTemplate.mutate()}
+                        onClick={() => sendTemplate.mutate({ whatsapp: selected!, clientName: current?.clientName ?? null })}
                         disabled={sendTemplate.isPending}
                       >
                         {sendTemplate.isPending ? text.window.templateSending : text.window.sendTemplate}
