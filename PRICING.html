@@ -22,10 +22,43 @@
 </head>
 <body><h1>Precificação e Custos — Financiamento Bot</h1>
 <blockquote>
-<p>Referência para definir planos comerciais e entender o custo operacional da plataforma.<br>Valores em BRL (conversão aproximada USD → BRL a R$ 5,70). Atualizar conforme câmbio.<br><strong>Premissa:</strong> dois ambientes ativos (Staging + Produção) e divisão de 50% da receita líquida entre os sócios.</p>
+<p>Referência para definir planos comerciais e entender o custo operacional da plataforma.<br>Valores em BRL (conversão aproximada USD → BRL a R$ 5,70). Atualizar conforme câmbio.<br><strong>Premissa:</strong> dois ambientes ativos (Staging + Produção), divisão de 50% da receita líquida entre os sócios.</p>
 </blockquote>
 <hr>
-<h2>1. Custos de Infraestrutura — Railway</h2>
+<h2>1. Cenário Base: 3 Usuários · 24/7 · Backup Seguro</h2>
+<p>Este é o cenário de <strong>um cliente real em produção</strong> com 3 atendentes, disponibilidade contínua e backup diário do banco.</p>
+<h3>O que esse cenário exige</h3>
+<table>
+<thead>
+<tr>
+<th>Requisito</th>
+<th>Solução</th>
+<th>Observação</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>3 usuários simultâneos</td>
+<td>Plano Railway Pro (sempre ligado)</td>
+<td>Sem suspensão automática</td>
+</tr>
+<tr>
+<td>Disponibilidade 24/7</td>
+<td>Serviços com restart automático</td>
+<td>Railway garante por padrão no Pro</td>
+</tr>
+<tr>
+<td>Backup seguro do banco</td>
+<td>Railway Postgres backup diário + exportação externa</td>
+<td>Detalhado abaixo</td>
+</tr>
+<tr>
+<td>Monitoramento de uptime</td>
+<td>UptimeRobot (gratuito) ou Better Uptime</td>
+<td>Alertas por e-mail/WhatsApp</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>2. Custos de Infraestrutura — Railway</h2>
 <p>O projeto roda com 4 serviços por ambiente: <strong>API</strong>, <strong>Web (Nginx)</strong>, <strong>PostgreSQL</strong> e <strong>Redis</strong>.<br>São <strong>dois ambientes permanentes</strong>: Staging (STG) e Produção (PROD).</p>
 <h3>Planos Railway necessários</h3>
 <table>
@@ -52,8 +85,7 @@
 <td><strong>~R$ 142/mês</strong></td>
 </tr>
 </tbody></table>
-<h3>Estimativa de consumo por ambiente</h3>
-<h4>Produção</h4>
+<h3>Estimativa de consumo — Produção (3 usuários, 24/7)</h3>
 <table>
 <thead>
 <tr>
@@ -94,7 +126,10 @@
 <td><strong>~R$ 120–160/mês</strong></td>
 </tr>
 </tbody></table>
-<h4>Staging (ambiente reduzido)</h4>
+<blockquote>
+<p>Com 3 usuários ativos simultaneamente o consumo de vCPU aumenta levemente nos picos de atendimento, mas o impacto no custo mensal é marginal (Railway cobra pelo uso médio, não pelo pico).</p>
+</blockquote>
+<h3>Estimativa de consumo — Staging (ambiente reduzido)</h3>
 <table>
 <thead>
 <tr>
@@ -135,145 +170,92 @@
 <td><strong>~R$ 50–60/mês</strong></td>
 </tr>
 </tbody></table>
-<h3>Total Railway (PROD + STG)</h3>
-<table>
-<thead>
-<tr>
-<th></th>
-<th>Mínimo</th>
-<th>Máximo</th>
-</tr>
-</thead>
-<tbody><tr>
-<td>Custo base (planos)</td>
-<td>R$ 142</td>
-<td>R$ 142</td>
-</tr>
-<tr>
-<td>Uso estimado</td>
-<td>R$ 170</td>
-<td>R$ 220</td>
-</tr>
-<tr>
-<td><strong>Total Railway/mês</strong></td>
-<td><strong>~R$ 180</strong></td>
-<td><strong>~R$ 250</strong></td>
-</tr>
-</tbody></table>
-<blockquote>
-<p>STG roda com recursos menores e pode ser pausado nos fins de semana se necessário, reduzindo ~R$ 20/mês.</p>
-</blockquote>
 <h3>Referência de preço Railway (2025)</h3>
 <ul>
 <li>vCPU: US$ 0,000463/min → ~R$ 0,0026/min</li>
 <li>RAM: US$ 0,000231/GB/min → ~R$ 0,0013/GB/min</li>
-<li>Egress: US$ 0,10/GB após 100 GB grátis/mês</li>
+<li>Egress (tráfego saída): US$ 0,10/GB após 100 GB grátis/mês</li>
 </ul>
 <hr>
-<h2>2. Custos WhatsApp Business API (Meta Cloud API)</h2>
-<p>A Meta cobra <strong>por conversa</strong> (janela de 24h), não por mensagem individual.</p>
-<h3>Categorias de conversa</h3>
+<h2>3. Backup Seguro do Banco de Dados</h2>
+<h3>O que o Railway Pro já inclui</h3>
 <table>
 <thead>
 <tr>
-<th>Categoria</th>
-<th>Quando ocorre</th>
-<th>Custo estimado (Brasil)</th>
+<th>Recurso</th>
+<th>Disponibilidade</th>
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>Service</strong> (atendimento)</td>
-<td>Cliente inicia a conversa</td>
-<td>Grátis*</td>
+<td>Backup automático diário</td>
+<td>✅ Incluído no Pro</td>
 </tr>
 <tr>
-<td><strong>Utility</strong> (transacional)</td>
-<td>Template pós-24h — reengajamento</td>
-<td><del>US$ 0,0200 (</del>R$ 0,11)</td>
+<td>Retenção de 7 dias</td>
+<td>✅ Incluído no Pro</td>
 </tr>
 <tr>
-<td><strong>Marketing</strong></td>
-<td>Templates promocionais</td>
-<td><del>US$ 0,0625 (</del>R$ 0,36)</td>
+<td>Restore com 1 clique</td>
+<td>✅ Incluído no Pro</td>
 </tr>
 <tr>
-<td><strong>Authentication</strong></td>
-<td>OTP / validação</td>
-<td><del>US$ 0,0125 (</del>R$ 0,07)</td>
+<td>Point-in-time recovery</td>
+<td>❌ Não disponível</td>
 </tr>
 </tbody></table>
-<blockquote>
-<p>* <strong>1.000 conversas de serviço por mês são gratuitas</strong> (free tier Meta). Acima disso <del>US$ 0,008 (</del>R$ 0,05) por conversa.</p>
-</blockquote>
-<h3>Estimativa por volume mensal</h3>
+<h3>Backup externo adicional (recomendado para dados críticos)</h3>
+<p>Para proteção além do Railway, exportar o banco diariamente para armazenamento externo:</p>
 <table>
 <thead>
 <tr>
-<th>Volume de conversas/mês</th>
-<th>Custo Meta estimado</th>
+<th>Solução</th>
+<th>Custo/mês</th>
+<th>Observação</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>até 1.000 (service)</td>
-<td>R$ 0 (free tier)</td>
+<td><strong>Cloudflare R2</strong></td>
+<td>~R$ 0–10</td>
+<td>10 GB grátis, ~R$ 0,012/GB adicional</td>
 </tr>
 <tr>
-<td>5.000 (service)</td>
-<td>~R$ 200</td>
+<td><strong>AWS S3</strong></td>
+<td>~R$ 5–15</td>
+<td>Mais robusto, mais caro</td>
 </tr>
 <tr>
-<td>5.000 (utility/reengajamento)</td>
-<td>~R$ 550</td>
-</tr>
-<tr>
-<td>10.000 misto</td>
-<td>~R$ 600–1.200</td>
+<td><strong>Backblaze B2</strong></td>
+<td>~R$ 3–8</td>
+<td>Mais barato, S3-compatível</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p>O custo da API WhatsApp é repassado ao cliente ou absorvido dependendo do plano contratado.</p>
+<p>Script de backup: <code>pg_dump</code> agendado via cron no Railway ou GitHub Actions (1x/dia), arquivado comprimido no R2. Retenção de 30 dias custa menos de R$ 5/mês para bancos pequenos (&lt;1 GB).</p>
 </blockquote>
-<h3>Número WhatsApp Business</h3>
-<ul>
-<li><strong>Número próprio do cliente</strong> (recomendado): gratuito — cliente registra no Meta Business Manager.</li>
-<li><strong>Via BSP</strong> (Twilio, Zenvia, etc.): R$ 150–500/mês — não recomendado para começar.</li>
-</ul>
-<hr>
-<h2>3. Perfil Verificado (Selo Verde ✅)</h2>
-<p>O <strong>Official Business Account (OBA)</strong> exibe o nome da empresa com selo verde no WhatsApp.</p>
-<h3>Requisitos</h3>
-<ol>
-<li>Meta Business Manager com verificação de CNPJ + site da empresa concluída.</li>
-<li>Volume de conversas relevante e histórico consistente.</li>
-<li>Solicitação via <strong>WhatsApp Manager → Phone numbers → Request official business account</strong>.</li>
-</ol>
-<h3>Custos</h3>
+<h3>Custo total de backup</h3>
 <table>
 <thead>
 <tr>
 <th>Item</th>
-<th>Custo</th>
+<th>Custo/mês</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Verificação Meta Business</td>
-<td><strong>Gratuito</strong></td>
+<td>Railway Pro backup (incluído)</td>
+<td>R$ 0</td>
 </tr>
 <tr>
-<td>Selo OBA (Green Badge)</td>
-<td><strong>Gratuito</strong></td>
+<td>Cloudflare R2 (backup externo)</td>
+<td>~R$ 5–10</td>
 </tr>
 <tr>
-<td>Consultoria/facilitação (opcional)</td>
-<td>R$ 500–2.000</td>
+<td><strong>Total backup</strong></td>
+<td><strong>~R$ 5–10/mês</strong></td>
 </tr>
 </tbody></table>
-<blockquote>
-<p>O selo não é garantido — a Meta aprova conforme critérios internos. Empresas menores normalmente recebem <strong>Business Account</strong> (nome da empresa exibido, sem selo verde).</p>
-</blockquote>
 <hr>
-<h2>4. Planos Comerciais</h2>
-<h3>Custo operacional base (fixo, independente do número de clientes)</h3>
+<h2>4. Custo Total do Cenário (3 usuários · 24/7 · backup)</h2>
+<h3>Custo nosso (o que pagamos para operar)</h3>
 <table>
 <thead>
 <tr>
@@ -282,25 +264,227 @@
 </tr>
 </thead>
 <tbody><tr>
-<td>Railway PROD + STG</td>
-<td>R$ 180–250</td>
+<td>Railway PROD (plano Pro + uso)</td>
+<td>~R$ 135–175</td>
 </tr>
 <tr>
-<td>API WhatsApp (volume baixo)</td>
-<td>R$ 0–100</td>
+<td>Railway STG (plano Hobby + uso)</td>
+<td>~R$ 55–70</td>
 </tr>
 <tr>
-<td>Domínios / certificados</td>
-<td>~R$ 10</td>
+<td>Backup externo (R2/Backblaze)</td>
+<td>~R$ 5–10</td>
 </tr>
 <tr>
-<td><strong>Custo fixo base</strong></td>
-<td><strong>~R$ 190–360/mês</strong></td>
+<td>Monitoramento uptime (UptimeRobot)</td>
+<td>R$ 0 (gratuito)</td>
+</tr>
+<tr>
+<td>Domínio custom (se necessário)</td>
+<td>~R$ 5</td>
+</tr>
+<tr>
+<td><strong>Total custo operacional/mês</strong></td>
+<td><strong>~R$ 200–260/mês</strong></td>
 </tr>
 </tbody></table>
 <blockquote>
-<p>A partir do segundo cliente, o custo fixo de infra é rateado — Railway comporta múltiplos clientes na mesma instância até certo volume.</p>
+<p>Este valor é <strong>fixo independente do cliente</strong> — é o custo da nossa infraestrutura compartilhada. A partir do segundo cliente o custo é rateado.</p>
 </blockquote>
+<hr>
+<h2>5. Quanto Cobrar deste Cliente</h2>
+<h3>Composição do preço</h3>
+<p>O preço deve cobrir: <strong>custo operacional + margem de lucro + suporte + desenvolvimento contínuo</strong>.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Custo operacional (rateado, 1 cliente)</td>
+<td>~R$ 230</td>
+</tr>
+<tr>
+<td>Margem para suporte e manutenção</td>
+<td>~R$ 150</td>
+</tr>
+<tr>
+<td>Margem de lucro (~55%)</td>
+<td>~R$ 370</td>
+</tr>
+<tr>
+<td><strong>Preço sugerido/mês</strong></td>
+<td><strong>R$ 750–997</strong></td>
+</tr>
+</tbody></table>
+<h3>Recomendação: Plano Profissional — R$ 997/mês</h3>
+<p>Com 3 usuários, 24/7 e backup, o cliente se encaixa no <strong>Plano Profissional</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Incluso</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Usuários (agentes)</td>
+<td>até 5</td>
+</tr>
+<tr>
+<td>Sessões bot/mês</td>
+<td>até 2.000</td>
+</tr>
+<tr>
+<td>Disponibilidade</td>
+<td>24/7 com restart automático</td>
+</tr>
+<tr>
+<td>Backup</td>
+<td>Railway Pro (7 dias) + externo (30 dias)</td>
+</tr>
+<tr>
+<td>Templates HSM</td>
+<td>até 3</td>
+</tr>
+<tr>
+<td>Monitoramento de uptime</td>
+<td>✅</td>
+</tr>
+<tr>
+<td>Suporte</td>
+<td>WhatsApp (resposta em 24h úteis)</td>
+</tr>
+<tr>
+<td>Ambiente de homologação (STG)</td>
+<td>✅</td>
+</tr>
+</tbody></table>
+<h3>Alternativa — cobrar os custos variáveis separado</h3>
+<p>Outra abordagem é separar a API do WhatsApp (custo variável por volume):</p>
+<table>
+<thead>
+<tr>
+<th>Componente</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Plataforma (fixo)</td>
+<td>R$ 797/mês</td>
+</tr>
+<tr>
+<td>API WhatsApp (repassado ao cliente)</td>
+<td>custo Meta + 20% de taxa</td>
+</tr>
+<tr>
+<td>Sessões extras (acima de 2.000)</td>
+<td>R$ 80 a cada 500</td>
+</tr>
+</tbody></table>
+<p>Essa estrutura protege você de clientes com volume muito alto.</p>
+<hr>
+<h2>6. Retorno por Cliente (divisão 50/50)</h2>
+<h3>Com 1 cliente Profissional (R$ 997/mês)</h3>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Receita bruta</td>
+<td>R$ 997</td>
+</tr>
+<tr>
+<td>Custo Railway PROD + STG</td>
+<td>− R$ 230</td>
+</tr>
+<tr>
+<td>Backup externo</td>
+<td>− R$ 8</td>
+</tr>
+<tr>
+<td><strong>Receita líquida</strong></td>
+<td><strong>R$ 759</strong></td>
+</tr>
+<tr>
+<td>Sócio A (50%)</td>
+<td><strong>R$ 379</strong></td>
+</tr>
+<tr>
+<td>Sócio B (50%)</td>
+<td><strong>R$ 379</strong></td>
+</tr>
+</tbody></table>
+<h3>Escala — receita líquida por sócio (50/50)</h3>
+<table>
+<thead>
+<tr>
+<th>Clientes</th>
+<th>Plano médio</th>
+<th>Receita bruta</th>
+<th>Custos infra</th>
+<th>Líquido total</th>
+<th><strong>Por sócio</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>Profissional</td>
+<td>R$ 997</td>
+<td>R$ 238</td>
+<td>R$ 759</td>
+<td><strong>R$ 379</strong></td>
+</tr>
+<tr>
+<td>2</td>
+<td>Profissional</td>
+<td>R$ 1.994</td>
+<td>R$ 290</td>
+<td>R$ 1.704</td>
+<td><strong>R$ 852</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>Profissional</td>
+<td>R$ 2.991</td>
+<td>R$ 340</td>
+<td>R$ 2.651</td>
+<td><strong>R$ 1.325</strong></td>
+</tr>
+<tr>
+<td>5</td>
+<td>Profissional</td>
+<td>R$ 4.985</td>
+<td>R$ 440</td>
+<td>R$ 4.545</td>
+<td><strong>R$ 2.272</strong></td>
+</tr>
+<tr>
+<td>10</td>
+<td>Misto</td>
+<td>R$ 8.470</td>
+<td>R$ 720</td>
+<td>R$ 7.750</td>
+<td><strong>R$ 3.875</strong></td>
+</tr>
+<tr>
+<td>20</td>
+<td>Misto</td>
+<td>R$ 16.940</td>
+<td>R$ 1.300</td>
+<td>R$ 15.640</td>
+<td><strong>R$ 7.820</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Custos escalam suavemente — Railway comporta múltiplos clientes na mesma instância até ~10 clientes. Acima disso convém avaliar instâncias dedicadas.</p>
+</blockquote>
+<hr>
+<h2>7. Planos Comerciais Completos</h2>
 <h3>Tabela de planos</h3>
 <table>
 <thead>
@@ -324,7 +508,7 @@
 <td>—</td>
 </tr>
 <tr>
-<td>Agentes simultâneos</td>
+<td>Usuários (agentes)</td>
 <td>1</td>
 <td>5</td>
 <td>ilimitado</td>
@@ -334,6 +518,18 @@
 <td>até 500</td>
 <td>até 2.000</td>
 <td>ilimitado</td>
+</tr>
+<tr>
+<td>Disponibilidade</td>
+<td>24/7</td>
+<td>24/7</td>
+<td>24/7 + SLA</td>
+</tr>
+<tr>
+<td>Backup banco</td>
+<td>Railway 7 dias</td>
+<td>Railway 7 dias + externo 30 dias</td>
+<td>externo 90 dias</td>
 </tr>
 <tr>
 <td>Simulações de financiamento</td>
@@ -360,6 +556,18 @@
 <td>ilimitado</td>
 </tr>
 <tr>
+<td>Criação de templates</td>
+<td>—</td>
+<td>✓ (via painel)</td>
+<td>✓</td>
+</tr>
+<tr>
+<td>Monitoramento de uptime</td>
+<td>básico</td>
+<td>✓</td>
+<td>✓ com alertas</td>
+</tr>
+<tr>
 <td>Suporte</td>
 <td>e-mail (48h)</td>
 <td>WhatsApp (24h)</td>
@@ -375,7 +583,7 @@
 <blockquote>
 <p><strong>Sessões extras:</strong> R$ 80 a cada 500 sessões acima do plano.</p>
 </blockquote>
-<h3>Taxa de setup (única, não dividida — cobre custo de implantação)</h3>
+<h3>Taxa de setup (única)</h3>
 <table>
 <thead>
 <tr>
@@ -388,140 +596,372 @@
 <td>R$ 800</td>
 </tr>
 <tr>
-<td>Com número do cliente já registrado na Meta</td>
+<td>Com número já registrado na Meta</td>
 <td>R$ 500</td>
 </tr>
 <tr>
 <td>Facilitação para perfil verificado (OBA)</td>
 <td>R$ 1.200</td>
 </tr>
+<tr>
+<td>Backup externo configurado e documentado</td>
+<td>R$ 300</td>
+</tr>
 </tbody></table>
 <hr>
-<h2>5. Distribuição de Receita (Sociedade 50/50)</h2>
-<p>A receita líquida após custos operacionais é dividida igualmente entre os sócios.</p>
-<h3>Exemplo com 1 cliente — Plano Essencial (R$ 497/mês)</h3>
+<h2>8. Custos WhatsApp Business API (Meta Cloud API)</h2>
+<p>A Meta cobra <strong>por conversa</strong> (janela de 24h), não por mensagem individual.</p>
+<h3>Categorias de conversa</h3>
+<table>
+<thead>
+<tr>
+<th>Categoria</th>
+<th>Quando ocorre</th>
+<th>Custo (Brasil)</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>Service</strong> (atendimento)</td>
+<td>Cliente inicia a conversa</td>
+<td>Grátis*</td>
+</tr>
+<tr>
+<td><strong>Utility</strong> (transacional)</td>
+<td>Template pós-24h — reengajamento</td>
+<td><del>US$ 0,0200 (</del>R$ 0,11)</td>
+</tr>
+<tr>
+<td><strong>Marketing</strong></td>
+<td>Templates promocionais</td>
+<td><del>US$ 0,0625 (</del>R$ 0,36)</td>
+</tr>
+<tr>
+<td><strong>Authentication</strong></td>
+<td>OTP / validação</td>
+<td><del>US$ 0,0125 (</del>R$ 0,07)</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>* <strong>1.000 conversas de serviço/mês gratuitas</strong> (free tier Meta). Acima disso ~R$ 0,05 por conversa.</p>
+</blockquote>
+<h3>Estimativa por volume</h3>
+<table>
+<thead>
+<tr>
+<th>Volume/mês</th>
+<th>Custo Meta</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>até 1.000 conversas</td>
+<td>R$ 0 (free tier)</td>
+</tr>
+<tr>
+<td>5.000 (service)</td>
+<td>~R$ 200</td>
+</tr>
+<tr>
+<td>5.000 (utility)</td>
+<td>~R$ 550</td>
+</tr>
+<tr>
+<td>10.000 misto</td>
+<td>~R$ 600–1.200</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>9. Perfil Verificado (Selo Verde ✅)</h2>
 <table>
 <thead>
 <tr>
 <th>Item</th>
-<th>Valor</th>
+<th>Custo</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Receita bruta</td>
-<td>R$ 497</td>
+<td>Verificação Meta Business (CNPJ + site)</td>
+<td><strong>Gratuito</strong></td>
 </tr>
 <tr>
-<td>Custo Railway (rateado)</td>
-<td>− R$ 120</td>
+<td>Selo OBA (Green Badge)</td>
+<td><strong>Gratuito</strong></td>
 </tr>
 <tr>
-<td>Custo WhatsApp API (estimado)</td>
-<td>− R$ 30</td>
-</tr>
-<tr>
-<td><strong>Receita líquida</strong></td>
-<td><strong>R$ 347</strong></td>
-</tr>
-<tr>
-<td>Sócio A (50%)</td>
-<td>R$ 173</td>
-</tr>
-<tr>
-<td>Sócio B (50%)</td>
-<td>R$ 173</td>
-</tr>
-</tbody></table>
-<h3>Escala — receita líquida por sócio</h3>
-<table>
-<thead>
-<tr>
-<th>Clientes</th>
-<th>Plano médio</th>
-<th>Receita bruta</th>
-<th>Custos</th>
-<th>Líquido total</th>
-<th><strong>Por sócio (50%)</strong></th>
-</tr>
-</thead>
-<tbody><tr>
-<td>1</td>
-<td>Essencial</td>
-<td>R$ 497</td>
-<td>R$ 230</td>
-<td>R$ 267</td>
-<td><strong>R$ 133</strong></td>
-</tr>
-<tr>
-<td>3</td>
-<td>Essencial</td>
-<td>R$ 1.491</td>
-<td>R$ 420</td>
-<td>R$ 1.071</td>
-<td><strong>R$ 535</strong></td>
-</tr>
-<tr>
-<td>5</td>
-<td>Profissional</td>
-<td>R$ 4.985</td>
-<td>R$ 700</td>
-<td>R$ 4.285</td>
-<td><strong>R$ 2.142</strong></td>
-</tr>
-<tr>
-<td>10</td>
-<td>Misto</td>
-<td>R$ 7.470</td>
-<td>R$ 1.100</td>
-<td>R$ 6.370</td>
-<td><strong>R$ 3.185</strong></td>
-</tr>
-<tr>
-<td>20</td>
-<td>Misto</td>
-<td>R$ 14.940</td>
-<td>R$ 1.800</td>
-<td>R$ 13.140</td>
-<td><strong>R$ 6.570</strong></td>
+<td>Consultoria/facilitação (opcional)</td>
+<td>R$ 500–2.000</td>
 </tr>
 </tbody></table>
 <blockquote>
-<p>Custos escalam suavemente pois a infra Railway é compartilhada. A partir de ~10 clientes convém avaliar instâncias dedicadas por cliente (Enterprise).</p>
+<p>Não é garantido. A Meta aprova por critérios internos. Empresas menores normalmente recebem Business Account (nome visível, sem selo verde).</p>
 </blockquote>
-<h3>Setup fee — distribuição</h3>
-<p>O setup fee é receita de serviço pontual. Sugestão: <strong>70% vai para quem executou a implantação</strong>, 30% dividido igualmente — ou dividir 50/50 se ambos participaram.</p>
 <hr>
-<h2>6. Break-even</h2>
+<h2>10. Break-even e Metas</h2>
 <table>
 <thead>
 <tr>
-<th>Cenário</th>
+<th>Meta</th>
 <th>Clientes necessários</th>
 </tr>
 </thead>
 <tbody><tr>
-<td>Cobrir custo fixo Railway (R$ 220/mês)</td>
-<td><strong>1 cliente Essencial</strong></td>
+<td>Cobrir custo fixo de infra (R$ 238/mês)</td>
+<td><strong>1 cliente Profissional</strong></td>
 </tr>
 <tr>
-<td>Cada sócio receber R$ 1.000/mês líquido</td>
-<td><strong>~4 clientes Profissional</strong></td>
+<td>Cada sócio receber R$ 1.000/mês</td>
+<td><strong>~3 clientes Profissional</strong></td>
 </tr>
 <tr>
-<td>Cada sócio receber R$ 3.000/mês líquido</td>
-<td><strong>~9 clientes mistos</strong></td>
+<td>Cada sócio receber R$ 3.000/mês</td>
+<td><strong>~8 clientes mistos</strong></td>
 </tr>
 <tr>
-<td>Cada sócio receber R$ 5.000/mês líquido</td>
-<td><strong>~14 clientes mistos</strong></td>
+<td>Cada sócio receber R$ 5.000/mês</td>
+<td><strong>~13 clientes mistos</strong></td>
+</tr>
+<tr>
+<td>Cada sócio receber R$ 10.000/mês</td>
+<td><strong>~26 clientes mistos</strong></td>
 </tr>
 </tbody></table>
 <hr>
-<h2>7. Fontes de referência</h2>
+<h2>11. Data Lake — Análise e Custos</h2>
+<p>Um data lake permitiria armazenar e analisar <strong>todos os eventos brutos</strong> da plataforma: conversas, qualificações do bot, funil de conversão, templates enviados, tempo de resposta dos atendentes — dados que hoje somem quando uma conversa é finalizada ou que ficam presos no PostgreSQL sem consulta analítica eficiente.</p>
+<h3>O que um data lake habilitaria</h3>
+<table>
+<thead>
+<tr>
+<th>Capacidade</th>
+<th>Valor para o negócio</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Relatórios históricos ilimitados</td>
+<td>Ver funil de conversão de qualquer período</td>
+</tr>
+<tr>
+<td>Métricas de qualidade de atendimento</td>
+<td>Tempo de resposta, taxa de conversão por atendente</td>
+</tr>
+<tr>
+<td>Análise de comportamento do bot</td>
+<td>Onde os leads desistem no fluxo</td>
+</tr>
+<tr>
+<td>Dashboards por cliente</td>
+<td>Cada cliente vê seus próprios dados</td>
+</tr>
+<tr>
+<td>IA / ML futuro</td>
+<td>Treinar modelo próprio de qualificação</td>
+</tr>
+<tr>
+<td>Auditoria de longo prazo</td>
+<td>Histórico de ações além dos logs operacionais</td>
+</tr>
+</tbody></table>
+<h3>Eventos a capturar</h3>
+<pre><code>conversa_iniciada      → timestamp, número, origem
+mensagem_recebida      → conversa_id, tipo (texto/áudio/imagem), tamanho
+qualificação_bot       → etapa, resposta, timestamp
+template_enviado       → template_id, atendente, resultado
+takeover_realizado     → conversa_id, atendente_id, timestamp
+conversa_finalizada    → duração, atendente, satisfação (futuro)
+lead_criado            → dados capturados (sem PII sensível em texto claro)
+</code></pre>
+<hr>
+<h3>Opções de arquitetura (do mais simples ao mais robusto)</h3>
+<h4>Opção A — R2 + DuckDB (recomendado para início)</h4>
+<p>Exportar eventos do PostgreSQL para Cloudflare R2 em formato Parquet (1x/dia ou em tempo real via job). Consultar com DuckDB via API ou script local.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Custo/mês</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Cloudflare R2 (já temos para backup)</td>
+<td>~R$ 0–10</td>
+</tr>
+<tr>
+<td>DuckDB</td>
+<td>Gratuito (roda em processo Node/Python)</td>
+</tr>
+<tr>
+<td>Job de exportação (Railway Cron)</td>
+<td>Incluso no plano atual</td>
+</tr>
+<tr>
+<td><strong>Total adicional</strong></td>
+<td><strong>~R$ 0–10/mês</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Ideal para 1–10 clientes. Consultas em segundos para datasets até ~50 GB. Sem servidor extra.</p>
+</blockquote>
+<hr>
+<h4>Opção B — ClickHouse Cloud (melhor custo-benefício analítico)</h4>
+<p>Banco OLAP especializado em séries temporais e eventos. Aceita bilhões de linhas, consultas em milissegundos. Tem tier gratuito generoso.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Custo/mês</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ClickHouse Cloud (free tier: 1M linhas/consulta)</td>
+<td>R$ 0</td>
+</tr>
+<tr>
+<td>ClickHouse Cloud (produção ~25 GB)</td>
+<td><del>US$ 25 (</del>R$ 142)</td>
+</tr>
+<tr>
+<td>Pipeline de ingestão (Kafka ou job simples)</td>
+<td>Incluso ou Railway Cron</td>
+</tr>
+<tr>
+<td><strong>Total adicional</strong></td>
+<td><strong>R$ 0 (free) ou ~R$ 142/mês</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Recomendado quando tiver 5+ clientes e precisar de dashboards em tempo real.</p>
+</blockquote>
+<hr>
+<h4>Opção C — BigQuery (Google Cloud)</h4>
+<p>Serverless, paga por consulta. Ideal se já usar Google Cloud para algo.</p>
+<table>
+<thead>
+<tr>
+<th>Item</th>
+<th>Custo/mês</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Storage (~10 GB)</td>
+<td><del>US$ 0,20 (</del>R$ 1,14)</td>
+</tr>
+<tr>
+<td>Consultas (primeiros 1 TB/mês grátis)</td>
+<td>R$ 0</td>
+</tr>
+<tr>
+<td>Streaming insert (se tempo real)</td>
+<td>~US$ 0,01 por 200 MB</td>
+</tr>
+<tr>
+<td><strong>Total adicional</strong></td>
+<td><strong>~R$ 0–30/mês</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>Boa opção se quiser integrar com Looker Studio (dashboards gratuitos do Google).</p>
+</blockquote>
+<hr>
+<h3>Comparativo de opções</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><strong>Opção A (R2 + DuckDB)</strong></th>
+<th><strong>Opção B (ClickHouse)</strong></th>
+<th><strong>Opção C (BigQuery)</strong></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Custo/mês</td>
+<td>R$ 0–10</td>
+<td>R$ 0–142</td>
+<td>R$ 0–30</td>
+</tr>
+<tr>
+<td>Complexidade de setup</td>
+<td>Baixa</td>
+<td>Média</td>
+<td>Média</td>
+</tr>
+<tr>
+<td>Latência de consulta</td>
+<td>Segundos</td>
+<td>Milissegundos</td>
+<td>Segundos</td>
+</tr>
+<tr>
+<td>Tempo real</td>
+<td>❌</td>
+<td>✅</td>
+<td>Parcial</td>
+</tr>
+<tr>
+<td>Dashboard nativo</td>
+<td>❌ (precisa exportar)</td>
+<td>✅</td>
+<td>✅ (Looker Studio)</td>
+</tr>
+<tr>
+<td>Escala até</td>
+<td>~50 GB / 10 clientes</td>
+<td>Bilhões de linhas</td>
+<td>Ilimitado</td>
+</tr>
+<tr>
+<td>Recomendado para</td>
+<td>Início / MVP analytics</td>
+<td>5+ clientes</td>
+<td>Integração Google</td>
+</tr>
+</tbody></table>
+<hr>
+<h3>Impacto no custo total por cenário</h3>
+<table>
+<thead>
+<tr>
+<th>Cenário</th>
+<th>Sem data lake</th>
+<th>+ Opção A</th>
+<th>+ Opção B</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1 cliente</td>
+<td>R$ 200–260/mês</td>
+<td>R$ 200–270/mês</td>
+<td>R$ 342–402/mês</td>
+</tr>
+<tr>
+<td>5 clientes</td>
+<td>R$ 440/mês</td>
+<td>R$ 450/mês</td>
+<td>R$ 582/mês</td>
+</tr>
+<tr>
+<td>10 clientes</td>
+<td>R$ 720/mês</td>
+<td>R$ 730/mês</td>
+<td>R$ 862/mês</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>O custo do data lake é diluído conforme escala — com 5+ clientes o impacto por cliente é de R$ 2–28/mês.</p>
+</blockquote>
+<hr>
+<h3>Recomendação</h3>
+<p><strong>Fase 1 (agora — até 5 clientes):</strong> implementar Opção A com R2. Custo zero extra, habilita relatórios históricos básicos. Pipeline: job diário que exporta tabelas do PostgreSQL para R2 em Parquet.</p>
+<p><strong>Fase 2 (5+ clientes):</strong> migrar para ClickHouse Cloud (free tier cobre bem os primeiros meses). Adicionar dashboard ao painel do cliente como diferencial de plano.</p>
+<p><strong>Fase 3 (Enterprise):</strong> BigQuery + Looker Studio para clientes que precisam de BI avançado. Cobrar como add-on (R$ 200–500/mês por cliente).</p>
+<hr>
+<h2>12. Fontes de referência</h2>
 <ul>
 <li>Railway pricing: <a href="https://railway.com/pricing">https://railway.com/pricing</a></li>
 <li>Meta WhatsApp pricing (Brasil): <a href="https://developers.facebook.com/docs/whatsapp/pricing">https://developers.facebook.com/docs/whatsapp/pricing</a></li>
-<li>WhatsApp Business Platform: <a href="https://business.whatsapp.com/products/platform-pricing">https://business.whatsapp.com/products/platform-pricing</a></li>
+<li>Cloudflare R2: <a href="https://developers.cloudflare.com/r2/pricing/">https://developers.cloudflare.com/r2/pricing/</a></li>
+<li>Backblaze B2: <a href="https://www.backblaze.com/b2/cloud-storage-pricing.html">https://www.backblaze.com/b2/cloud-storage-pricing.html</a></li>
+<li>ClickHouse Cloud pricing: <a href="https://clickhouse.com/pricing">https://clickhouse.com/pricing</a></li>
+<li>BigQuery pricing: <a href="https://cloud.google.com/bigquery/pricing">https://cloud.google.com/bigquery/pricing</a></li>
+<li>DuckDB: <a href="https://duckdb.org/">https://duckdb.org/</a></li>
 </ul>
 </body>
 </html>

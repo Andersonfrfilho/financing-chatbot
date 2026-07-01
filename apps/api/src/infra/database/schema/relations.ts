@@ -7,6 +7,8 @@ import { simulationResults } from './simulation-results'
 import { banks } from './banks'
 import { bankRates } from './bank-rates'
 import { leads } from './leads'
+import { categories } from './categories'
+import { products } from './products'
 
 export const usersRelations = relations(users, ({ one, many }) => ({
   role: one(roles, { fields: [users.roleId], references: [roles.id] }),
@@ -47,4 +49,12 @@ export const leadsRelations = relations(leads, ({ one }) => ({
   client: one(financingClients, { fields: [leads.clientId], references: [financingClients.id] }),
   simulation: one(financingSimulations, { fields: [leads.simulationId], references: [financingSimulations.id] }),
   assignedUser: one(users, { fields: [leads.assignedTo], references: [users.id] }),
+}))
+
+export const categoriesRelations = relations(categories, ({ many }) => ({
+  products: many(products),
+}))
+
+export const productsRelations = relations(products, ({ one }) => ({
+  category: one(categories, { fields: [products.categoryId], references: [categories.id] }),
 }))

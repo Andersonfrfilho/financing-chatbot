@@ -11,6 +11,8 @@ export const navigation = {
     clients:       'Clientes',
     leads:         'Leads',
     simulations:   'Simulações',
+    categories:    'Categorias',
+    products:      'Produtos',
     users:         'Usuários',
     settings:      'Configurações',
   },

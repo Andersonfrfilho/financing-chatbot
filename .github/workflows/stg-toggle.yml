@@ -1,0 +1,59 @@
+name: STG — Liga / Desliga
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Ação no ambiente de Staging'
+        required: true
+        type: choice
+        default: 'stop'
+        options:
+          - start
+          - stop
+
+jobs:
+  toggle-stg:
+    name: ${{ inputs.action == 'start' && '▶ Ligar STG' || '⏹ Desligar STG' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Escalar serviços STG (${{ inputs.action }})
+        env:
+          RAILWAY_TOKEN:      ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+          RAILWAY_STG_ENV_ID: ${{ secrets.RAILWAY_STG_ENVIRONMENT_ID }}
+        run: |
+          REPLICAS=${{ inputs.action == 'start' && '1' || '0' }}
+          ACTION_LABEL=${{ inputs.action == 'start' && 'ligado' || 'desligado' }}
+
+          echo "→ Buscando serviços do projeto..."
+          SERVICES=$(curl -sf -X POST https://backboard.railway.app/graphql/v2 \
+            -H "Authorization: Bearer $RAILWAY_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"query\": \"query { project(id: \\\"$RAILWAY_PROJECT_ID\\\") { services { edges { node { id name } } } } }\"
+            }" | jq -r '.data.project.services.edges[].node | [.id, .name] | @tsv')
+
+          if [ -z "$SERVICES" ]; then
+            echo "❌ Nenhum serviço encontrado. Verifique RAILWAY_TOKEN e RAILWAY_PROJECT_ID."
+            exit 1
+          fi
+
+          echo "$SERVICES" | while IFS=$'\t' read -r SERVICE_ID SERVICE_NAME; do
+            echo "  → $SERVICE_NAME ($SERVICE_ID): $REPLICAS réplica(s)"
+            RESULT=$(curl -sf -X POST https://backboard.railway.app/graphql/v2 \
+              -H "Authorization: Bearer $RAILWAY_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{
+                \"query\": \"mutation { serviceInstanceUpdate(serviceId: \\\"$SERVICE_ID\\\", environmentId: \\\"$RAILWAY_STG_ENV_ID\\\", input: { numReplicas: $REPLICAS }) }\"
+              }" || echo '{"errors":"request failed"}')
+            if echo "$RESULT" | grep -q '"errors"'; then
+              echo "    ⚠ Aviso: $RESULT"
+            else
+              echo "    ✓ OK"
+            fi
+          done
+
+          echo ""
+          echo "✅ STG $ACTION_LABEL com sucesso."
+          echo "   Réplicas: $REPLICAS por serviço"

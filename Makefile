@@ -1,6 +1,63 @@
-.PHONY: setup up down logs ps db-reset db-seed api-shell test typecheck build test-n8n verify-web setup-hooks
+.PHONY: all dev dev-api dev-web infra migrate seed seed-demo \
+        setup up down logs ps db-reset db-seed api-shell \
+        test typecheck build test-n8n verify-web setup-hooks
 
-COMPOSE = docker compose -f infra/docker-compose.yml --env-file infra/.env
+COMPOSE  = docker compose -f infra/docker-compose.yml --env-file infra/.env
+NODE22   = $(HOME)/.nvm/versions/node/v22.23.1
+BUN      = $(HOME)/.nvm/versions/node/v24.14.0/bin/bun
+API_DIR  = apps/api
+WEB_DIR  = apps/web
+
+# ──────────────────────────────────────────────
+# Atalho principal: sobe infra + migra + seed demo
+# ──────────────────────────────────────────────
+all: infra migrate seed-demo
+	@echo ""
+	@echo "✅ Stack pronta! Próximos passos:"
+	@echo "   API local:  make dev-api   (terminal 1)"
+	@echo "   Web local:  make dev-web   (terminal 2)"
+	@echo "   Admin:      admin@financiamento.bot / admin@123"
+	@echo "   Demo users: carlos/fernanda/juliana@financiamento.bot / demo@123"
+
+# Sobe apenas postgres + redis (sem a API que falha no uWS.js arm64)
+infra:
+	@echo "→ Subindo infra (postgres + redis)..."
+	$(COMPOSE) up -d financiamento_postgres financiamento_redis 2>/dev/null || \
+	docker compose -f infra/docker-compose.yml up -d 2>/dev/null || true
+	@echo "⏳ Aguardando postgres ficar pronto..."
+	@for i in 1 2 3 4 5 6 7 8 9 10; do \
+		pg_isready -h localhost -p 5432 -q 2>/dev/null && break || sleep 2; \
+	done
+	@echo "✓ Infra pronta"
+
+# Roda migrations no host
+migrate:
+	@echo "→ Rodando migrations..."
+	@cd $(API_DIR) && $(BUN) run db:migrate
+	@echo "✓ Migrations concluídas"
+
+# Seed base (roles + admin + banks) — idempotente, seguro rodar sempre
+seed:
+	@echo "→ Seed base (roles/admin/banks)..."
+	@cd $(API_DIR) && $(BUN) --env-file=.env run src/infra/database/seeds/index.ts
+	@echo "✓ Seed base concluído"
+
+# Seed demo — ~530 registros cobrindo todos os casos (clientes, simulações, leads, sessões)
+seed-demo:
+	@echo "→ Seed demo (~530 registros)..."
+	@cd $(API_DIR) && $(BUN) --env-file=.env run src/infra/database/seeds/demo.ts
+	@echo "✓ Seed demo concluído"
+
+# Inicia API localmente com Node.js 22 (necessário por limitação do uWS.js no arm64)
+dev-api:
+	@echo "→ Iniciando API em http://localhost:3333"
+	@cd $(API_DIR) && PATH="$(NODE22)/bin:$$PATH" node --env-file=.env \
+		node_modules/.bin/tsx src/index.ts
+
+# Inicia frontend Vite em http://localhost:5173
+dev-web:
+	@echo "→ Iniciando Web em http://localhost:5173"
+	@cd $(WEB_DIR) && $(BUN) run dev
 
 # ──────────────────────────────────────────────
 # Configuração inicial
@@ -50,13 +107,13 @@ db-shell:
 # Desenvolvimento
 # ──────────────────────────────────────────────
 typecheck:
-	cd apps/api && bun run typecheck
+	cd apps/api && $(BUN) run typecheck
 
 test:
-	cd apps/api && bun test
+	cd apps/api && $(BUN) test
 
 build:
-	cd apps/web && bun run build
+	cd apps/web && $(BUN) run build
 
 # ──────────────────────────────────────────────
 # Teste WhatsApp (simula mensagem)

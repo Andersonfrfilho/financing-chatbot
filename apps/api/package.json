@@ -10,9 +10,11 @@
     "test": "bun test",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "db:seed": "bun run src/infra/database/seeds/index.ts"
+    "db:seed": "bun run src/infra/database/seeds/index.ts",
+    "db:seed:demo": "bun --env-file=.env run src/infra/database/seeds/demo.ts"
   },
   "dependencies": {
+    "@adatechnology/whatsapp-provider": "file:../../../adatechnology-packages/packages/backend/whatsapp-provider",
     "@node-rs/argon2": "^2.0.0",
     "drizzle-orm": "^0.36.4",
     "ioredis": "^5.4.1",

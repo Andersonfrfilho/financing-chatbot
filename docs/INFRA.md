@@ -66,6 +66,7 @@ WHATSAPP_PHONE_NUMBER_ID=                       # Meta Developer Console
 WHATSAPP_BUSINESS_ACCOUNT_ID=                  # Meta Developer Console
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=                  # string livre de sua escolha
 WHATSAPP_API_VERSION=v21.0
+WHATSAPP_CATALOG_ID=                            # Meta Commerce Manager — necessário para sincronizar categorias/produtos
 LOG_LEVEL=info
 ```
 

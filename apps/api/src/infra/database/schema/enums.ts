@@ -101,6 +101,18 @@ export const leadStatusEnum = pgEnum('lead_status', [
   'lost',
 ])
 
+export const catalogSyncStatusEnum = pgEnum('catalog_sync_status', ['pending', 'synced', 'error'])
+
+export const productAvailabilityEnum = pgEnum('product_availability', [
+  'in stock',
+  'out of stock',
+  'preorder',
+  'available for order',
+  'discontinued',
+])
+
+export const productConditionEnum = pgEnum('product_condition', ['new', 'refurbished', 'used'])
+
 export const conversationStateEnum = pgEnum('conversation_state', [
   // Início
   'greeting',

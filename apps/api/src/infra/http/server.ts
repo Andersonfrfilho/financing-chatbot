@@ -22,6 +22,8 @@ import { registerDashboardRoutes } from '@/modules/dashboard/infra/http/Dashboar
 import { registerFipeRoutes } from '@/modules/fipe/infra/http/FipeRoutes'
 import { registerConversationRoutes } from '@/modules/conversations/infra/http/ConversationRoutes'
 import { registerSettingsRoutes } from '@/modules/settings/infra/http/SettingsRoutes'
+import { registerCategoryRoutes } from '@/modules/categories/infra/http/CategoryRoutes'
+import { registerProductRoutes } from '@/modules/products/infra/http/ProductRoutes'
 
 const PORT = parseInt(process.env.PORT ?? '3333')
 const NODE_ENV = process.env.NODE_ENV ?? 'development'
@@ -131,6 +133,8 @@ export async function createServer() {
   registerFipeRoutes(router, container.fipeController)
   registerConversationRoutes(router, container.conversationController)
   registerSettingsRoutes(router, container.settingsController)
+  registerCategoryRoutes(router, container.categoryController)
+  registerProductRoutes(router, container.productController)
 
   return {
     listen() {

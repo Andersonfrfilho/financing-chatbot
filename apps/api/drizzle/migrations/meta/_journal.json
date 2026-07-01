@@ -50,6 +50,20 @@
       "when": 1782240000000,
       "tag": "0009_password_reset_and_company",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1782572570810,
+      "tag": "0007_lonely_skaar",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1782904471832,
+      "tag": "0008_clean_slayback",
+      "breakpoints": true
     }
   ]
 }

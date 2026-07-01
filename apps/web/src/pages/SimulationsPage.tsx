@@ -230,16 +230,16 @@ export function SimulationsPage() {
             </SelectContent>
           </Select>
           <Input
-            type="date"
+            type="datetime-local"
             value={startDate}
             onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
-            className="w-full sm:w-36 text-xs"
+            className="w-full sm:w-48 text-xs"
           />
           <Input
-            type="date"
+            type="datetime-local"
             value={endDate}
             onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
-            className="w-full sm:w-36 text-xs"
+            className="w-full sm:w-48 text-xs"
           />
           <Button
             variant={showValueFilters ? 'default' : 'outline'}
@@ -407,7 +407,7 @@ export function SimulationsPage() {
                     {formatBRL(sim.downPaymentAmount)}
                   </TableCell>
                   <TableCell className="hidden lg:table-cell text-sm whitespace-nowrap">
-                    {sim.termMonths} meses
+                    {Math.floor(sim.termMonths / 12)} anos - {sim.termMonths} meses
                   </TableCell>
                   <TableCell className="hidden xl:table-cell text-xs text-gray-600 dark:text-gray-400 max-w-[180px] truncate" title={sim.bankNames ?? undefined}>
                     {sim.bankNames ?? '—'}

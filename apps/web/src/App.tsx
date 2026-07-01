@@ -10,6 +10,8 @@ import { SessionsPage } from '@/pages/SessionsPage'
 import { ConversationsPage } from '@/pages/ConversationsPage'
 import { UsersPage } from '@/pages/UsersPage'
 import { SettingsPage } from '@/pages/SettingsPage'
+import { CategoriesPage } from '@/pages/CategoriesPage'
+import { ProductsPage } from '@/pages/ProductsPage'
 
 const ROUTES: Record<string, React.ComponentType> = {
   '/': DashboardPage,
@@ -20,6 +22,8 @@ const ROUTES: Record<string, React.ComponentType> = {
   '/conversations': ConversationsPage,
   '/users': UsersPage,
   '/settings': SettingsPage,
+  '/categories': CategoriesPage,
+  '/products': ProductsPage,
 }
 
 export default function App() {

@@ -38,6 +38,7 @@ WHATSAPP_ACCESS_TOKEN=<token-meta>
 WHATSAPP_PHONE_NUMBER_ID=<phone-number-id>
 WHATSAPP_WEBHOOK_VERIFY_TOKEN=<token-aleatorio>
 WHATSAPP_API_VERSION=v19.0
+WHATSAPP_CATALOG_ID=<catalog-id-meta-commerce-manager>  # necessário para sincronizar categorias/produtos
 
 # Criptografia LGPD (gere com: openssl rand -hex 32)
 ENCRYPTION_KEY=<64-chars-hex>

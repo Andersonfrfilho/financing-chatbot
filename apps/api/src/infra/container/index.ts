@@ -1,3 +1,4 @@
+import { createWhatsAppProvider } from '@adatechnology/whatsapp-provider'
 import { db } from '@/infra/database/connection'
 import { RedisProvider } from '@/infra/redis/RedisProvider'
 import type { WebSocketHub } from '@/infra/websocket/WebSocketHub'
@@ -91,6 +92,28 @@ import { AppConfigRepository } from '@/modules/settings/infra/repositories/AppCo
 import { UpdateMaxAgentSessionsUseCase } from '@/modules/settings/application/use-cases/UpdateMaxAgentSessionsUseCase'
 import { SettingsController } from '@/modules/settings/infra/http/SettingsController'
 
+// Categories
+import { DrizzleCategoryRepository } from '@/modules/categories/infra/repositories/DrizzleCategoryRepository'
+import { CategorySyncService } from '@/modules/categories/application/services/CategorySyncService'
+import { ListCategoriesUseCase } from '@/modules/categories/application/use-cases/ListCategoriesUseCase'
+import { GetCategoryUseCase } from '@/modules/categories/application/use-cases/GetCategoryUseCase'
+import { CreateCategoryUseCase } from '@/modules/categories/application/use-cases/CreateCategoryUseCase'
+import { UpdateCategoryUseCase } from '@/modules/categories/application/use-cases/UpdateCategoryUseCase'
+import { DeleteCategoryUseCase } from '@/modules/categories/application/use-cases/DeleteCategoryUseCase'
+import { RetryCategorySyncUseCase } from '@/modules/categories/application/use-cases/RetryCategorySyncUseCase'
+import { CategoryController } from '@/modules/categories/infra/http/CategoryController'
+
+// Products
+import { DrizzleProductRepository } from '@/modules/products/infra/repositories/DrizzleProductRepository'
+import { ProductSyncService } from '@/modules/products/application/services/ProductSyncService'
+import { ListProductsUseCase } from '@/modules/products/application/use-cases/ListProductsUseCase'
+import { GetProductUseCase } from '@/modules/products/application/use-cases/GetProductUseCase'
+import { CreateProductUseCase } from '@/modules/products/application/use-cases/CreateProductUseCase'
+import { UpdateProductUseCase } from '@/modules/products/application/use-cases/UpdateProductUseCase'
+import { DeleteProductUseCase } from '@/modules/products/application/use-cases/DeleteProductUseCase'
+import { RetryProductSyncUseCase } from '@/modules/products/application/use-cases/RetryProductSyncUseCase'
+import { ProductController } from '@/modules/products/infra/http/ProductController'
+
 export interface AppContainer {
   cache: RedisProvider
   wsHub: WebSocketHub
@@ -106,11 +129,22 @@ export interface AppContainer {
   fipeController: FipeController
   conversationController: ConversationController
   settingsController: SettingsController
+  categoryController: CategoryController
+  productController: ProductController
 }
 
 export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContainer {
   const cache = new RedisProvider()
   const userRepository = new DrizzleUserRepository(db)
+
+  // WhatsApp provider (shared across conversations, settings, categories, products)
+  const whatsAppProvider = createWhatsAppProvider({
+    accessToken:   process.env.WHATSAPP_ACCESS_TOKEN ?? '',
+    apiVersion:    process.env.WHATSAPP_API_VERSION,
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    catalogId:     process.env.WHATSAPP_CATALOG_ID,
+    wabaId:        process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
+  })
 
   // Settings (needed by auth for email flag)
   const appConfigRepository = new AppConfigRepository()
@@ -184,7 +218,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
 
   // Conversations (must be before webhook)
   const conversationRepository = new DrizzleConversationRepository()
-  const whatsAppSender = new WhatsAppSender()
+  const whatsAppSender = new WhatsAppSender(whatsAppProvider.messages)
   const conversationController = new ConversationController(
     new LogMessageUseCase(conversationRepository, sseHub),
     new GetConversationHistoryUseCase(conversationRepository),
@@ -211,6 +245,31 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   const settingsController = new SettingsController(
     new UpdateMaxAgentSessionsUseCase(appConfigRepository),
     appConfigRepository,
+    whatsAppProvider.templates,
+  )
+
+  // Categories
+  const categoryRepository = new DrizzleCategoryRepository()
+  const categorySyncService = new CategorySyncService(categoryRepository, whatsAppProvider.catalog)
+  const categoryController = new CategoryController(
+    new ListCategoriesUseCase(categoryRepository),
+    new GetCategoryUseCase(categoryRepository),
+    new CreateCategoryUseCase(categoryRepository, categorySyncService),
+    new UpdateCategoryUseCase(categoryRepository, categorySyncService),
+    new DeleteCategoryUseCase(categoryRepository, whatsAppProvider.catalog),
+    new RetryCategorySyncUseCase(categoryRepository, categorySyncService),
+  )
+
+  // Products
+  const productRepository = new DrizzleProductRepository()
+  const productSyncService = new ProductSyncService(productRepository, whatsAppProvider.catalog)
+  const productController = new ProductController(
+    new ListProductsUseCase(productRepository),
+    new GetProductUseCase(productRepository),
+    new CreateProductUseCase(productRepository, productSyncService),
+    new UpdateProductUseCase(productRepository, productSyncService),
+    new DeleteProductUseCase(productRepository, whatsAppProvider.catalog),
+    new RetryProductSyncUseCase(productRepository, productSyncService),
   )
 
   return {
@@ -228,5 +287,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     fipeController,
     conversationController,
     settingsController,
+    categoryController,
+    productController,
   }
 }

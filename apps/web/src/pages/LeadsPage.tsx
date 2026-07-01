@@ -170,16 +170,16 @@ export function LeadsPage() {
           className="w-full sm:w-36"
         />
         <Input
-          type="date"
+          type="datetime-local"
           value={startDate}
           onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
+          className="w-full sm:w-48 text-xs"
         />
         <Input
-          type="date"
+          type="datetime-local"
           value={endDate}
           onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
+          className="w-full sm:w-48 text-xs"
         />
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">

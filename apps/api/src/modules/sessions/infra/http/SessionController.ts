@@ -12,9 +12,11 @@ export class SessionController {
 
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const q = request.query
+    const rawStates = q['states']
+    const states = rawStates ? rawStates.split(',').filter(Boolean) : undefined
     const result = await this.listSessions.execute({
       search:    q['search'],
-      state:     q['state'],
+      states,
       startDate: q['startDate'],
       endDate:   q['endDate'],
       page:      q['page']  ? Number(q['page'])  : undefined,

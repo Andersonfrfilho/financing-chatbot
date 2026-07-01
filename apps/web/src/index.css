@@ -60,6 +60,19 @@
     @apply bg-background text-foreground;
   }
 
+  tbody tr:nth-child(even) {
+    background-color: rgb(243 244 246);
+  }
+  .dark tbody tr:nth-child(even) {
+    background-color: rgba(55, 65, 81, 0.4);
+  }
+  tbody tr:hover {
+    background-color: rgb(229 231 235);
+  }
+  .dark tbody tr:hover {
+    background-color: rgba(55, 65, 81, 0.6);
+  }
+
 }
 
 

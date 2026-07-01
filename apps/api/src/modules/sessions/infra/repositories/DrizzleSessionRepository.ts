@@ -1,11 +1,11 @@
-import { eq, desc, and, or, gte, lte, ilike, sql } from 'drizzle-orm'
+import { eq, desc, and, or, gte, lte, ilike, inArray, sql } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { conversationSessions, financingClients } from '@/infra/database/schema'
 import type { ConversationSession } from '@/infra/database/schema'
 
 export type SessionFilters = {
   search?: string
-  state?: string
+  states?: string[]
   startDate?: string
   endDate?: string
   page?: number
@@ -38,7 +38,7 @@ export class DrizzleSessionRepository {
         ilike(financingClients.companyName, term),
       ))
     }
-    if (filters.state) conditions.push(eq(conversationSessions.currentState, filters.state as any))
+    if (filters.states && filters.states.length > 0) conditions.push(inArray(conversationSessions.currentState, filters.states as any))
     if (filters.startDate) conditions.push(gte(conversationSessions.lastActivity, new Date(filters.startDate)))
     if (filters.endDate) conditions.push(lte(conversationSessions.lastActivity, new Date(filters.endDate)))
 

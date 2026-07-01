@@ -9,6 +9,8 @@ import { sessions }      from './modules/sessions'
 import { simulations }   from './modules/simulations'
 import { users }         from './modules/users'
 import { settings }      from './modules/settings'
+import { categories }    from './modules/categories'
+import { products }      from './modules/products'
 
 export const locale = {
   common,
@@ -22,6 +24,8 @@ export const locale = {
   simulations,
   users,
   settings,
+  categories,
+  products,
 } as const
 
 // Re-export modules individually for tree-shaking in large pages
@@ -37,6 +41,8 @@ export {
   simulations,
   users,
   settings,
+  categories,
+  products,
 }
 
 // Utility type: extracts the return type of string-functions and plain strings

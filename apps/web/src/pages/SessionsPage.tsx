@@ -23,7 +23,7 @@ type StateLabel = { label: string; color: string }
 export function SessionsPage() {
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const [state, setState] = useState('')
+  const [states, setStates] = useState<string[]>([])
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [page, setPage] = useState(1)
@@ -37,10 +37,15 @@ export function SessionsPage() {
     return () => clearTimeout(timer)
   }, [search])
 
-  const hasFilters = debouncedSearch || state || startDate || endDate
+  const toggleState = (stateKey: string) => {
+    setStates((prev) => prev.includes(stateKey) ? prev.filter((s) => s !== stateKey) : [...prev, stateKey])
+    setPage(1)
+  }
+
+  const hasFilters = debouncedSearch || states.length > 0 || startDate || endDate
   const clearFilters = () => {
     setSearch('')
-    setState('')
+    setStates([])
     setStartDate('')
     setEndDate('')
   }
@@ -62,11 +67,11 @@ export function SessionsPage() {
   })
 
   const { data, isLoading } = useQuery<{ data: Session[]; total: number }>({
-    queryKey: ['sessions', debouncedSearch, state, startDate, endDate, page, limit],
+    queryKey: ['sessions', debouncedSearch, states, startDate, endDate, page, limit],
     queryFn: () => api.get('/sessions', {
       params: {
         search:    debouncedSearch || undefined,
-        state:     state || undefined,
+        states:    states.length > 0 ? states.join(',') : undefined,
         startDate: startDate || undefined,
         endDate:   endDate || undefined,
         page,
@@ -109,12 +114,12 @@ export function SessionsPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 md:gap-3">
           {Object.entries(stats).map(([s, count]) => {
             const info = stateLabels[s] ?? { label: s, color: 'bg-gray-100 text-gray-600' }
-            const isSelected = state === s
+            const isSelected = states.includes(s)
             return (
               <button
                 key={s}
-                onClick={() => setState(isSelected ? '' : s)}
-                className={`rounded-xl p-2.5 md:p-3 cursor-pointer border-2 transition-all text-left ${info.color} ${isSelected ? 'border-current ring-2 ring-offset-1' : 'border-transparent'}`}
+                onClick={() => toggleState(s)}
+                className={`rounded-xl p-2.5 md:p-3 cursor-pointer border-2 transition-all text-left ${info.color} ${isSelected ? 'border-current ring-2 ring-offset-1' : 'border-transparent opacity-70 hover:opacity-100'}`}
               >
                 <p className="text-xl md:text-2xl font-bold">{count}</p>
                 <p className="text-[10px] md:text-xs mt-0.5 opacity-75 leading-tight">{info.label}</p>
@@ -134,16 +139,16 @@ export function SessionsPage() {
           className="w-full sm:w-56"
         />
         <Input
-          type="date"
+          type="datetime-local"
           value={startDate}
           onChange={(e) => { setStartDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
+          className="w-full sm:w-48 text-xs"
         />
         <Input
-          type="date"
+          type="datetime-local"
           value={endDate}
           onChange={(e) => { setEndDate(e.target.value); setPage(1) }}
-          className="w-full sm:w-36 text-xs"
+          className="w-full sm:w-48 text-xs"
         />
         {hasFilters && (
           <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-gray-500 hover:text-red-500">

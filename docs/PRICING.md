@@ -268,9 +268,124 @@ A Meta cobra **por conversa** (janela de 24h), não por mensagem individual.
 
 ---
 
-## 11. Fontes de referência
+## 11. Data Lake — Análise e Custos
+
+Um data lake permitiria armazenar e analisar **todos os eventos brutos** da plataforma: conversas, qualificações do bot, funil de conversão, templates enviados, tempo de resposta dos atendentes — dados que hoje somem quando uma conversa é finalizada ou que ficam presos no PostgreSQL sem consulta analítica eficiente.
+
+### O que um data lake habilitaria
+
+| Capacidade | Valor para o negócio |
+|---|---|
+| Relatórios históricos ilimitados | Ver funil de conversão de qualquer período |
+| Métricas de qualidade de atendimento | Tempo de resposta, taxa de conversão por atendente |
+| Análise de comportamento do bot | Onde os leads desistem no fluxo |
+| Dashboards por cliente | Cada cliente vê seus próprios dados |
+| IA / ML futuro | Treinar modelo próprio de qualificação |
+| Auditoria de longo prazo | Histórico de ações além dos logs operacionais |
+
+### Eventos a capturar
+
+```
+conversa_iniciada      → timestamp, número, origem
+mensagem_recebida      → conversa_id, tipo (texto/áudio/imagem), tamanho
+qualificação_bot       → etapa, resposta, timestamp
+template_enviado       → template_id, atendente, resultado
+takeover_realizado     → conversa_id, atendente_id, timestamp
+conversa_finalizada    → duração, atendente, satisfação (futuro)
+lead_criado            → dados capturados (sem PII sensível em texto claro)
+```
+
+---
+
+### Opções de arquitetura (do mais simples ao mais robusto)
+
+#### Opção A — R2 + DuckDB (recomendado para início)
+
+Exportar eventos do PostgreSQL para Cloudflare R2 em formato Parquet (1x/dia ou em tempo real via job). Consultar com DuckDB via API ou script local.
+
+| Item | Custo/mês |
+|---|---|
+| Cloudflare R2 (já temos para backup) | ~R$ 0–10 |
+| DuckDB | Gratuito (roda em processo Node/Python) |
+| Job de exportação (Railway Cron) | Incluso no plano atual |
+| **Total adicional** | **~R$ 0–10/mês** |
+
+> Ideal para 1–10 clientes. Consultas em segundos para datasets até ~50 GB. Sem servidor extra.
+
+---
+
+#### Opção B — ClickHouse Cloud (melhor custo-benefício analítico)
+
+Banco OLAP especializado em séries temporais e eventos. Aceita bilhões de linhas, consultas em milissegundos. Tem tier gratuito generoso.
+
+| Item | Custo/mês |
+|---|---|
+| ClickHouse Cloud (free tier: 1M linhas/consulta) | R$ 0 |
+| ClickHouse Cloud (produção ~25 GB) | ~US$ 25 (~R$ 142) |
+| Pipeline de ingestão (Kafka ou job simples) | Incluso ou Railway Cron |
+| **Total adicional** | **R$ 0 (free) ou ~R$ 142/mês** |
+
+> Recomendado quando tiver 5+ clientes e precisar de dashboards em tempo real.
+
+---
+
+#### Opção C — BigQuery (Google Cloud)
+
+Serverless, paga por consulta. Ideal se já usar Google Cloud para algo.
+
+| Item | Custo/mês |
+|---|---|
+| Storage (~10 GB) | ~US$ 0,20 (~R$ 1,14) |
+| Consultas (primeiros 1 TB/mês grátis) | R$ 0 |
+| Streaming insert (se tempo real) | ~US$ 0,01 por 200 MB |
+| **Total adicional** | **~R$ 0–30/mês** |
+
+> Boa opção se quiser integrar com Looker Studio (dashboards gratuitos do Google).
+
+---
+
+### Comparativo de opções
+
+| | **Opção A (R2 + DuckDB)** | **Opção B (ClickHouse)** | **Opção C (BigQuery)** |
+|---|---|---|---|
+| Custo/mês | R$ 0–10 | R$ 0–142 | R$ 0–30 |
+| Complexidade de setup | Baixa | Média | Média |
+| Latência de consulta | Segundos | Milissegundos | Segundos |
+| Tempo real | ❌ | ✅ | Parcial |
+| Dashboard nativo | ❌ (precisa exportar) | ✅ | ✅ (Looker Studio) |
+| Escala até | ~50 GB / 10 clientes | Bilhões de linhas | Ilimitado |
+| Recomendado para | Início / MVP analytics | 5+ clientes | Integração Google |
+
+---
+
+### Impacto no custo total por cenário
+
+| Cenário | Sem data lake | + Opção A | + Opção B |
+|---|---|---|---|
+| 1 cliente | R$ 200–260/mês | R$ 200–270/mês | R$ 342–402/mês |
+| 5 clientes | R$ 440/mês | R$ 450/mês | R$ 582/mês |
+| 10 clientes | R$ 720/mês | R$ 730/mês | R$ 862/mês |
+
+> O custo do data lake é diluído conforme escala — com 5+ clientes o impacto por cliente é de R$ 2–28/mês.
+
+---
+
+### Recomendação
+
+**Fase 1 (agora — até 5 clientes):** implementar Opção A com R2. Custo zero extra, habilita relatórios históricos básicos. Pipeline: job diário que exporta tabelas do PostgreSQL para R2 em Parquet.
+
+**Fase 2 (5+ clientes):** migrar para ClickHouse Cloud (free tier cobre bem os primeiros meses). Adicionar dashboard ao painel do cliente como diferencial de plano.
+
+**Fase 3 (Enterprise):** BigQuery + Looker Studio para clientes que precisam de BI avançado. Cobrar como add-on (R$ 200–500/mês por cliente).
+
+---
+
+## 12. Fontes de referência
 
 - Railway pricing: https://railway.com/pricing
 - Meta WhatsApp pricing (Brasil): https://developers.facebook.com/docs/whatsapp/pricing
 - Cloudflare R2: https://developers.cloudflare.com/r2/pricing/
 - Backblaze B2: https://www.backblaze.com/b2/cloud-storage-pricing.html
+- ClickHouse Cloud pricing: https://clickhouse.com/pricing
+- BigQuery pricing: https://cloud.google.com/bigquery/pricing
+- DuckDB: https://duckdb.org/

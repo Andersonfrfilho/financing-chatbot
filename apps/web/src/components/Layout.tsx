@@ -24,6 +24,8 @@ const navGroups = [
       { href: '/clients',      label: 'Clientes',   icon: '👥' },
       { href: '/leads',        label: 'Leads',      icon: '🎯' },
       { href: '/simulations',  label: 'Simulações', icon: '🏦' },
+      { href: '/categories',   label: 'Categorias', icon: '🏷️' },
+      { href: '/products',     label: 'Produtos',   icon: '📦' },
     ],
   },
   {
