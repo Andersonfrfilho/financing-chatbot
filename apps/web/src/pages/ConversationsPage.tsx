@@ -418,12 +418,27 @@ export function ConversationsPage() {
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle}</p>
         </div>
-        <Button
-          variant={waitingOnly ? 'default' : 'outline'}
-          onClick={() => setWaitingOnly((v) => !v)}
-        >
-          ⏳ Aguardando atendimento{waitingCount > 0 ? ` (${waitingCount})` : ''}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant={waitingOnly ? 'default' : 'outline'}
+            onClick={() => setWaitingOnly((v) => !v)}
+          >
+            ⏳ Aguardando atendimento{waitingCount > 0 ? ` (${waitingCount})` : ''}
+          </Button>
+          {waitingCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={async () => {
+                await api.post('/conversations/read-all').catch(() => {})
+                qc.invalidateQueries({ queryKey: ['conversations'] })
+                window.dispatchEvent(new Event('read-all'))
+              }}
+            >
+              Marcar todas como lidas
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-h-0">
