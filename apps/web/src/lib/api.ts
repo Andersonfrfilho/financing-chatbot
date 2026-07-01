@@ -10,10 +10,10 @@ export const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use((requestConfig) => {
   const token = useAuthStore.getState().token
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
+  if (token) requestConfig.headers.Authorization = `Bearer ${token}`
+  return requestConfig
 })
 
 api.interceptors.response.use(

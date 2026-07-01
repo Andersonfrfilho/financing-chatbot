@@ -4,12 +4,12 @@ import type { SseHub } from '@/infra/sse/SseHub'
 // Persiste uma mensagem do transcript e notifica os streams SSE abertos da conversa (Fase C).
 export class LogMessageUseCase {
   constructor(
-    private readonly repo: DrizzleConversationRepository,
+    private readonly repository: DrizzleConversationRepository,
     private readonly sse?: SseHub,
   ) {}
 
   async execute(input: LogMessageInput): Promise<{ id: string | null; deduped: boolean }> {
-    const row = await this.repo.insertMessage(input)
+    const row = await this.repository.insertMessage(input)
     if (this.sse) {
       if (row) {
         this.sse.emit(`conv:${input.whatsappNumber}`, 'message', { id: row.id, direction: input.direction, sender: input.sender })

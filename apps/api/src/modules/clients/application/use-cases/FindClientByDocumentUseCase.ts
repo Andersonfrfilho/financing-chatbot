@@ -32,20 +32,20 @@ const num = (v: string | null): number | null => (v == null || v === '' ? null :
 // WhatsApp diferente. Se achar e o número for outro, reatribui o cadastro ao número atual
 // (evita pedir tudo de novo e mantém o reconhecimento por telefone funcionando depois).
 export class FindClientByDocumentUseCase {
-  constructor(private readonly repo: ClientRepository) {}
+  constructor(private readonly repository: ClientRepository) {}
 
   async execute(cpf: string, whatsapp: string): Promise<ClientByDocumentResult> {
     const digits = (cpf ?? '').replace(/\D/g, '')
     const empty: ClientByDocumentResult = { found: false, reassigned: false, previousWhatsapp: null, data: null }
     if (digits.length !== 11) return empty
 
-    const client = await this.repo.findByCpf(digits)
+    const client = await this.repository.findByCpf(digits)
     if (!client) return empty
 
     const previousWhatsapp = client.whatsappNumber
     let reassigned = false
     if (previousWhatsapp !== whatsapp && whatsapp) {
-      reassigned = await this.repo.reassignWhatsapp(digits, whatsapp)
+      reassigned = await this.repository.reassignWhatsapp(digits, whatsapp)
     }
 
     return {

@@ -1,12 +1,12 @@
 import type { DrizzleConversationRepository } from '../../infra/repositories/DrizzleConversationRepository'
 
 export class ListConversationsUseCase {
-  constructor(private readonly repo: DrizzleConversationRepository) {}
+  constructor(private readonly repository: DrizzleConversationRepository) {}
 
   async execute(page: number, limit: number, waitingOnly = false, hasUnread = false) {
     const safeLimit = Math.min(Math.max(limit || 30, 1), 100)
     const safePage = Math.max(page || 1, 1)
-    const conversations = await this.repo.listConversations(safeLimit, (safePage - 1) * safeLimit, waitingOnly, hasUnread)
+    const conversations = await this.repository.listConversations(safeLimit, (safePage - 1) * safeLimit, waitingOnly, hasUnread)
     return { conversations, page: safePage, limit: safeLimit }
   }
 }

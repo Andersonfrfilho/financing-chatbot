@@ -5,7 +5,7 @@ import { ValidationError } from '@/shared/errors/AppError'
 
 export class SendAgentMediaUseCase {
   constructor(
-    private readonly repo: DrizzleConversationRepository,
+    private readonly repository: DrizzleConversationRepository,
     private readonly sender: WhatsAppSender,
     private readonly sse?: SseHub,
   ) {}
@@ -22,9 +22,9 @@ export class SendAgentMediaUseCase {
 
     const buffer = Buffer.from(base64, 'base64')
 
-    const session = await this.repo.getSessionMode(whatsapp)
+    const session = await this.repository.getSessionMode(whatsapp)
     if (session && session.mode !== 'human') {
-      await this.repo.setMode(whatsapp, 'human', agentUserId)
+      await this.repository.setMode(whatsapp, 'human', agentUserId)
     }
 
     const { waMessageId } = await this.sender.sendMedia(whatsapp, buffer, mimeType, filename, caption || undefined)
@@ -34,7 +34,7 @@ export class SendAgentMediaUseCase {
       : mimeType.startsWith('video/') ? 'video'
       : 'document'
 
-    const row = await this.repo.insertMessage({
+    const row = await this.repository.insertMessage({
       whatsappNumber: whatsapp,
       direction: 'outbound',
       sender: 'agent',
