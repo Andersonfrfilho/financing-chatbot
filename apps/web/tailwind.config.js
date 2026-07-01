@@ -43,6 +43,10 @@ export default {
           '0%, 100%': { opacity: '1' },
           '50%': { opacity: '0.6' },
         },
+        'status-pulse-attention': {
+          '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+          '50%': { opacity: '0.5', transform: 'scale(1.02)' },
+        },
         'status-pulse-intense': {
           '0%, 100%': { opacity: '1', borderColor: 'rgba(239,68,68,1)' },
           '50%': { opacity: '0.4', borderColor: 'rgba(239,68,68,0.5)' },
@@ -56,6 +60,7 @@ export default {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
         'status-pulse': 'status-pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'status-pulse-attention': 'status-pulse-attention 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'status-pulse-intense': 'status-pulse-intense 0.8s cubic-bezier(0.4, 0, 0.6, 1) infinite',
         'slide-up': 'slide-up 0.3s ease-out',
       },
@@ -64,6 +69,7 @@ export default {
   plugins: [],
   safelist: [
     'animate-status-pulse',
+    'animate-status-pulse-attention',
     'animate-status-pulse-intense',
     'border-l-green-400',
     'dark:border-l-green-500',

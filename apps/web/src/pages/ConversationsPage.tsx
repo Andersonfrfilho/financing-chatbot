@@ -111,7 +111,7 @@ function getWindowStatus(hours: number | null): WindowStatus {
 
 const WINDOW_BORDER: Record<WindowStatus, string> = {
   active:      'border-l-4 border-l-green-400 dark:border-l-green-500 animate-status-pulse',
-  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600 animate-status-pulse',
+  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600 animate-status-pulse-attention',
   warning:     'border-l-4 border-l-red-500 dark:border-l-red-500 animate-status-pulse-intense',
   expired:     'border-l-4 border-l-gray-300 dark:border-l-gray-600',
 }
@@ -555,7 +555,7 @@ export function ConversationsPage() {
             const isStalled = c.mode === 'bot' && (minSinceInbound !== null ? minSinceInbound > 30 : minAgo > 30)
             const stalledMinutes = minSinceInbound ?? minAgo
             const borderClass = c.waitingHuman && (windowStatus === 'active' || windowStatus === 'approaching')
-              ? 'border-l-4 border-l-yellow-400'
+              ? 'border-l-4 border-l-yellow-400 animate-status-pulse-attention'
               : WINDOW_BORDER[windowStatus]
             return (
               <div
