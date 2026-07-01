@@ -14,7 +14,7 @@
     "db:seed:demo": "bun --env-file=.env run src/infra/database/seeds/demo.ts"
   },
   "dependencies": {
-    "@adatechnology/whatsapp-provider": "file:../../../adatechnology-packages/packages/backend/whatsapp-provider",
+    "@adatechnology/whatsapp-provider": "^0.1.0",
     "@node-rs/argon2": "^2.0.0",
     "drizzle-orm": "^0.36.4",
     "ioredis": "^5.4.1",
