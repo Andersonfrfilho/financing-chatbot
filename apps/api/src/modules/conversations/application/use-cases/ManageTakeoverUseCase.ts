@@ -87,6 +87,10 @@ export class ManageTakeoverUseCase {
     await this.repo.markRead(whatsapp)
   }
 
+  async markAllRead(): Promise<void> {
+    await this.repo.markAllRead()
+  }
+
   // Cliente pediu consultor (handoff) — entra na fila de atendimento.
   async requestHuman(whatsapp: string): Promise<void> {
     await this.repo.requestHuman(whatsapp)

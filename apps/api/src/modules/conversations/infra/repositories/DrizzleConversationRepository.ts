@@ -214,4 +214,17 @@ export class DrizzleConversationRepository {
       .limit(1)
     return rows[0]?.context ?? null
   }
+
+  async markAllRead(): Promise<void> {
+    await db.execute(sql`
+      UPDATE conversation_sessions s
+      SET last_agent_read_at = NOW(), updated_at = NOW()
+      WHERE EXISTS (
+        SELECT 1 FROM conversation_messages m
+        WHERE m.whatsapp_number = s.whatsapp_number
+          AND m.direction = 'inbound'
+          AND (s.last_agent_read_at IS NULL OR m.created_at > s.last_agent_read_at)
+      )
+    `)
+  }
 }

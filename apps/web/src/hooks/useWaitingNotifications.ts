@@ -46,6 +46,8 @@ export function useWaitingNotifications(): number {
 
     poll()
     const id = setInterval(poll, 10_000)
+    function onReadAll() { poll() }
+    window.addEventListener('read-all', onReadAll)
     const token = localStorage.getItem('auth-token')
     let eventSource: EventSource | null = null
     if (token) {
@@ -55,6 +57,7 @@ export function useWaitingNotifications(): number {
     return () => {
       clearInterval(id)
       eventSource?.close()
+      window.removeEventListener('read-all', onReadAll)
     }
   }, [])
 

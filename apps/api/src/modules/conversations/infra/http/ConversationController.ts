@@ -111,6 +111,12 @@ export class ConversationController {
     response.json({ ok: true })
   }
 
+  // POST /api/conversations/read-all  (marca todas como lidas)
+  async readAll(_request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    await this.takeover.markAllRead()
+    response.json({ ok: true })
+  }
+
   // POST /api/conversations/:whatsapp/request-human  (interno, n8n) — cliente pediu consultor
   async requestHuman(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const whatsapp = request.params['whatsapp'] ?? ''

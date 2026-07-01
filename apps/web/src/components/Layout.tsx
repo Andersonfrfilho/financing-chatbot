@@ -56,6 +56,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
     window.location.href = '/login'
   }
 
+  async function handleMarkAllRead() {
+    await api.post('/conversations/read-all').catch(() => {})
+    window.dispatchEvent(new Event('read-all'))
+  }
+
   const close = () => setOpen(false)
 
   return (
@@ -103,6 +108,21 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </button>
           </div>
         </div>
+
+        {/* Barra de notificações */}
+        {waitingCount > 0 && (
+          <div className="px-4 py-2 bg-orange-50 dark:bg-orange-950/30 border-b border-orange-200 dark:border-orange-800/50 flex items-center justify-between">
+            <span className="text-xs text-orange-700 dark:text-orange-300 font-medium">
+              {waitingCount} mensagem(ns) não lida(s)
+            </span>
+            <button
+              onClick={handleMarkAllRead}
+              className="text-xs px-2 py-1 rounded bg-orange-500 hover:bg-orange-600 text-white font-medium transition-colors"
+            >
+              Marcar como lido
+            </button>
+          </div>
+        )}
 
         {/* Nav com separadores por grupo */}
         <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
