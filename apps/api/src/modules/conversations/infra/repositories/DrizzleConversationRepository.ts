@@ -141,12 +141,12 @@ export class DrizzleConversationRepository {
   }
 
   // Lista de conversas: última mensagem por número + cliente + estado + não-lidas + fila.
-  async listConversations(limit: number, offset: number, waitingOnly: boolean): Promise<ConversationListItem[]> {
+  async listConversations(limit: number, offset: number, waitingOnly: boolean, hasUnread = false): Promise<ConversationListItem[]> {
     const t0 = Date.now()
     const waitingFilter = waitingOnly
       ? sql`WHERE s.human_requested_at IS NOT NULL AND s.assigned_user_id IS NULL`
       : sql``
-    const result = await db.execute(sql`
+    const innerQuery = sql`
       SELECT t.whatsapp_number   AS "whatsappNumber",
              t.content           AS "lastContent",
              t.direction         AS "lastDirection",
@@ -174,9 +174,10 @@ export class DrizzleConversationRepository {
       LEFT JOIN conversation_sessions s
         ON s.whatsapp_number = t.whatsapp_number
       ${waitingFilter}
-      ORDER BY t.created_at DESC
-      LIMIT ${limit} OFFSET ${offset}
-    `)
+    `
+    const result = hasUnread
+      ? await db.execute(sql`SELECT * FROM (${innerQuery}) sub WHERE sub."unread" > 0 ORDER BY "lastAt" DESC LIMIT ${limit} OFFSET ${offset}`)
+      : await db.execute(sql`${innerQuery} ORDER BY t.created_at DESC LIMIT ${limit} OFFSET ${offset}`)
     log.debug('listConversations_query', { ms: Date.now() - t0, rows: result.rows?.length ?? 0, waitingOnly })
     return (result.rows ?? []) as unknown as ConversationListItem[]
   }

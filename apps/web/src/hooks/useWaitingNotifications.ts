@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { api } from '@/lib/api'
 import { formatPhone } from '@/lib/phone'
 
-type WaitingConv = { whatsappNumber: string; clientName: string | null }
+type WaitingConv = { whatsappNumber: string; clientName: string | null; unread: number }
 
 function requestPermission() {
   if ('Notification' in window && Notification.permission === 'default') {
@@ -14,8 +14,8 @@ function notifyNew(convs: WaitingConv[]) {
   if (!('Notification' in window) || Notification.permission !== 'granted') return
   for (const c of convs) {
     const who = c.clientName || formatPhone(c.whatsappNumber)
-    new Notification('⏳ Atendimento pendente', {
-      body: `${who} está aguardando atendimento`,
+    new Notification('Nova mensagem', {
+      body: `${who}: ${c.unread} mensagem(ns) não lida(s)`,
       icon: '/favicon.ico',
     })
   }
@@ -30,7 +30,7 @@ export function useWaitingNotifications(): number {
 
     async function poll() {
       try {
-        const r = await api.get('/conversations', { params: { waitingHuman: 'true', limit: 50 } })
+        const r = await api.get('/conversations', { params: { hasUnread: 'true', limit: 50 } })
         const convs: WaitingConv[] = r.data?.conversations ?? []
         const currentNumbers = new Set(convs.map((c) => c.whatsappNumber))
 
@@ -40,7 +40,7 @@ export function useWaitingNotifications(): number {
         }
 
         knownRef.current = currentNumbers
-        setWaitingCount(convs.length)
+        setWaitingCount(convs.reduce((sum, c) => sum + (c.unread || 0), 0))
       } catch { /* silent */ }
     }
 

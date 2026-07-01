@@ -94,12 +94,13 @@ export class ConversationController {
     response.json(result)
   }
 
-  // GET /api/conversations?page=&limit=&waitingHuman=true
+  // GET /api/conversations?page=&limit=&waitingHuman=true&hasUnread=true
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const page = request.query['page'] ? Number(request.query['page']) : 1
     const limit = request.query['limit'] ? Number(request.query['limit']) : 30
     const waitingOnly = request.query['waitingHuman'] === 'true'
-    const result = await this.listConvs.execute(page, limit, waitingOnly)
+    const hasUnread = request.query['hasUnread'] === 'true'
+    const result = await this.listConvs.execute(page, limit, waitingOnly, hasUnread)
     response.json(result)
   }
 

@@ -3,10 +3,10 @@ import type { DrizzleConversationRepository } from '../../infra/repositories/Dri
 export class ListConversationsUseCase {
   constructor(private readonly repo: DrizzleConversationRepository) {}
 
-  async execute(page: number, limit: number, waitingOnly = false) {
+  async execute(page: number, limit: number, waitingOnly = false, hasUnread = false) {
     const safeLimit = Math.min(Math.max(limit || 30, 1), 100)
     const safePage = Math.max(page || 1, 1)
-    const conversations = await this.repo.listConversations(safeLimit, (safePage - 1) * safeLimit, waitingOnly)
+    const conversations = await this.repo.listConversations(safeLimit, (safePage - 1) * safeLimit, waitingOnly, hasUnread)
     return { conversations, page: safePage, limit: safeLimit }
   }
 }
