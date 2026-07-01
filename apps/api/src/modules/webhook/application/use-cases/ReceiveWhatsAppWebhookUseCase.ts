@@ -1,6 +1,7 @@
 import { timingSafeEqual, createHmac } from 'crypto'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import type { DrizzleConversationRepository } from '@/modules/conversations/infra/repositories/DrizzleConversationRepository'
+import type { SseHub } from '@/infra/sse/SseHub'
 import { UnauthorizedError, ConflictError } from '@/shared/errors/AppError'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
@@ -138,6 +139,7 @@ export class ReceiveWhatsAppWebhookUseCase {
   constructor(
     private readonly cache: CacheProvider,
     private readonly conversationRepository: DrizzleConversationRepository,
+    private readonly sse?: SseHub,
   ) {}
 
   async execute(input: ReceiveInput): Promise<void> {
@@ -219,6 +221,10 @@ export class ReceiveWhatsAppWebhookUseCase {
               saved: saved ? 'yes' : 'skipped',
               reason: saved ? 'persisted' : 'duplicate or error',
             })
+            if (saved && this.sse) {
+              this.sse.emit(`conv:${message.from}`, 'message', { direction: 'inbound', sender: 'customer' })
+              this.sse.emit('global', 'data-changed', {})
+            }
           } catch (err) {
             log_.error(LOG_EVENTS.WEBHOOK_MESSAGE, {
               id: message.id,

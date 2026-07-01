@@ -1,6 +1,7 @@
 import type { DrizzleConversationRepository } from '../../infra/repositories/DrizzleConversationRepository'
 import type { AppConfigRepository } from '@/modules/settings/infra/repositories/AppConfigRepository'
 import type { WhatsAppSender } from '../../infra/WhatsAppSender'
+import type { SseHub } from '@/infra/sse/SseHub'
 import { NotFoundError, ForbiddenError, ValidationError } from '@/shared/errors/AppError'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
@@ -13,6 +14,7 @@ export class ManageTakeoverUseCase {
     private readonly repo: DrizzleConversationRepository,
     private readonly configRepo: AppConfigRepository,
     private readonly sender?: WhatsAppSender,
+    private readonly sse?: SseHub,
   ) {}
 
   async takeover(whatsapp: string, userId: string): Promise<{ mode: string; assignedUserId: string }> {
@@ -35,6 +37,8 @@ export class ManageTakeoverUseCase {
     }
 
     await this.repo.setMode(whatsapp, 'human', userId)
+    this.sse?.emit(`conv:${whatsapp}`, 'session', { mode: 'human', assignedUserId: userId })
+    this.sse?.emit('global', 'data-changed', {})
 
     // Notifica o cliente que um atendente assumiu
     if (this.sender) {
@@ -65,14 +69,17 @@ export class ManageTakeoverUseCase {
     const session = await this.repo.getSessionMode(whatsapp)
     if (!session) throw new NotFoundError('Conversa não encontrada')
     await this.repo.setMode(whatsapp, 'bot', null)
+    this.sse?.emit(`conv:${whatsapp}`, 'session', { mode: 'bot' })
+    this.sse?.emit('global', 'data-changed', {})
     return { mode: 'bot' }
   }
 
   async finalize(whatsapp: string): Promise<{ status: string }> {
     const session = await this.repo.getSessionMode(whatsapp)
     if (!session) throw new NotFoundError('Conversa não encontrada')
-    // Encerra: volta ao bot e limpa o request de human
     await this.repo.setMode(whatsapp, 'bot', null)
+    this.sse?.emit(`conv:${whatsapp}`, 'session', { mode: 'bot' })
+    this.sse?.emit('global', 'data-changed', {})
     return { status: 'finalized' }
   }
 

@@ -78,7 +78,6 @@ export function DashboardPage() {
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ['dashboard-stats'],
     queryFn: () => api.get('/dashboard/stats').then((r: any) => r.data),
-    refetchInterval: 15_000,
   })
 
   if (isLoading || !stats) return <DashboardSkeleton />

@@ -3,6 +3,7 @@ import { Menu, X, Eye, EyeOff } from 'lucide-react'
 import { useLocation } from '@/hooks/useRouter'
 import { useAuthStore } from '@/store/authStore'
 import { useWaitingNotifications } from '@/hooks/useWaitingNotifications'
+import { useGlobalSse } from '@/hooks/useGlobalSse'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { usePrivacyStore } from '@/store/privacyStore'
 import { api } from '@/lib/api'
@@ -41,6 +42,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { user, clearAuth } = useAuthStore()
   const location = useLocation()
   const waitingCount = useWaitingNotifications()
+  useGlobalSse()
   const { isPrivate, togglePrivacy } = usePrivacyStore()
   const [open, setOpen] = useState(false)
 

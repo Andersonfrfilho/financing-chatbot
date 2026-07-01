@@ -223,7 +223,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new LogMessageUseCase(conversationRepository, sseHub),
     new GetConversationHistoryUseCase(conversationRepository),
     new ListConversationsUseCase(conversationRepository),
-    new ManageTakeoverUseCase(conversationRepository, appConfigRepository, whatsAppSender),
+    new ManageTakeoverUseCase(conversationRepository, appConfigRepository, whatsAppSender, sseHub),
     new SendAgentMessageUseCase(conversationRepository, whatsAppSender, sseHub),
     new SendAgentMediaUseCase(conversationRepository, whatsAppSender, sseHub),
     whatsAppSender,
@@ -231,7 +231,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
   )
 
   // Webhook (after conversations)
-  const receiveWebhookUseCase = new ReceiveWhatsAppWebhookUseCase(cache, conversationRepository)
+  const receiveWebhookUseCase = new ReceiveWhatsAppWebhookUseCase(cache, conversationRepository, sseHub)
   const webhookController = new WebhookController(receiveWebhookUseCase)
 
   // Fipe

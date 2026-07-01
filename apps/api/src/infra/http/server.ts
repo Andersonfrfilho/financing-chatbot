@@ -57,6 +57,45 @@ export async function createServer() {
   // SSE: stream ao vivo de uma conversa (Fase C). Aditivo — o painel também faz polling.
   // EventSource não envia header Authorization, então o JWT vem por query (?token=).
   const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+
+  // SSE global: notifica qualquer mudança de dados (conversas, dashboard, etc.)
+  app.get('/api/events/stream', (res, req) => {
+    let aborted = false
+    let unregister: (() => void) | null = null
+    let heartbeat: ReturnType<typeof setInterval> | null = null
+    res.onAborted(() => {
+      aborted = true
+      if (heartbeat) clearInterval(heartbeat)
+      if (unregister) unregister()
+    })
+    const origin = req.getHeader('origin')
+    const token = new URLSearchParams(req.getQuery()).get('token') ?? ''
+    const allowOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0]
+
+    jwtVerify(token, JWT_SECRET)
+      .then(() => {
+        if (aborted) return
+        res.cork(() => {
+          res.writeStatus('200 OK')
+            .writeHeader('Content-Type', 'text/event-stream')
+            .writeHeader('Cache-Control', 'no-cache')
+            .writeHeader('Connection', 'keep-alive')
+            .writeHeader('Access-Control-Allow-Origin', allowOrigin)
+            .write(': connected\n\n')
+        })
+        const conn = {
+          write: (chunk: string) => { if (!aborted) res.cork(() => res.write(chunk)) },
+          isAlive: () => !aborted,
+        }
+        unregister = sseHub.register('global', conn)
+        heartbeat = setInterval(() => { if (!aborted) conn.write(': keep-alive\n\n') }, 25_000)
+      })
+      .catch(() => {
+        if (aborted) return
+        res.cork(() => res.writeStatus('401 Unauthorized').writeHeader('Access-Control-Allow-Origin', allowOrigin).end())
+      })
+  })
+
   app.get('/api/conversations/:whatsapp/stream', (res, req) => {
     let aborted = false
     let unregister: (() => void) | null = null

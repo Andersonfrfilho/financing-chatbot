@@ -46,7 +46,16 @@ export function useWaitingNotifications(): number {
 
     poll()
     const id = setInterval(poll, 10_000)
-    return () => clearInterval(id)
+    const token = localStorage.getItem('auth-token')
+    let eventSource: EventSource | null = null
+    if (token) {
+      eventSource = new EventSource(`${import.meta.env.VITE_API_URL || ''}/api/events/stream?token=${encodeURIComponent(token)}`)
+      eventSource.addEventListener('data-changed', () => poll())
+    }
+    return () => {
+      clearInterval(id)
+      eventSource?.close()
+    }
   }, [])
 
   return waitingCount
