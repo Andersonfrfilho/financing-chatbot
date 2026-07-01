@@ -89,6 +89,13 @@ function formatStalledDuration(minutes: number): string {
   if (minutes < 60) return `${minutes}m`
   const hours = Math.floor(minutes / 60)
   const remaining = minutes % 60
+  if (hours >= 24) {
+    const days = Math.floor(hours / 24)
+    const remainingHours = hours % 24
+    if (remaining > 0) return `${days}d ${remainingHours}h:${String(remaining).padStart(2, '0')}m`
+    if (remainingHours > 0) return `${days}d ${remainingHours}h`
+    return `${days}d`
+  }
   return remaining > 0 ? `${hours}h:${String(remaining).padStart(2, '0')}m` : `${hours}h`
 }
 
