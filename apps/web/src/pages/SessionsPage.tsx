@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { usePrivacyStore } from '@/store/privacyStore'
+import { common } from '@/locales'
 import { sessions as text } from '@/locales'
 import { useState, useEffect } from 'react'
 import { Eye, EyeOff, MessageSquare, Trash2, X, ChevronLeft, ChevronRight } from 'lucide-react'
@@ -163,7 +164,7 @@ export function SessionsPage() {
           className="gap-1.5 text-xs ml-auto"
         >
           {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
-          {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+          {isPrivate ? common.privacy.showPhoneNumbers : common.privacy.hidePhoneNumbers}
         </Button>
       </div>
 
@@ -226,7 +227,7 @@ export function SessionsPage() {
       {data && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Exibir</span>
+            <span>{common.pagination.show}</span>
             <select
               value={limit}
               onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
@@ -236,19 +237,19 @@ export function SessionsPage() {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <span>por página</span>
+            <span>{common.pagination.perPage}</span>
             <span className="ml-2 text-gray-400">
-              ({data.total} total)
+              {common.pagination.total(data.total)}
             </span>
           </div>
           {data.total > limit && (
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                <ChevronLeft size={16} /> Anterior
+                <ChevronLeft size={16} /> {common.pagination.previous}
               </Button>
-              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">{common.pagination.page(page)}</span>
               <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
-                Próxima <ChevronRight size={16} />
+                {common.pagination.next} <ChevronRight size={16} />
               </Button>
             </div>
           )}

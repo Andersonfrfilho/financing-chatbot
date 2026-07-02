@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tansta
 import { Eye, EyeOff, Trash2, Edit2, Plus } from 'lucide-react'
 import { api } from '@/lib/api'
 import { usePrivacyStore } from '@/store/privacyStore'
+import { common } from '@/locales'
 import { clients as text } from '@/locales'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui'
@@ -180,7 +181,7 @@ export function ClientsPage() {
           className="gap-1.5 text-xs ml-auto"
         >
           {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
-          {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+          {isPrivate ? common.privacy.showPhoneNumbers : common.privacy.hidePhoneNumbers}
         </Button>
       </div>
 
@@ -247,7 +248,7 @@ export function ClientsPage() {
       {data && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Exibir</span>
+            <span>{common.pagination.show}</span>
             <select
               value={limit}
               onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
@@ -257,16 +258,16 @@ export function ClientsPage() {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <span>por página</span>
+            <span>{common.pagination.perPage}</span>
             <span className="ml-2 text-gray-400">
-              ({data.total} total)
+              {common.pagination.total(data.total)}
             </span>
           </div>
           {data.total > limit && (
             <div className="flex items-center gap-2">
-              <button className="btn-secondary text-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>Anterior</button>
-              <span className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
-              <button className="btn-secondary text-sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>Próxima</button>
+              <button className="btn-secondary text-sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>{common.pagination.previous}</button>
+              <span className="px-3 py-2 text-sm text-gray-600 dark:text-gray-400">{common.pagination.page(page)}</span>
+              <button className="btn-secondary text-sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>{common.pagination.next}</button>
             </div>
           )}
         </div>

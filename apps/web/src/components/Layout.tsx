@@ -7,33 +7,34 @@ import { useGlobalSse } from '@/hooks/useGlobalSse'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { usePrivacyStore } from '@/store/privacyStore'
 import { api } from '@/lib/api'
+import { common, navigation } from '@/locales'
 import { ThemeToggle } from './ThemeToggle'
 import { AdaTechLogoFull } from './AdaTechLogo'
 
 const navGroups = [
   {
-    label: 'Geral',
+    label: navigation.groups.general,
     items: [
-      { href: '/',             label: 'Dashboard',  icon: '📊' },
-      { href: '/conversations',label: 'Conversas',  icon: '🗨️', badge: true },
-      { href: '/sessions',     label: 'Sessões',    icon: '💬' },
+      { href: '/',              label: navigation.items.dashboard,      icon: '📊' },
+      { href: '/conversations', label: navigation.items.conversations,  icon: '🗨️', badge: true },
+      { href: '/sessions',      label: navigation.items.sessions,       icon: '💬' },
     ],
   },
   {
-    label: 'Cadastros',
+    label: navigation.groups.registrations,
     items: [
-      { href: '/clients',      label: 'Clientes',   icon: '👥' },
-      { href: '/leads',        label: 'Leads',      icon: '🎯' },
-      { href: '/simulations',  label: 'Simulações', icon: '🏦' },
-      { href: '/categories',   label: 'Categorias', icon: '🏷️' },
-      { href: '/products',     label: 'Produtos',   icon: '📦' },
+      { href: '/clients',      label: navigation.items.clients,       icon: '👥' },
+      { href: '/leads',        label: navigation.items.leads,         icon: '🎯' },
+      { href: '/simulations',  label: navigation.items.simulations,   icon: '🏦' },
+      { href: '/categories',   label: navigation.items.categories,    icon: '🏷️' },
+      { href: '/products',     label: navigation.items.products,      icon: '📦' },
     ],
   },
   {
-    label: 'Administração',
+    label: navigation.groups.administration,
     items: [
-      { href: '/users',        label: 'Usuários',   icon: '👤' },
-      { href: '/settings',     label: 'Configurações', icon: '⚙️' },
+      { href: '/users',        label: navigation.items.users,       icon: '👤' },
+      { href: '/settings',     label: navigation.items.settings,    icon: '⚙️' },
     ],
   },
 ]
@@ -90,7 +91,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             )}
             <div className="min-w-0">
               <h1 className="text-sm font-bold text-gray-900 dark:text-gray-100 leading-tight truncate">{companyName}</h1>
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">Painel Operacional</p>
+              <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">{navigation.sidebar.operationalPanel}</p>
             </div>
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
@@ -158,7 +159,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <div className="flex gap-2">
             <button
               onClick={togglePrivacy}
-              title={isPrivate ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais'}
+              title={isPrivate ? navigation.sidebar.privacyShow : navigation.sidebar.privacyHide}
               className={`flex items-center gap-1.5 flex-1 text-xs py-2 px-3 rounded-lg border transition-colors font-medium ${
                 isPrivate
                   ? 'border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -166,13 +167,13 @@ export function Layout({ children }: { children: React.ReactNode }) {
               }`}
             >
               {isPrivate ? <EyeOff size={13} /> : <Eye size={13} />}
-              {isPrivate ? 'Privado' : 'Visível'}
+              {isPrivate ? navigation.sidebar.private : navigation.sidebar.visible}
             </button>
             <button
               onClick={handleLogout}
               className="flex-1 text-xs py-2 px-3 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-600 dark:hover:text-red-400 hover:border-red-200 dark:hover:border-red-800 transition-colors font-medium"
             >
-              Sair
+              {common.actions.logout}
             </button>
           </div>
 
@@ -183,7 +184,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
               variant="auto"
               className="text-gray-400 dark:text-gray-600 opacity-70"
             />
-            <span className="text-[10px] text-gray-400 dark:text-gray-600">© {new Date().getFullYear()} AdA Technology</span>
+            <span className="text-[10px] text-gray-400 dark:text-gray-600">{common.copyright(new Date().getFullYear())}</span>
           </div>
         </div>
       </aside>
@@ -210,7 +211,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           )}
           <button
             onClick={togglePrivacy}
-            title={isPrivate ? 'Mostrar dados pessoais' : 'Ocultar dados pessoais'}
+            title={isPrivate ? navigation.sidebar.privacyShow : navigation.sidebar.privacyHide}
             className="p-2 rounded-xl text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
           >
             {isPrivate ? <EyeOff size={18} /> : <Eye size={18} />}

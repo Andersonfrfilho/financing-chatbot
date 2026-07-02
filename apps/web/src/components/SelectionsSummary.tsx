@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Check, Clock, Edit2, ChevronDown, ChevronUp } from 'lucide-react'
+import { conversations as text } from '@/locales'
 import { useValueLabels } from '@/hooks/useCompanySettings'
 
 interface Selection {
@@ -60,25 +61,6 @@ const FIELD_ICONS: Record<string, string> = {
   clientId: '🪪',
 }
 
-const FIELD_LABELS: Record<string, string> = {
-  entrada: 'Entrada',
-  prazoMeses: 'Prazo',
-  entradaEscolha: 'Tipo de Entrada',
-  fgtsValor: 'Valor FGTS',
-  valorImovel: 'Valor do Imóvel',
-  rendaFamiliar: 'Renda Familiar',
-  rendaMensal: 'Renda Mensal',
-  valorDesejado: 'Valor Desejado',
-  valorCarta: 'Valor da Carta',
-  valorTerreno: 'Valor do Terreno',
-  valorConstrucao: 'Valor da Construção',
-  valorCredito: 'Valor do Crédito',
-  totalAmount: 'Valor Total',
-  downPayment: 'Entrada',
-  installments: 'Parcelas',
-  clientId: 'ID do Cliente',
-}
-
 const CURRENCY_FIELDS = new Set([
   'valorImovel', 'rendaFamiliar', 'rendaMensal', 'valorDesejado', 'valorCarta',
   'valorTerreno', 'valorConstrucao', 'valorCredito', 'totalAmount', 'downPayment',
@@ -87,19 +69,12 @@ const CURRENCY_FIELDS = new Set([
 
 const MONTHS_FIELDS = new Set(['prazoMeses', 'installments'])
 
-const ENTRY_TYPE_LABELS: Record<string, string> = {
-  proprio: 'Recursos Próprios',
-  fgts: 'FGTS',
-  combinado: 'FGTS + Próprio',
-  outro: 'Outro',
-}
-
 function getFieldIcon(step: string): string {
   return FIELD_ICONS[step] || '✓'
 }
 
 function getFieldLabel(step: string, originalLabel: string): string {
-  return FIELD_LABELS[step] ?? originalLabel
+  return (text.selectionsCard.labels as Record<string, string>)[step] ?? originalLabel
 }
 
 function formatMoneyValue(raw: string): string {
@@ -112,8 +87,8 @@ function formatMonthsValue(raw: string): string {
   const months = parseInt(raw, 10)
   if (isNaN(months)) return raw
   const years = Math.floor(months / 12)
-  const yearLabel = years === 1 ? 'ano' : 'anos'
-  return years > 0 ? `${years} ${yearLabel} - ${months} meses` : `${months} meses`
+  const yearLabel = years === 1 ? text.selectionsCard.year : text.selectionsCard.years
+  return years > 0 ? `${years} ${yearLabel} - ${months} ${text.selectionsCard.months}` : `${months} ${text.selectionsCard.months}`
 }
 
 export function SelectionsSummary({ selections, compact = false }: SelectionsSummaryProps) {
@@ -123,7 +98,7 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
   function formatValue(step: string, value: string): string {
     if (CURRENCY_FIELDS.has(step)) return formatMoneyValue(value)
     if (MONTHS_FIELDS.has(step)) return formatMonthsValue(value)
-    if (step === 'entradaEscolha') return ENTRY_TYPE_LABELS[value.toLowerCase()] ?? value
+    if (step === 'entradaEscolha') return (text.selectionsCard.entryTypes as Record<string, string>)[value.toLowerCase()] ?? value
     if (!valueLabels) return value
     return valueLabels[step]?.[value.toLowerCase()] ?? value
   }
@@ -176,7 +151,7 @@ export function SelectionsSummary({ selections, compact = false }: SelectionsSum
       >
         <div className="flex items-center gap-2">
           <span className="text-base leading-none">📋</span>
-          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">Suas Seleções</span>
+          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{text.selectionsCard.title}</span>
           {selectedFlow && (
             <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">{selectedFlow}</span>
           )}

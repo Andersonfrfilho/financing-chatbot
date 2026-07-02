@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
 import { Edit2, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { common } from '@/locales'
 import { users as text } from '@/locales'
 import { useSortableData } from '@/hooks/useSortableData'
 import {
@@ -243,7 +244,7 @@ export function UsersPage() {
       {data && (
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Exibir</span>
+            <span>{common.pagination.show}</span>
             <select
               value={limit}
               onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
@@ -253,17 +254,17 @@ export function UsersPage() {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <span>por página</span>
-            <span className="ml-2 text-gray-400">({data.total} total)</span>
+            <span>{common.pagination.perPage}</span>
+            <span className="ml-2 text-gray-400">{common.pagination.total(data.total)}</span>
           </div>
           {data.total > limit && (
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                <ChevronLeft size={16} /> Anterior
+                <ChevronLeft size={16} /> {common.pagination.previous}
               </Button>
-              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">{common.pagination.page(page)}</span>
               <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
-                Próxima <ChevronRight size={16} />
+                {common.pagination.next} <ChevronRight size={16} />
               </Button>
             </div>
           )}

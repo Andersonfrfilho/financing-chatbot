@@ -3,6 +3,7 @@ import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { AdaCopyright } from '@/components/AdaCopyright'
+import { auth as text } from '@/locales'
 
 export function ResetPasswordPage() {
   const [password, setPassword] = useState('')
@@ -20,18 +21,18 @@ export function ResetPasswordPage() {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const t = params.get('token')
-    if (!t) setError('Token inválido ou ausente.')
+    if (!t) setError('text.reset.invalidToken')
     else setToken(t)
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (password.length < 8) {
-      setError('A senha deve ter no mínimo 8 caracteres.')
+      setError('text.reset.minLength')
       return
     }
     if (password !== confirm) {
-      setError('As senhas não coincidem.')
+      setError('text.reset.mismatch')
       return
     }
     setError('')
@@ -40,7 +41,7 @@ export function ResetPasswordPage() {
       await api.post('/auth/reset-password', { token, password })
       setSuccess(true)
     } catch (error: any) {
-      setError(error?.response?.data?.message ?? 'Token inválido ou expirado.')
+      setError(error?.response?.data?.message ?? text.reset.errors.generic)
     } finally {
       setLoading(false)
     }
@@ -59,22 +60,22 @@ export function ResetPasswordPage() {
             </div>
           )}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{companyName}</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Redefinir Senha</p>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">text.reset.title</p>
         </div>
 
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl shadow-gray-100/50 dark:shadow-black/30 border border-gray-100 dark:border-gray-700 p-8">
           {success ? (
             <div className="text-center py-4">
               <CheckCircle size={48} className="mx-auto mb-4 text-green-500" />
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">Senha redefinida!</h2>
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">text.reset.success.title</h2>
               <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-                Sua senha foi alterada com sucesso. Você já pode fazer login.
+                text.reset.success.description
               </p>
               <a
                 href="/login"
                 className="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-xl transition-colors text-sm text-center"
               >
-                Ir para o Login
+                text.reset.success.action
               </a>
             </div>
           ) : (
@@ -84,7 +85,7 @@ export function ResetPasswordPage() {
               </p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Nova senha</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{text.reset.newPassword}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -106,7 +107,7 @@ export function ResetPasswordPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Confirmar senha</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{text.reset.confirmPassword}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -134,13 +135,13 @@ export function ResetPasswordPage() {
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Salvando...
+                    {text.reset.submitting}
                   </span>
-                ) : 'Redefinir Senha'}
+                ) : text.reset.submit}
               </button>
 
               <a href="/login" className="block text-center text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors">
-                Voltar ao login
+                {text.reset.backToLogin}
               </a>
             </form>
           )}

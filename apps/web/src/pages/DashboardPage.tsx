@@ -14,36 +14,6 @@ type DashboardStats = {
 
 const COLORS = ['#3b82f6', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#f97316']
 
-const STATE_LABELS: Record<string, string> = {
-  greeting: 'Boas-vindas',
-  awaiting_financing_type: 'Tipo financiamento',
-  awaiting_name: 'Nome',
-  awaiting_cpf: 'CPF',
-  awaiting_birth_date: 'Nascimento',
-  awaiting_civil_status: 'Estado civil',
-  awaiting_email: 'E-mail',
-  awaiting_city: 'Cidade',
-  awaiting_state: 'Estado',
-  awaiting_monthly_income: 'Renda',
-  awaiting_family_income: 'Renda familiar',
-  awaiting_fgts: 'FGTS',
-  awaiting_down_payment: 'Entrada',
-  awaiting_property_value: 'Valor imóvel',
-  awaiting_property_type: 'Tipo imóvel',
-  awaiting_vehicle_type: 'Tipo veículo',
-  awaiting_vehicle_value: 'Valor veículo',
-  awaiting_vehicle_year: 'Ano veículo',
-  awaiting_loan_amount: 'Valor empréstimo',
-  awaiting_term: 'Prazo',
-  simulation_ready: 'Simulação pronta',
-  human_handoff: 'Aguardando humano',
-  completed: 'Concluído',
-  abandoned: 'Abandonado',
-  in_flow: 'Em fluxo',
-  awaiting_menu: 'Aguardando menu',
-  new: 'Novo',
-}
-
 function DashboardSkeleton() {
   return (
     <div className="space-y-4 md:space-y-6">
@@ -87,13 +57,13 @@ export function DashboardPage() {
   }))
 
   const sessionsChartData = Object.entries(stats.sessions.byState)
-    .map(([k, v]) => ({ name: STATE_LABELS[k] ?? k.replace(/_/g, ' '), value: v }))
+    .map(([k, v]) => ({ name: dashboard.stateLabels[k as keyof typeof dashboard.stateLabels] ?? k.replace(/_/g, ' '), value: v }))
     .sort((a, b) => b.value - a.value)
     .slice(0, 8)
 
   const comparisonData = [
-    { name: 'Leads',     hoje: stats.leads.newToday,     semana: stats.leads.newThisWeek },
-    { name: 'Clientes',  hoje: stats.clients.newToday,   semana: stats.clients.newThisWeek },
+    { name: dashboard.labels.leads,    hoje: stats.leads.newToday,     semana: stats.leads.newThisWeek },
+    { name: dashboard.labels.clients,  hoje: stats.clients.newToday,   semana: stats.clients.newThisWeek },
   ]
 
   return (
@@ -151,8 +121,8 @@ export function DashboardPage() {
               <XAxis dataKey="name" tick={{ fontSize: 10 }} />
               <YAxis tick={{ fontSize: 10 }} />
               <Tooltip />
-              <Bar dataKey="hoje" name="Hoje" fill="#3b82f6" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="semana" name="Semana" fill="#93c5fd" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="hoje" name={dashboard.labels.today} fill="#3b82f6" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="semana" name={dashboard.labels.week} fill="#93c5fd" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </Card>
@@ -162,19 +132,19 @@ export function DashboardPage() {
           <div className="grid grid-cols-2 gap-3">
             <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 p-3 text-center">
               <p className="text-2xl font-bold text-blue-700 dark:text-blue-400">{stats.leads.newThisWeek}</p>
-              <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">Leads esta semana</p>
+              <p className="text-[11px] text-blue-600 dark:text-blue-400 mt-0.5">{dashboard.weekly.leadsThisWeek}</p>
             </div>
             <div className="rounded-lg bg-green-50 dark:bg-green-950/30 p-3 text-center">
               <p className="text-2xl font-bold text-green-700 dark:text-green-400">{stats.clients.newThisWeek}</p>
-              <p className="text-[11px] text-green-600 dark:text-green-400 mt-0.5">Clientes novos</p>
+              <p className="text-[11px] text-green-600 dark:text-green-400 mt-0.5">{dashboard.weekly.newClients}</p>
             </div>
             <div className="rounded-lg bg-yellow-50 dark:bg-yellow-950/30 p-3 text-center">
               <p className="text-2xl font-bold text-yellow-700 dark:text-yellow-400">{stats.simulations.todayTotal}</p>
-              <p className="text-[11px] text-yellow-600 dark:text-yellow-400 mt-0.5">Simulações hoje</p>
+              <p className="text-[11px] text-yellow-600 dark:text-yellow-400 mt-0.5">{dashboard.weekly.simulationsToday}</p>
             </div>
             <div className="rounded-lg bg-purple-50 dark:bg-purple-950/30 p-3 text-center">
               <p className="text-2xl font-bold text-purple-700 dark:text-purple-400">{stats.sessions.active}</p>
-              <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">Sessões ativas</p>
+              <p className="text-[11px] text-purple-600 dark:text-purple-400 mt-0.5">{dashboard.weekly.activeSessions}</p>
             </div>
           </div>
         </Card>

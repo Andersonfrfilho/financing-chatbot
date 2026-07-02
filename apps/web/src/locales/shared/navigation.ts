@@ -11,6 +11,7 @@ export const navigation = {
     clients:       'Clientes',
     leads:         'Leads',
     simulations:   'Simulações',
+    banks:         'Bancos',
     categories:    'Categorias',
     products:      'Produtos',
     users:         'Usuários',
@@ -18,5 +19,9 @@ export const navigation = {
   },
   sidebar: {
     operationalPanel: 'Painel Operacional',
+    privacyHide:      'Ocultar dados pessoais',
+    privacyShow:      'Mostrar dados pessoais',
+    private:          'Privado',
+    visible:          'Visível',
   },
 } as const

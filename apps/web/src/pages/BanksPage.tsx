@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
+import { banks as text } from '@/locales'
 
 type Bank = {
   id: string
@@ -18,8 +19,8 @@ export function BanksPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">Bancos</h2>
-        <p className="text-gray-500 text-sm mt-1">Gerenciamento de instituições financeiras</p>
+        <h2 className="text-2xl font-bold text-gray-900">{text.title}</h2>
+        <p className="text-gray-500 text-sm mt-1">{text.subtitle}</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -30,17 +31,17 @@ export function BanksPage() {
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-900">{bank.name}</p>
-              <p className="text-sm text-gray-500">Código: {bank.code}</p>
+              <p className="text-sm text-gray-500">{text.code(bank.code)}</p>
             </div>
             <span className={`badge ${bank.active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-              {bank.active ? 'Ativo' : 'Inativo'}
+              {bank.active ? text.active : text.inactive}
             </span>
           </div>
         ))}
       </div>
 
       {!banks?.length && (
-        <p className="text-center text-gray-400 py-12">Nenhum banco cadastrado</p>
+        <p className="text-center text-gray-400 py-12">{text.empty}</p>
       )}
     </div>
   )

@@ -11,6 +11,7 @@ import { users }         from './modules/users'
 import { settings }      from './modules/settings'
 import { categories }    from './modules/categories'
 import { products }      from './modules/products'
+import { banks }         from './modules/banks'
 
 export const locale = {
   common,
@@ -26,6 +27,7 @@ export const locale = {
   settings,
   categories,
   products,
+  banks,
 } as const
 
 // Re-export modules individually for tree-shaking in large pages
@@ -43,6 +45,7 @@ export {
   settings,
   categories,
   products,
+  banks,
 }
 
 // Utility type: extracts the return type of string-functions and plain strings

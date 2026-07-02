@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery, keepPreviousData } from '@tanstack/react-query'
+import { common } from '@/locales'
 import { simulations as text } from '@/locales'
 import { ChevronLeft, ChevronRight, X, Download, Copy, Check, Filter, Eye, EyeOff } from 'lucide-react'
 import { Button, Input, Skeleton, TableSkeleton, SortableHead } from '@/components/ui'
@@ -192,7 +193,7 @@ export function SimulationsPage() {
                 className="flex items-center gap-1.5 text-xs"
               >
                 {copiedRows ? <Check size={14} className="text-green-500" /> : <Copy size={14} />}
-                Copiar ({exportLabel})
+                {common.export.copy} ({exportLabel})
               </Button>
               <Button
                 variant="outline"
@@ -201,7 +202,7 @@ export function SimulationsPage() {
                 className="flex items-center gap-1.5 text-xs"
               >
                 <Download size={14} />
-                CSV ({exportLabel})
+                {common.export.csv} ({exportLabel})
               </Button>
             </>
           )}
@@ -262,7 +263,7 @@ export function SimulationsPage() {
             className="gap-1.5 text-xs ml-auto"
           >
             {isPrivate ? <EyeOff size={14} /> : <Eye size={14} />}
-            {isPrivate ? 'Mostrar telefones' : 'Ocultar telefones'}
+            {isPrivate ? common.privacy.showPhoneNumbers : common.privacy.hidePhoneNumbers}
           </Button>
         </div>
 
@@ -336,15 +337,15 @@ export function SimulationsPage() {
                   title="Selecionar todos desta página"
                 />
               </TableCell>
-              <SortableHead label="Data" field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
-              <SortableHead label="Cliente" field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
-              <SortableHead label="Modalidade" field="financingType" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
-              <SortableHead label="Valor Imóvel" field="requestedAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
-              <SortableHead label="Financiado" field="financedAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
-              <SortableHead label="Entrada" field="downPaymentAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
-              <SortableHead label="Prazo" field="termMonths" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
-              <SortableHead label="Bancos" field="bankNames" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden xl:table-cell" />
-              <SortableHead label="Melhor 1ª Parcela" field="bestRateAnnual" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.createdAt} field="createdAt" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden sm:table-cell" />
+              <SortableHead label={text.columns.clientName} field="clientName" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label={text.columns.modality} field="financingType" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label={text.columns.propertyValue} field="requestedAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden md:table-cell" />
+              <SortableHead label={text.columns.financed} field="financedAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} />
+              <SortableHead label={text.columns.downPayment} field="downPaymentAmount" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.term} field="termMonths" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
+              <SortableHead label={text.columns.banks} field="bankNames" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden xl:table-cell" />
+              <SortableHead label={text.columns.bestInstallment} field="bestRateAnnual" sortField={sortField} sortDirection={sortDirection} onSort={toggleSort} className="hidden lg:table-cell" />
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -426,7 +427,7 @@ export function SimulationsPage() {
       {data && (
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-            <span>Exibir</span>
+            <span>{common.pagination.show}</span>
             <select
               value={limit}
               onChange={(e) => { setLimit(Number(e.target.value)); setPage(1) }}
@@ -436,17 +437,17 @@ export function SimulationsPage() {
                 <option key={n} value={n}>{n}</option>
               ))}
             </select>
-            <span>por página</span>
-            <span className="ml-2 text-gray-400">({data.total} total)</span>
+            <span>{common.pagination.perPage}</span>
+            <span className="ml-2 text-gray-400">{common.pagination.total(data.total)}</span>
           </div>
           {data.total > limit && (
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page === 1}>
-                <ChevronLeft size={16} /> Anterior
+                <ChevronLeft size={16} /> {common.pagination.previous}
               </Button>
-              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">Pág. {page}</span>
+              <span className="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-400">{common.pagination.page(page)}</span>
               <Button variant="outline" size="sm" onClick={() => setPage((p) => p + 1)} disabled={page * limit >= data.total}>
-                Próxima <ChevronRight size={16} />
+                {common.pagination.next} <ChevronRight size={16} />
               </Button>
             </div>
           )}

@@ -5,6 +5,8 @@ import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { AdaTechLogoFull } from '@/components/AdaTechLogo'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { auth as text } from '@/locales'
+import { common } from '@/locales'
 
 type View = 'login' | 'forgot' | 'forgot-sent'
 
@@ -52,7 +54,7 @@ export function LoginPage() {
       }
       window.location.href = '/'
     } catch {
-      setLoginError('E-mail ou senha inválidos.')
+      setLoginError(text.login.error)
     } finally {
       setLoginLoading(false)
     }
@@ -68,9 +70,9 @@ export function LoginPage() {
     } catch (error: any) {
       const messageText = error?.response?.data?.message
       if (messageText?.includes('não está habilitada')) {
-        setForgotError('Recuperação por e-mail não está habilitada. Entre em contato com o administrador.')
+        setForgotError(text.forgot.errors.disabled)
       } else {
-        setForgotError('Não foi possível enviar o e-mail. Tente novamente.')
+        setForgotError(text.forgot.errors.generic)
       }
     } finally {
       setForgotLoading(false)
@@ -98,7 +100,7 @@ export function LoginPage() {
           )}
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{companyName}</h1>
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
-            {view === 'login' ? 'Painel Administrativo' : 'Recuperar Senha'}
+            {view === 'login' ? text.login.title : text.forgot.title}
           </p>
         </div>
 
@@ -109,14 +111,14 @@ export function LoginPage() {
           {view === 'login' && (
             <form onSubmit={handleLogin} className="space-y-5">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">E-mail</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{text.login.emailLabel}</label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
+                    placeholder={text.login.emailPlaceholder}
                     className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     required
                   />
@@ -124,7 +126,7 @@ export function LoginPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Senha</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{text.login.passwordLabel}</label>
                 <div className="relative">
                   <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
@@ -153,7 +155,7 @@ export function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-400"
                   />
-                  Lembrar-me
+                  text.login.rememberMe
                 </label>
                 <button
                   type="button"
@@ -164,7 +166,7 @@ export function LoginPage() {
                   }}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                 >
-                  Esqueci minha senha
+                  text.login.forgotPassword
                 </button>
               </div>
 
@@ -182,9 +184,9 @@ export function LoginPage() {
                 {loginLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Entrando...
+                    text.login.submitting
                   </span>
-                ) : 'Entrar'}
+                ) : text.login.submit}
               </button>
             </form>
           )}
@@ -198,22 +200,20 @@ export function LoginPage() {
                 className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
-                Voltar ao login
+                text.forgot.backToLogin
               </button>
 
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Informe seu e-mail e enviaremos um link para redefinir sua senha.
-              </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{text.forgot.description}</p>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">E-mail</label>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">{text.login.emailLabel}</label>
                 <div className="relative">
                   <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                   <input
                     type="email"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="seu@email.com"
+                    placeholder={text.login.emailPlaceholder}
                     className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
                     required
                   />
@@ -222,7 +222,7 @@ export function LoginPage() {
 
               {!emailResetEnabled && (
                 <div className="bg-yellow-50 dark:bg-yellow-950/40 border border-yellow-200 dark:border-yellow-800 rounded-xl px-4 py-3 text-sm text-yellow-700 dark:text-yellow-400">
-                  Recuperação por e-mail não está habilitada neste sistema. Entre em contato com o administrador.
+                  {text.forgot.disabledWarning}
                 </div>
               )}
 
@@ -240,9 +240,9 @@ export function LoginPage() {
                 {forgotLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    Enviando...
+                    text.forgot.submitting
                   </span>
-                ) : 'Enviar link'}
+                ) : text.forgot.submit}
               </button>
             </form>
           )}
@@ -252,10 +252,8 @@ export function LoginPage() {
             <div className="text-center py-4 space-y-4">
               <CheckCircle size={48} className="mx-auto text-green-500" />
               <div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">E-mail enviado!</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  Se este e-mail estiver cadastrado, você receberá as instruções em breve.
-                </p>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">text.forgotSent.title</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{text.forgotSent.description}</p>
               </div>
               <button
                 type="button"
@@ -263,7 +261,7 @@ export function LoginPage() {
                 className="flex items-center gap-1.5 mx-auto text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
               >
                 <ArrowLeft size={14} />
-                Voltar ao login
+                text.forgot.backToLogin
               </button>
             </div>
           )}
@@ -273,7 +271,7 @@ export function LoginPage() {
         <div className="mt-6 flex items-center justify-center gap-2">
           <AdaTechLogoFull height={14} variant="auto" className="text-gray-400 dark:text-gray-600 opacity-60" />
           <p className="text-xs text-gray-400 dark:text-gray-600">
-            © {new Date().getFullYear()} AdA Technology
+            {common.copyright(new Date().getFullYear())}
           </p>
         </div>
       </div>

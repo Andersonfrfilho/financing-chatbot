@@ -1,5 +1,6 @@
 import { Moon, Sun } from 'lucide-react'
 import { useDarkMode } from '@/hooks/useDarkMode'
+import { common as text } from '@/locales'
 
 export function ThemeToggle({ className = '' }: { className?: string }) {
   const { isDark, toggle } = useDarkMode()
@@ -7,7 +8,7 @@ export function ThemeToggle({ className = '' }: { className?: string }) {
   return (
     <button
       onClick={toggle}
-      aria-label={isDark ? 'Ativar modo claro' : 'Ativar modo escuro'}
+      aria-label={isDark ? text.theme.light : text.theme.dark}
       className={`
         p-2 rounded-lg transition-colors
         text-gray-500 hover:text-gray-700 hover:bg-gray-100

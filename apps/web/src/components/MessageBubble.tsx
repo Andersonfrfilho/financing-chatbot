@@ -4,6 +4,7 @@ import * as Tooltip from '@radix-ui/react-tooltip'
 import { Button } from '@/components/ui'
 import { api } from '@/lib/api'
 import { AudioPlayer } from '@/components/AudioPlayer'
+import { conversations as text } from '@/locales'
 
 export interface Message {
   id: string
@@ -19,9 +20,9 @@ export interface Message {
 }
 
 const SENDER_LABEL: Record<string, string> = {
-  customer: 'Cliente',
-  bot: '🤖 Bot',
-  agent: '🧑‍💼 Atendente'
+  customer: text.chat.bubble.customer,
+  bot: text.chat.bubble.bot,
+  agent: text.chat.bubble.agent
 }
 
 function fmtTime(iso: string) {
@@ -58,7 +59,7 @@ function MediaContent({ message, isMine }: { message: Message; isMine: boolean }
     return (
       <a href={src} download={payload.filename || 'arquivo'} className="flex items-center gap-2 text-sm text-blue-700 underline">
         <FileText size={16} />
-        {payload.filename || message.content || 'Documento'}
+        {payload.filename || message.content || text.chat.bubble.document}
         <Download size={14} />
       </a>
     )
@@ -73,7 +74,7 @@ function MediaContent({ message, isMine }: { message: Message; isMine: boolean }
     return (
       <div className="flex items-center gap-2 text-xs text-gray-500 bg-gray-100 rounded px-2 py-1">
         <FileText size={14} />
-        <span>{type} — {message.content || 'Mídia'}</span>
+        <span>{type} — {message.content || text.chat.bubble.media}</span>
       </div>
     )
   }
@@ -91,7 +92,7 @@ function MediaContent({ message, isMine }: { message: Message; isMine: boolean }
     if (!mediaSrc) {
       return (
         <button onClick={loadMedia} className="text-xs text-blue-600 underline flex items-center gap-1">
-          {loading ? '⏳ Carregando...' : '🖼️ Ver imagem'}
+          {loading ? '⏳ Carregando...' : text.chat.bubble.viewImage}
         </button>
       )
     }
@@ -106,7 +107,7 @@ function MediaContent({ message, isMine }: { message: Message; isMine: boolean }
     if (!mediaSrc) {
       return (
         <button onClick={loadMedia} className="text-xs text-blue-600 underline flex items-center gap-1">
-          <Music size={14} /> {loading ? 'Carregando...' : 'Ouvir áudio'}
+          <Music size={14} /> {loading ? 'Carregando...' : text.chat.bubble.listenAudio}
         </button>
       )
     }
@@ -117,7 +118,7 @@ function MediaContent({ message, isMine }: { message: Message; isMine: boolean }
     if (!mediaSrc) {
       return (
         <button onClick={loadMedia} className="text-xs text-blue-600 underline flex items-center gap-1">
-          <Video size={14} /> {loading ? 'Carregando...' : 'Ver vídeo'}
+          <Video size={14} /> {loading ? 'Carregando...' : text.chat.bubble.viewVideo}
         </button>
       )
     }
@@ -203,7 +204,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
                       className="bg-blue-50 border border-blue-200 rounded px-2 py-1 shadow-md text-[11px] text-blue-700 font-medium whitespace-nowrap"
                       sideOffset={5}
                     >
-                      Lido às {fmtTime(message.readAt)}
+                      {text.chat.bubble.readAt}{fmtTime(message.readAt)}
                     </Tooltip.Content>
                   )}
                   {message.status === 'failed' && (
@@ -211,7 +212,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
                       className="bg-red-50 border border-red-200 rounded px-2 py-1 shadow-md text-[11px] text-red-700 font-medium"
                       sideOffset={5}
                     >
-                      Falha: Fora da janela 24h
+                      {text.chat.bubble.windowExpired}
                     </Tooltip.Content>
                   )}
                 </Tooltip.Root>
@@ -222,7 +223,7 @@ export function MessageBubble({ message, isMine }: MessageBubbleProps) {
 
         {!isMedia && (
           <div className="absolute -top-8 right-0 hidden group-hover:flex gap-1 bg-white border border-gray-200 rounded shadow-md p-1">
-            <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(message.content || '')} title="Copiar">
+            <Button size="sm" variant="ghost" onClick={() => navigator.clipboard.writeText(message.content || '')} title={text.chat.bubble.copy}>
               <Copy size={14} />
             </Button>
           </div>

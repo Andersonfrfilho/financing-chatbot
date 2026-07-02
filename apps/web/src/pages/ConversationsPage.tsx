@@ -40,32 +40,18 @@ type Message = {
   readAt?: string
 }
 
-const REMINDER_MESSAGES: Record<string, string> = {
-  awaiting_menu: 'Bem-vindo de volta! 👋 Qual é seu interesse?',
-  awaiting_hab_type: 'Voltamos aqui! 👋 Qual é a sua necessidade?',
-  awaiting_vehicle_model: 'Continuamos aqui! 👋 Qual veículo você está procurando?',
-  awaiting_financing_type: 'Estamos de volta! 👋 Vamos prosseguir com sua solicitação?',
-  in_flow: 'Desculpe a demora! 😊 Continuamos preenchendo os dados...',
-  simulation_ready: 'Sua simulação está pronta! 🎉 Quer revisar os resultados?',
-  new: 'Olá! 👋 Bem-vindo de volta!',
-  default: 'Estamos aqui para ajudar! 😊 Como podemos continuar?',
-}
-
 type QuickMessage = { label: string; text: (conversationData: ConversationItem | undefined, selections: Record<string, any>) => string }
 
 function buildQuickMessages(current: ConversationItem | undefined, selections: Record<string, any>): QuickMessage[] {
   const name = current?.clientName?.split(' ')[0] ?? ''
   const product = selections['requestedProduct']?.value ?? ''
-  const productLabel: Record<string, string> = {
-    imobiliario: 'imóvel', veiculo: 'veículo', pessoal: 'crédito pessoal',
-    consignado: 'consignado', empresa: 'empresarial', equipamento: 'equipamento', rural: 'rural',
-  }
+  const productLabels = text.productLabels as Record<string, string>
 
   return [
     { label: text.quickMessages.greeting,   text: () => text.quickMessages.greetingText(name) },
-    { label: text.quickMessages.status,     text: () => text.quickMessages.statusText(productLabel[product] ?? '') },
+    { label: text.quickMessages.status,     text: () => text.quickMessages.statusText(productLabels[product] ?? '') },
     { label: text.quickMessages.simulation, text: () => text.quickMessages.simulationText() },
-    { label: text.quickMessages.documents,  text: () => text.quickMessages.documentsText(productLabel[product] ?? '') },
+    { label: text.quickMessages.documents,  text: () => text.quickMessages.documentsText(productLabels[product] ?? '') },
     { label: text.quickMessages.contact,    text: () => text.quickMessages.contactText() },
     { label: text.quickMessages.deadline,   text: () => text.quickMessages.deadlineText() },
   ]
@@ -118,59 +104,10 @@ const WINDOW_BORDER: Record<WindowStatus, string> = {
 
 const HIDDEN_FIELDS = new Set(['flow', 'step'])
 
-const CTX_LABELS: Record<string, string> = {
-  // n8n context fields
-  requestedProduct: 'Produto',
-  name: 'Nome Completo',
-  cpf: 'CPF',
-  nascimento: 'Data de Nascimento',
-  valorImovel: 'Valor do Imóvel',
-  imovelCond: 'Condição do Imóvel',
-  rendaFamiliar: 'Renda Bruta Familiar',
-  fgts3anos: 'FGTS +3 anos',
-  dependentes: 'Dependentes',
-  jaTemImovel: 'Já tem imóvel',
-  construcaoTipo: 'Tipo de Construção',
-  valorTerreno: 'Valor do Terreno',
-  valorConstrucao: 'Valor da Construção',
-  consorcioPara: 'Consórcio para',
-  valorCarta: 'Valor da Carta de Crédito',
-  consignadoTipo: 'Tipo de Consignado',
-  valorDesejado: 'Valor Desejado',
-  consignadoAtivo: 'Consignado Ativo',
-  imovelQuitado: 'Imóvel Quitado',
-  valorCredito: 'Valor do Crédito',
-  rendaMensal: 'Renda Mensal',
-  cidade: 'Cidade',
-  // legacy
-  cpf2: 'CPF',
-  city: 'Cidade',
-  email: 'E-mail',
-  phone: 'Telefone',
-  state: 'Estado',
-  birthDate: 'Data de Nascimento',
-  personType: 'Tipo de Pessoa',
-  civilStatus: 'Estado Civil',
-  vehicleType: 'Tipo de Veículo',
-  vehicleBrand: 'Marca do Veículo',
-  vehicleModel: 'Modelo do Veículo',
-  financingType: 'Tipo de Financiamento',
-  habitationType: 'Tipo de Habitação',
-  installments: 'Parcelas',
-  downPayment: 'Entrada',
-  totalAmount: 'Valor Total',
-}
-
 const MONEY_FIELDS = new Set([
   'valorImovel', 'rendaFamiliar', 'valorTerreno', 'valorConstrucao',
   'valorCarta', 'valorDesejado', 'valorCredito', 'rendaMensal', 'downPayment', 'totalAmount',
 ])
-
-const BOOL_CHOICES: Record<string, string> = {
-  sim: 'Sim', nao: 'Não', s: 'Sim', n: 'Não',
-  novo: 'Novo', usado: 'Usado',
-  true: 'Sim', false: 'Não',
-}
 
 const CTX_ORDER = [
   'requestedProduct', 'name', 'cpf', 'nascimento', 'cidade',
@@ -194,7 +131,8 @@ function fmtMoney(value: string): string {
 function fmtValue(key: string, value: string): string {
   if (MONEY_FIELDS.has(key)) return fmtMoney(value)
   const lower = value.toLowerCase().trim()
-  if (BOOL_CHOICES[lower]) return BOOL_CHOICES[lower]
+  const choices = text.choices as Record<string, string>
+  if (choices[lower]) return choices[lower]
   return value
 }
 
@@ -208,7 +146,7 @@ function contextToSelections(contextData: Record<string, unknown> | null): Recor
     if (!stringValue) return
     selections[key] = {
       step: key,
-      label: CTX_LABELS[key] || key,
+      label: (text.contextLabels as Record<string, string>)[key] || key,
       value: fmtValue(key, stringValue),
       selectedAt: new Date().toISOString(),
       status: 'completed' as const,
@@ -362,7 +300,8 @@ export function ConversationsPage() {
   const continueConversation = useMutation({
     mutationFn: (whatsapp: string) => {
       const conv = conversations.find((c) => c.whatsappNumber === whatsapp)
-      const reminderMsg = REMINDER_MESSAGES[conv?.currentState ?? 'default'] || REMINDER_MESSAGES.default
+      const reminders = text.reminders as Record<string, string>
+      const reminderMsg = reminders[conv?.currentState ?? 'default'] || reminders.default
       return api.post(`/conversations/${encodeURIComponent(whatsapp)}/send`, { text: reminderMsg })
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['conversations'] }),
@@ -451,7 +390,7 @@ export function ConversationsPage() {
             variant={waitingOnly ? 'default' : 'outline'}
             onClick={() => setWaitingOnly((v) => !v)}
           >
-            ⏳ Aguardando atendimento{waitingCount > 0 ? ` (${waitingCount})` : ''}
+            {waitingCount > 0 ? text.filters.waitingWithCount(waitingCount) : text.filters.waitingHuman}
           </Button>
           {waitingCount > 0 && (
             <Button
@@ -463,7 +402,7 @@ export function ConversationsPage() {
                 window.dispatchEvent(new Event('read-all'))
               }}
             >
-              Marcar todas como lidas
+              {text.window.markAllRead}
             </Button>
           )}
         </div>
@@ -483,22 +422,22 @@ export function ConversationsPage() {
                   onClick={() => setSelectedBulk(new Set())}
                   className="text-xs"
                 >
-                  Limpar
+                  {text.bulk.clear}
                 </Button>
                 <Button
                   size="sm"
                   variant="default"
                   onClick={() => {
                     const expiredCount = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length
-                    if (expiredCount === 0) { alert('Nenhuma conversa expirada selecionada'); return }
-                    if (confirm(`Enviar template para ${expiredCount} conversa(s) expirada(s)?`)) {
+                    if (expiredCount === 0) { alert(text.window.noExpiredSelected); return }
+                    if (confirm(text.window.confirmBulkTemplate(expiredCount))) {
                       bulkSendTemplate.mutate()
                     }
                   }}
                   disabled={bulkSendTemplate.isPending}
                   className="text-xs"
                 >
-                  {bulkSendTemplate.isPending ? 'Enviando...' : 'Enviar template'}
+                  {bulkSendTemplate.isPending ? text.window.bulkTemplateSending : text.window.bulkTemplate}
                 </Button>
                 <Button
                   size="sm"
@@ -514,7 +453,7 @@ export function ConversationsPage() {
                   }}
                   className="text-xs"
                 >
-                  Finalizar
+                  {text.bulk.finalize}
                 </Button>
               </div>
             </div>
@@ -526,7 +465,7 @@ export function ConversationsPage() {
               <Search size={16} className="absolute left-2 text-gray-400 dark:text-gray-500" />
               <input
                 type="text"
-                placeholder="Buscar conversa..."
+                placeholder={text.search}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-8 pr-8 py-2 text-sm border border-gray-200 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
@@ -545,13 +484,13 @@ export function ConversationsPage() {
           {/* Legenda da janela de 24h */}
           {conversations.length > 0 && (
             <div className="px-3 py-1.5 border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex-shrink-0 flex items-center gap-2 text-[10px] text-gray-500 dark:text-gray-400">
-              <span className="font-medium">Janela:</span>
+              <span className="font-medium">{text.window.legend}</span>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setWindowFilter('all')}
                   className={`px-1.5 py-0.5 rounded ${windowFilter === 'all' ? 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100' : ''}`}
                 >
-                  Todas
+                  {text.window.all}
                 </button>
                 {(['active', 'approaching', 'warning', 'expired'] as WindowStatus[]).map((status) => (
                   <button
@@ -566,9 +505,7 @@ export function ConversationsPage() {
                       status === 'warning' ? 'bg-red-500' :
                       'bg-gray-300 dark:bg-gray-600'
                     } flex-shrink-0`} />
-                    {status === 'active' ? '<12h' :
-                     status === 'approaching' ? '12-21h' :
-                     status === 'warning' ? '21-24h' : '>24h'}
+                    {text.window.durationAbbr[status]}
                   </button>
                 ))}
               </div>
@@ -635,9 +572,9 @@ export function ConversationsPage() {
                       <span className="text-[10px] text-gray-400 dark:text-gray-500 whitespace-nowrap">{fmtTime(c.lastAt)}</span>
                     </div>
                   </div>
-                  {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">⏳ aguardando atendimento</span>}
-                  {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">🧑‍💼 em atendimento</span>}
-                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">⏱️ parada há {formatStalledDuration(stalledMinutes)}</span>}
+                  {c.waitingHuman && <span className="text-[10px] text-yellow-700 font-medium mt-1 block">{text.chat.waitingHuman}</span>}
+                  {c.mode === 'human' && <span className="text-[10px] text-green-600 font-medium">{text.chat.humanMode}</span>}
+                  {isStalled && <span className="text-[10px] text-orange-600 font-medium">{text.chat.stalledFor(formatStalledDuration(stalledMinutes))}</span>}
                 </button>
               </div>
               {isStalled && (
@@ -649,7 +586,7 @@ export function ConversationsPage() {
                     disabled={continueConversation.isPending}
                     className="w-full text-xs"
                   >
-                    {continueConversation.isPending ? '...' : '▶️ Continuar Atendimento'}
+                    {continueConversation.isPending ? '...' : text.chat.continueAttendance}
                   </Button>
                 </div>
               )}
@@ -662,7 +599,7 @@ export function ConversationsPage() {
         {/* Conversa - ocupa 2 colunas em lg, 1 em md, e full em mobile */}
         <div className={`${!selected ? 'hidden' : ''} md:col-span-1 lg:col-span-2 border dark:border-gray-700 rounded-lg flex flex-col bg-gray-50 dark:bg-gray-900 overflow-hidden`}>
           {!selected ? (
-            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">Selecione uma conversa</div>
+            <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">{text.noSelection}</div>
           ) : (
             <>
               <div className="px-4 py-3 border-b dark:border-gray-700 bg-white dark:bg-gray-800">
@@ -692,7 +629,7 @@ export function ConversationsPage() {
                         disabled={release.isPending}
                       >
                         <LogOut size={14} />
-                        Devolver ao bot
+                        {text.chat.release}
                       </Button>
                     ) : (
                       <Button
@@ -702,7 +639,7 @@ export function ConversationsPage() {
                       >
                         <Power size={14} />
                         <UserCheck size={14} />
-                        Assumir conversa
+                        {text.chat.takeover}
                       </Button>
                     )}
                     <Button
@@ -711,7 +648,7 @@ export function ConversationsPage() {
                       onClick={() => finalize.mutate()}
                       disabled={finalize.isPending}
                     >
-                      Finalizar
+                      {text.chat.finalize}
                     </Button>
                   </div>
                 </div>
@@ -808,7 +745,7 @@ export function ConversationsPage() {
                       <button
                         onClick={() => fileInputRef.current?.click()}
                         className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-blue-500 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                        title="Anexar arquivo"
+                        title={text.chat.attach}
                       >
                         <Paperclip size={18} />
                       </button>
@@ -834,7 +771,7 @@ export function ConversationsPage() {
                         onClick={submit}
                         disabled={(send.isPending || sendMedia.isPending) || (!message.trim() && !attached)}
                         className="flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                        title="Enviar"
+                        title={text.chat.send}
                       >
                         {(send.isPending || sendMedia.isPending)
                           ? <span className="text-xs">⏳</span>

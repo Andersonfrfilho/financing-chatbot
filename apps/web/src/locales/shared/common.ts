@@ -26,10 +26,25 @@ export const common = {
     enabled:  'Habilitado',
     disabled: 'Desabilitado',
   },
+  theme: {
+    light: 'Ativar modo claro',
+    dark:  'Ativar modo escuro',
+  },
   pagination: {
     previous: 'Anterior',
     next:     'Próxima',
     page:     (n: number) => `Pág. ${n}`,
+    show:     'Exibir',
+    perPage:  'por página',
+    total:    (n: number) => `(${n} total)`,
+  },
+  privacy: {
+    showPhoneNumbers: 'Mostrar telefones',
+    hidePhoneNumbers: 'Ocultar telefones',
+  },
+  export: {
+    copy:  'Copiar',
+    csv:   'CSV',
   },
   empty: {
     default:    'Nenhum resultado encontrado',
@@ -42,10 +57,11 @@ export const common = {
     notFound:   'Não encontrado.',
   },
   time: {
-    today:     'Hoje',
-    yesterday: 'Ontem',
-    daysAgo:   (n: number) => `${n}d atrás`,
-    minutesAgo:(n: number) => `há ${n} minutos`,
+    today:       'Hoje',
+    yesterday:   'Ontem',
+    daysAgo:     (n: number) => `${n}d atrás`,
+    minutesAgo:  (n: number) => `há ${n} minutos`,
+    hoursSuffix: (n: number) => `${n}h`,
   },
   copyright: (year: number) => `© ${year} AdA Technology`,
 } as const
