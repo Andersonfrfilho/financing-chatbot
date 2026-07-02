@@ -11,12 +11,14 @@ const createSchema = z.object({
   name:        z.string().min(2).max(255),
   description: z.string().max(1000).optional(),
   active:      z.boolean().optional(),
+  catalogId:   z.string().max(255).nullable().optional(),
 })
 
 const updateSchema = z.object({
   name:        z.string().min(2).max(255).optional(),
   description: z.string().max(1000).optional(),
   active:      z.boolean().optional(),
+  catalogId:   z.string().max(255).nullable().optional(),
 })
 
 export class CategoryController {

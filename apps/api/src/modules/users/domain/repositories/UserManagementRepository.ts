@@ -25,5 +25,4 @@ export interface UserManagementRepository {
   create(input: CreateUserInput): Promise<User>
   update(id: string, input: UpdateUserInput): Promise<User>
   delete(id: string): Promise<void>
-  findAllRoles(): Promise<Role[]>
 }

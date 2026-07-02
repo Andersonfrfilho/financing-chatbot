@@ -4,6 +4,7 @@ export type CreateCategoryInput = {
   name:         string
   description?: string
   active?:      boolean
+  catalogId?:   string | null
 }
 
 export type UpdateCategoryInput = Partial<CreateCategoryInput>
@@ -23,6 +24,7 @@ export type CategoryFilters = {
 
 export interface CategoryRepository {
   findById(id: string): Promise<Category | null>
+  findByNameCaseInsensitive(name: string): Promise<Category | null>
   findAll(filters: CategoryFilters): Promise<{ data: Category[]; total: number }>
   create(input: CreateCategoryInput): Promise<Category>
   update(id: string, input: UpdateCategoryInput): Promise<Category>

@@ -10,4 +10,5 @@ export function registerProductRoutes(router: Router, controller: ProductControl
   router.put('/api/products/:id',authenticate, authorize(['products:write']), (req, res) => controller.update(req, res))
   router.delete('/api/products/:id', authenticate, authorize(['products:delete']), (req, res) => controller.remove(req, res))
   router.post('/api/products/:id/retry-sync', authenticate, authorize(['products:write']), (req, res) => controller.retrySync(req, res))
+  router.post('/api/products/bulk-import', authenticate, authorize(['products:write']), (req, res) => controller.bulkImport(req, res))
 }

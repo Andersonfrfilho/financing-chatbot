@@ -10,37 +10,40 @@ import { api } from '@/lib/api'
 import { common, navigation } from '@/locales'
 import { ThemeToggle } from './ThemeToggle'
 import { AdaTechLogoFull } from './AdaTechLogo'
+import { SubscriptionBanner } from './SubscriptionBanner'
 
 const navGroups = [
   {
     label: navigation.groups.general,
     items: [
-      { href: '/',              label: navigation.items.dashboard,      icon: '📊' },
-      { href: '/conversations', label: navigation.items.conversations,  icon: '🗨️', badge: true },
-      { href: '/sessions',      label: navigation.items.sessions,       icon: '💬' },
+      { href: '/',              label: navigation.items.dashboard,      icon: '📊', permission: 'dashboard:read' },
+      { href: '/conversations', label: navigation.items.conversations,  icon: '🗨️', badge: true, permission: 'clients:read' },
+      { href: '/sessions',      label: navigation.items.sessions,       icon: '💬', permission: 'sessions:read' },
     ],
   },
   {
     label: navigation.groups.registrations,
     items: [
-      { href: '/clients',      label: navigation.items.clients,       icon: '👥' },
-      { href: '/leads',        label: navigation.items.leads,         icon: '🎯' },
-      { href: '/simulations',  label: navigation.items.simulations,   icon: '🏦' },
-      { href: '/categories',   label: navigation.items.categories,    icon: '🏷️' },
-      { href: '/products',     label: navigation.items.products,      icon: '📦' },
+      { href: '/clients',      label: navigation.items.clients,       icon: '👥', permission: 'clients:read' },
+      { href: '/leads',        label: navigation.items.leads,         icon: '🎯', permission: 'leads:read' },
+      { href: '/simulations',  label: navigation.items.simulations,   icon: '🏦', permission: 'simulations:read' },
+      { href: '/categories',   label: navigation.items.categories,    icon: '🏷️', permission: 'categories:read' },
+      { href: '/products',     label: navigation.items.products,      icon: '📦', permission: 'products:read' },
+      { href: '/catalogs',     label: navigation.items.catalogs,      icon: '🗂️', permission: 'catalogs:read' },
     ],
   },
   {
     label: navigation.groups.administration,
     items: [
-      { href: '/users',        label: navigation.items.users,       icon: '👤' },
-      { href: '/settings',     label: navigation.items.settings,    icon: '⚙️' },
+      { href: '/users',        label: navigation.items.users,       icon: '👤', permission: 'users:read' },
+      { href: '/roles',        label: navigation.items.roles,       icon: '🛡️', permission: 'roles:read' },
+      { href: '/settings',     label: navigation.items.settings,    icon: '⚙️', permission: 'settings:read' },
     ],
   },
 ]
 
 export function Layout({ children }: { children: React.ReactNode }) {
-  const { user, clearAuth } = useAuthStore()
+  const { user, clearAuth, hasPermission } = useAuthStore()
   const location = useLocation()
   const waitingCount = useWaitingNotifications()
   useGlobalSse()
@@ -107,11 +110,17 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
         {/* Nav com separadores por grupo */}
         <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-4">
-          {navGroups.map((group) => (
+          {navGroups.map((group) => {
+            const visibleItems = group.items.filter((item) => {
+              const [resource, action] = item.permission.split(':')
+              return hasPermission(resource, action)
+            })
+            if (!visibleItems.length) return null
+            return (
             <div key={group.label}>
               <p className="px-3 mb-1 text-[10px] font-semibold text-gray-400 dark:text-gray-600 uppercase tracking-widest">{group.label}</p>
               <div className="space-y-0.5">
-                {group.items.map((item) => {
+                {visibleItems.map((item) => {
                   const active = location === item.href
                   return (
                     <a
@@ -142,7 +151,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 })}
               </div>
             </div>
-          ))}
+            )
+          })}
         </nav>
 
         {/* Footer user + copyright */}
@@ -153,7 +163,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-gray-900 dark:text-gray-100 truncate">{user?.name}</p>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate capitalize">{user?.role?.name}</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500 truncate capitalize">{user?.role}</p>
             </div>
           </div>
           <div className="flex gap-2">
@@ -221,6 +231,8 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {user?.name?.charAt(0).toUpperCase()}
           </div>
         </header>
+
+        <SubscriptionBanner />
 
         {/* Página */}
         <main className="flex-1 overflow-auto min-h-0">

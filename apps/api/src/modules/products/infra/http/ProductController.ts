@@ -6,6 +6,9 @@ import type { CreateProductUseCase } from '../../application/use-cases/CreatePro
 import type { UpdateProductUseCase } from '../../application/use-cases/UpdateProductUseCase'
 import type { DeleteProductUseCase } from '../../application/use-cases/DeleteProductUseCase'
 import type { RetryProductSyncUseCase } from '../../application/use-cases/RetryProductSyncUseCase'
+import type { BulkCreateProductsUseCase } from '../../application/use-cases/BulkCreateProductsUseCase'
+
+const MAX_BULK_IMPORT_ROWS = 1000
 
 const availabilitySchema = z.enum(['in stock', 'out of stock', 'preorder', 'available for order', 'discontinued'])
 const conditionSchema = z.enum(['new', 'refurbished', 'used'])
@@ -21,6 +24,23 @@ const createSchema = z.object({
   active:        z.boolean().optional(),
   availability:  availabilitySchema.optional(),
   condition:     conditionSchema.optional(),
+})
+
+const bulkImportRowSchema = z.object({
+  categoryName: z.string().min(1).max(255),
+  retailerId:   z.string().min(1).max(255),
+  name:         z.string().min(2).max(255),
+  description:  z.string().max(1000).optional(),
+  price:        z.union([z.string(), z.number()]),
+  currency:     z.string().length(3).optional(),
+  imageUrl:     z.string().url().optional(),
+  availability: availabilitySchema.optional(),
+  condition:    conditionSchema.optional(),
+  active:       z.boolean().optional(),
+})
+
+const bulkImportSchema = z.object({
+  rows: z.array(bulkImportRowSchema).min(1).max(MAX_BULK_IMPORT_ROWS),
 })
 
 const updateSchema = z.object({
@@ -43,6 +63,7 @@ export class ProductController {
     private readonly updateProduct:    UpdateProductUseCase,
     private readonly deleteProduct:    DeleteProductUseCase,
     private readonly retryProductSync: RetryProductSyncUseCase,
+    private readonly bulkCreateProducts: BulkCreateProductsUseCase,
   ) {}
 
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
@@ -82,5 +103,11 @@ export class ProductController {
   async retrySync(request: ParsedRequest, response: ResponseHelper): Promise<void> {
     const product = await this.retryProductSync.execute(request.params['id'] ?? '')
     response.json(product)
+  }
+
+  async bulkImport(request: ParsedRequest, response: ResponseHelper): Promise<void> {
+    const input = bulkImportSchema.parse(request.body)
+    const result = await this.bulkCreateProducts.execute(input.rows)
+    response.json(result)
   }
 }

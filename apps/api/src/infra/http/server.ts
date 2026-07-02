@@ -1,6 +1,8 @@
 import uWS from 'uWebSockets.js'
 import { jwtVerify } from 'jose'
 import { Router } from './router'
+import { GatedRouter } from './GatedRouter'
+import { requireActiveSubscription } from './middlewares/requireActiveSubscription'
 import { logger } from '@/shared/logger'
 import { LOG_EVENTS } from '@/shared/constants/log-events'
 import { WebSocketHub } from '@/infra/websocket/WebSocketHub'
@@ -17,6 +19,7 @@ import { registerClientRoutes } from '@/modules/clients/infra/http/ClientRoutes'
 import { registerLeadRoutes } from '@/modules/leads/infra/http/LeadRoutes'
 import { registerBankRoutes } from '@/modules/banks/infra/http/BankRoutes'
 import { registerUserRoutes } from '@/modules/users/infra/http/UserRoutes'
+import { registerRoleRoutes } from '@/modules/roles/infra/http/RoleRoutes'
 import { registerSessionRoutes } from '@/modules/sessions/infra/http/SessionRoutes'
 import { registerDashboardRoutes } from '@/modules/dashboard/infra/http/DashboardRoutes'
 import { registerFipeRoutes } from '@/modules/fipe/infra/http/FipeRoutes'
@@ -24,6 +27,8 @@ import { registerConversationRoutes } from '@/modules/conversations/infra/http/C
 import { registerSettingsRoutes } from '@/modules/settings/infra/http/SettingsRoutes'
 import { registerCategoryRoutes } from '@/modules/categories/infra/http/CategoryRoutes'
 import { registerProductRoutes } from '@/modules/products/infra/http/ProductRoutes'
+import { registerCatalogRoutes } from '@/modules/catalogs/infra/http/CatalogRoutes'
+import { registerBillingRoutes } from '@/modules/billing/infra/http/BillingRoutes'
 
 const PORT = parseInt(process.env.PORT ?? '3333')
 const NODE_ENV = process.env.NODE_ENV ?? 'development'
@@ -53,6 +58,7 @@ export async function createServer() {
   const wsHub = new WebSocketHub(app, new RedisProvider())
   const sseHub = new SseHub()
   const container = buildContainer(wsHub, sseHub)
+  const gatedRouter = new GatedRouter(app, requireActiveSubscription(container.getSubscriptionStatusUseCase))
 
   // SSE: stream ao vivo de uma conversa (Fase C). Aditivo — o painel também faz polling.
   // EventSource não envia header Authorization, então o JWT vem por query (?token=).
@@ -160,20 +166,27 @@ export async function createServer() {
   })
 
   // Module routes
+  // auth, webhook and billing stay on the ungated router: auth must work to let a
+  // locked-out client log in and see why, webhook is inbound-only traffic from Meta
+  // that must never be dropped, and billing must stay reachable to check/lift the lock.
   registerAuthRoutes(router, container.authController)
-  registerSimulationRoutes(router, container.simulationController)
   registerWebhookRoutes(router, container.webhookController)
-  registerClientRoutes(router, container.clientController)
-  registerLeadRoutes(router, container.leadController)
-  registerBankRoutes(router, container.bankController)
-  registerUserRoutes(router, container.userController)
-  registerSessionRoutes(router, container.sessionController)
-  registerDashboardRoutes(router, container.dashboardController)
-  registerFipeRoutes(router, container.fipeController)
-  registerConversationRoutes(router, container.conversationController)
-  registerSettingsRoutes(router, container.settingsController)
-  registerCategoryRoutes(router, container.categoryController)
-  registerProductRoutes(router, container.productController)
+  registerBillingRoutes(router, container.billingController)
+
+  registerSimulationRoutes(gatedRouter, container.simulationController)
+  registerClientRoutes(gatedRouter, container.clientController)
+  registerLeadRoutes(gatedRouter, container.leadController)
+  registerBankRoutes(gatedRouter, container.bankController)
+  registerUserRoutes(gatedRouter, container.userController)
+  registerRoleRoutes(gatedRouter, container.roleController)
+  registerSessionRoutes(gatedRouter, container.sessionController)
+  registerDashboardRoutes(gatedRouter, container.dashboardController)
+  registerFipeRoutes(gatedRouter, container.fipeController)
+  registerConversationRoutes(gatedRouter, container.conversationController)
+  registerSettingsRoutes(gatedRouter, container.settingsController)
+  registerCategoryRoutes(gatedRouter, container.categoryController)
+  registerProductRoutes(gatedRouter, container.productController)
+  registerCatalogRoutes(gatedRouter, container.catalogController)
 
   return {
     listen() {

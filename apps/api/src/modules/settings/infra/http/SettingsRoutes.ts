@@ -1,11 +1,12 @@
 import type { Router } from '@/infra/http/router'
 import { authenticate } from '@/infra/http/middlewares/authenticate'
+import { authorize } from '@/infra/http/middlewares/authorize'
 import type { SettingsController } from './SettingsController'
 
 export function registerSettingsRoutes(router: Router, controller: SettingsController): void {
   // Max sessions
-  router.get('/api/settings/max-agent-sessions', authenticate, (req, res) => controller.getMaxAgentSessions(req, res))
-  router.post('/api/settings/max-agent-sessions', authenticate, (req, res) => controller.updateMaxAgentSessions(req, res))
+  router.get('/api/settings/max-agent-sessions', authenticate, authorize(['settings:read']),  (req, res) => controller.getMaxAgentSessions(req, res))
+  router.post('/api/settings/max-agent-sessions', authenticate, authorize(['settings:write']), (req, res) => controller.updateMaxAgentSessions(req, res))
 
   // Labels (public — login page + bot panel need them)
   router.get('/api/settings/state-labels', (_req, res) => controller.getStateLabels(_req, res))
@@ -13,18 +14,18 @@ export function registerSettingsRoutes(router: Router, controller: SettingsContr
 
   // Company settings (public GET — login page shows logo/name without auth)
   router.get('/api/settings/company',  (_req, res) => controller.getCompanySettings(_req, res))
-  router.put('/api/settings/company',  authenticate, (req, res) => controller.updateCompanySettings(req, res))
+  router.put('/api/settings/company',  authenticate, authorize(['settings:write']), (req, res) => controller.updateCompanySettings(req, res))
 
   // Email reset flag (admin only)
-  router.put('/api/settings/email-reset-enabled', authenticate, (req, res) => controller.updateEmailResetEnabled(req, res))
+  router.put('/api/settings/email-reset-enabled', authenticate, authorize(['settings:write']), (req, res) => controller.updateEmailResetEnabled(req, res))
 
   // Feature toggles
-  router.get('/api/settings/simulations-enabled', authenticate, (req, res) => controller.getSimulationsEnabled(req, res))
-  router.put('/api/settings/simulations-enabled', authenticate, (req, res) => controller.updateSimulationsEnabled(req, res))
+  router.get('/api/settings/simulations-enabled', authenticate, authorize(['settings:read']),  (req, res) => controller.getSimulationsEnabled(req, res))
+  router.put('/api/settings/simulations-enabled', authenticate, authorize(['settings:write']), (req, res) => controller.updateSimulationsEnabled(req, res))
 
   // WhatsApp template settings
-  router.get('/api/settings/whatsapp',           authenticate, (req, res) => controller.getWhatsAppSettings(req, res))
-  router.put('/api/settings/whatsapp',           authenticate, (req, res) => controller.updateWhatsAppSettings(req, res))
-  router.get('/api/settings/whatsapp/templates', authenticate, (req, res) => controller.listWhatsAppTemplates(req, res))
-  router.post('/api/settings/whatsapp/templates', authenticate, (req, res) => controller.createWhatsAppTemplate(req, res))
+  router.get('/api/settings/whatsapp',           authenticate, authorize(['settings:read']),  (req, res) => controller.getWhatsAppSettings(req, res))
+  router.put('/api/settings/whatsapp',           authenticate, authorize(['settings:write']), (req, res) => controller.updateWhatsAppSettings(req, res))
+  router.get('/api/settings/whatsapp/templates', authenticate, authorize(['settings:read']),  (req, res) => controller.listWhatsAppTemplates(req, res))
+  router.post('/api/settings/whatsapp/templates', authenticate, authorize(['settings:write']), (req, res) => controller.createWhatsAppTemplate(req, res))
 }

@@ -39,6 +39,12 @@ export class ValidationError extends AppError {
   }
 }
 
+export class PaymentRequiredError extends AppError {
+  constructor(message = 'Payment required') {
+    super(message, 402, 'PAYMENT_REQUIRED')
+  }
+}
+
 export class InternalError extends AppError {
   constructor(message = 'Internal server error') {
     super(message, 500, 'INTERNAL_ERROR')

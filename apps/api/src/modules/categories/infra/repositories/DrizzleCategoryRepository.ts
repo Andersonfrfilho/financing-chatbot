@@ -21,6 +21,15 @@ export class DrizzleCategoryRepository implements CategoryRepository {
     return result[0] ?? null
   }
 
+  async findByNameCaseInsensitive(name: string): Promise<Category | null> {
+    const result = await db
+      .select()
+      .from(categories)
+      .where(and(ilike(categories.name, name), isNull(categories.deletedAt)))
+      .limit(1)
+    return result[0] ?? null
+  }
+
   async findAll(filters: CategoryFilters): Promise<{ data: Category[]; total: number }> {
     const page = filters.page ?? 1
     const limit = filters.limit ?? 20

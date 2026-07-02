@@ -14,7 +14,9 @@ export const navigation = {
     banks:         'Bancos',
     categories:    'Categorias',
     products:      'Produtos',
+    catalogs:      'Catálogos',
     users:         'Usuários',
+    roles:         'Perfis de Acesso',
     settings:      'Configurações',
   },
   sidebar: {

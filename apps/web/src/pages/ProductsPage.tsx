@@ -1,7 +1,8 @@
 // @ts-nocheck
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query'
-import { Edit2, Trash2, RefreshCw, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import Papa from 'papaparse'
+import { Edit2, Trash2, RefreshCw, X, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import { api } from '@/lib/api'
 import { products as text } from '@/locales'
 import { useSortableData } from '@/hooks/useSortableData'
@@ -64,6 +65,11 @@ export function ProductsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState(emptyForm)
   const [priceInput, setPriceInput] = useState('0,00')
+  const [showImport, setShowImport] = useState(false)
+  const [csvFileName, setCsvFileName] = useState('')
+  const [csvRows, setCsvRows] = useState<Record<string, string>[]>([])
+  const [importResult, setImportResult] = useState<{ succeeded: unknown[]; failed: { row: number; error: string }[] } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
   useEffect(() => {
@@ -121,6 +127,44 @@ export function ProductsPage() {
     mutationFn: (id: string) => api.post(`/products/${id}/retry-sync`),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['products'] }),
   })
+
+  const bulkImport = useMutation({
+    mutationFn: (rows: Record<string, string>[]) => api.post('/products/bulk-import', {
+      rows: rows.map((row) => ({
+        categoryName: row.categoryName,
+        retailerId:   row.retailerId,
+        name:         row.name,
+        description:  row.description || undefined,
+        price:        row.price,
+        currency:     row.currency || undefined,
+        imageUrl:     row.imageUrl || undefined,
+        availability: row.availability || undefined,
+        condition:    row.condition || undefined,
+        active:       row.active === undefined || row.active === '' ? undefined : row.active === 'true',
+      })),
+    }).then((r: any) => r.data),
+    onSuccess: (result) => { setImportResult(result); queryClient.invalidateQueries({ queryKey: ['products'] }) },
+  })
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+    setCsvFileName(file.name)
+    setImportResult(null)
+    Papa.parse<Record<string, string>>(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (results) => setCsvRows(results.data),
+    })
+    event.target.value = ''
+  }
+
+  const closeImportDialog = () => {
+    setShowImport(false)
+    setCsvFileName('')
+    setCsvRows([])
+    setImportResult(null)
+  }
 
   const startEdit = (product: Product) => {
     setForm({
@@ -182,7 +226,12 @@ export function ProductsPage() {
           <p className="text-gray-500 dark:text-gray-400 text-sm mt-0.5">{text.subtitle(data?.total ?? 0)}</p>
           <p className="text-gray-400 dark:text-gray-500 text-xs mt-1 max-w-lg">{text.description}</p>
         </div>
-        <Button onClick={() => setShowCreate(true)} className="self-start">{text.newButton}</Button>
+        <div className="flex gap-2 self-start">
+          <Button variant="outline" onClick={() => setShowImport(true)}>
+            <Upload size={14} className="mr-1.5" />{text.bulkImport.button}
+          </Button>
+          <Button onClick={() => setShowCreate(true)}>{text.newButton}</Button>
+        </div>
       </div>
 
       {/* Filtros */}
@@ -392,6 +441,66 @@ export function ProductsPage() {
             <Button onClick={save} disabled={saving || !canSave}>
               {saving ? text.form.saving : (editingId ? text.form.save : text.form.create)}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showImport} onOpenChange={(open) => !open && closeImportDialog()}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{text.bulkImport.dialogTitle}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".csv"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={14} className="mr-1.5" />
+              {csvFileName ? text.bulkImport.changeFile : text.bulkImport.chooseFile}
+            </Button>
+
+            {csvFileName && (
+              <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                <p className="font-medium text-gray-900 dark:text-gray-100">{csvFileName}</p>
+                <p>{csvRows.length > 0 ? text.bulkImport.previewCount(csvRows.length) : text.bulkImport.emptyFile}</p>
+              </div>
+            )}
+
+            <p className="text-xs text-gray-400 dark:text-gray-500">{text.bulkImport.columnsHint}</p>
+
+            {importResult && (
+              <div className="rounded-lg border border-gray-200 dark:border-gray-700 p-3 space-y-2">
+                <p className="font-medium text-sm text-gray-900 dark:text-gray-100">{text.bulkImport.resultTitle}</p>
+                <p className="text-sm text-green-600 dark:text-green-400">{text.bulkImport.succeeded(importResult.succeeded.length)}</p>
+                {importResult.failed.length > 0 && (
+                  <div className="space-y-1">
+                    <p className="text-sm text-red-600 dark:text-red-400">{text.bulkImport.failed(importResult.failed.length)}</p>
+                    <ul className="text-xs text-gray-500 dark:text-gray-400 space-y-0.5 max-h-40 overflow-y-auto">
+                      {importResult.failed.map((failure) => (
+                        <li key={failure.row}>{text.bulkImport.rowLabel} {failure.row}: {failure.error}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeImportDialog}>
+              {importResult ? text.bulkImport.close : text.bulkImport.cancel}
+            </Button>
+            {!importResult && (
+              <Button
+                onClick={() => bulkImport.mutate(csvRows)}
+                disabled={bulkImport.isPending || csvRows.length === 0}
+              >
+                {bulkImport.isPending ? text.bulkImport.importing : text.bulkImport.import}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

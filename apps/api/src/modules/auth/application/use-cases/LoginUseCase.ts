@@ -17,7 +17,14 @@ interface LoginInput {
 interface LoginOutput {
   accessToken: string
   refreshToken: string
-  user: { id: string; name: string; email: string; role: string; passwordMustChange: boolean }
+  user: {
+    id: string
+    name: string
+    email: string
+    role: string
+    passwordMustChange: boolean
+    permissions: Array<{ resource: string; action: string }>
+  }
 }
 
 export class LoginUseCase {
@@ -75,6 +82,7 @@ export class LoginUseCase {
         email: user.email,
         role: user.role.name,
         passwordMustChange: user.passwordMustChange,
+        permissions: user.role.permissions,
       },
     }
   }

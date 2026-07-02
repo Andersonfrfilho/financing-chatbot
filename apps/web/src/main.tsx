@@ -29,6 +29,9 @@ const queryClient = new QueryClient({
           showToast('info', 'Janela de 24h expirada. Envie uma mensagem de template para reabrir a conversa.')
         } else if (code === 'WHATSAPP_CONFIG_MISSING') {
           showToast('error', 'WhatsApp não configurado. Verifique as variáveis de ambiente.')
+        } else if (code === 'PAYMENT_REQUIRED') {
+          showToast('error', message)
+          queryClient.invalidateQueries({ queryKey: ['billing', 'status'] })
         } else {
           showToast('error', message)
         }

@@ -76,6 +76,14 @@ import { CreateUserUseCase } from '@/modules/users/application/use-cases/CreateU
 import { UpdateUserUseCase } from '@/modules/users/application/use-cases/UpdateUserUseCase'
 import { UserController } from '@/modules/users/infra/http/UserController'
 
+// Roles
+import { DrizzleRoleRepository } from '@/modules/roles/infra/repositories/DrizzleRoleRepository'
+import { ListRolesUseCase } from '@/modules/roles/application/use-cases/ListRolesUseCase'
+import { CreateRoleUseCase } from '@/modules/roles/application/use-cases/CreateRoleUseCase'
+import { UpdateRoleUseCase } from '@/modules/roles/application/use-cases/UpdateRoleUseCase'
+import { DeleteRoleUseCase } from '@/modules/roles/application/use-cases/DeleteRoleUseCase'
+import { RoleController } from '@/modules/roles/infra/http/RoleController'
+
 // Sessions
 import { DrizzleSessionRepository } from '@/modules/sessions/infra/repositories/DrizzleSessionRepository'
 import { ListSessionsUseCase } from '@/modules/sessions/application/use-cases/ListSessionsUseCase'
@@ -112,7 +120,18 @@ import { CreateProductUseCase } from '@/modules/products/application/use-cases/C
 import { UpdateProductUseCase } from '@/modules/products/application/use-cases/UpdateProductUseCase'
 import { DeleteProductUseCase } from '@/modules/products/application/use-cases/DeleteProductUseCase'
 import { RetryProductSyncUseCase } from '@/modules/products/application/use-cases/RetryProductSyncUseCase'
+import { BulkCreateProductsUseCase } from '@/modules/products/application/use-cases/BulkCreateProductsUseCase'
 import { ProductController } from '@/modules/products/infra/http/ProductController'
+
+// Catalogs
+import { GetActiveCatalogUseCase } from '@/modules/catalogs/application/use-cases/GetActiveCatalogUseCase'
+import { SetActiveCatalogUseCase } from '@/modules/catalogs/application/use-cases/SetActiveCatalogUseCase'
+import { CatalogController } from '@/modules/catalogs/infra/http/CatalogController'
+
+// Billing
+import { GetSubscriptionStatusUseCase } from '@/modules/billing/application/use-cases/GetSubscriptionStatusUseCase'
+import { UpdateSubscriptionPaymentUseCase } from '@/modules/billing/application/use-cases/UpdateSubscriptionPaymentUseCase'
+import { BillingController } from '@/modules/billing/infra/http/BillingController'
 
 export interface AppContainer {
   cache: RedisProvider
@@ -124,6 +143,7 @@ export interface AppContainer {
   leadController: LeadController
   bankController: BankController
   userController: UserController
+  roleController: RoleController
   sessionController: SessionController
   dashboardController: DashboardController
   fipeController: FipeController
@@ -131,6 +151,11 @@ export interface AppContainer {
   settingsController: SettingsController
   categoryController: CategoryController
   productController: ProductController
+  catalogController: CatalogController
+  billingController: BillingController
+  // Exposed directly (not just via a controller) because server.ts needs it
+  // to build the GatedRouter's write-blocking guard, not only to handle requests.
+  getSubscriptionStatusUseCase: GetSubscriptionStatusUseCase
 }
 
 export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContainer {
@@ -199,7 +224,15 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     new ListUsersUseCase(userManagementRepository),
     new CreateUserUseCase(userManagementRepository),
     new UpdateUserUseCase(userManagementRepository),
-    userManagementRepository,
+  )
+
+  // Roles
+  const roleRepository = new DrizzleRoleRepository()
+  const roleController = new RoleController(
+    new ListRolesUseCase(roleRepository),
+    new CreateRoleUseCase(roleRepository),
+    new UpdateRoleUseCase(roleRepository),
+    new DeleteRoleUseCase(roleRepository),
   )
 
   // Sessions
@@ -250,7 +283,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
 
   // Categories
   const categoryRepository = new DrizzleCategoryRepository()
-  const categorySyncService = new CategorySyncService(categoryRepository, whatsAppProvider.catalog)
+  const categorySyncService = new CategorySyncService(categoryRepository, whatsAppProvider.catalog, appConfigRepository)
   const categoryController = new CategoryController(
     new ListCategoriesUseCase(categoryRepository),
     new GetCategoryUseCase(categoryRepository),
@@ -262,14 +295,29 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
 
   // Products
   const productRepository = new DrizzleProductRepository()
-  const productSyncService = new ProductSyncService(productRepository, whatsAppProvider.catalog)
+  const productSyncService = new ProductSyncService(productRepository, whatsAppProvider.catalog, categoryRepository, appConfigRepository)
+  const createProductUseCase = new CreateProductUseCase(productRepository, productSyncService)
   const productController = new ProductController(
     new ListProductsUseCase(productRepository),
     new GetProductUseCase(productRepository),
-    new CreateProductUseCase(productRepository, productSyncService),
+    createProductUseCase,
     new UpdateProductUseCase(productRepository, productSyncService),
     new DeleteProductUseCase(productRepository, whatsAppProvider.catalog),
     new RetryProductSyncUseCase(productRepository, productSyncService),
+    new BulkCreateProductsUseCase(createProductUseCase, categoryRepository),
+  )
+
+  // Catalogs
+  const catalogController = new CatalogController(
+    new GetActiveCatalogUseCase(appConfigRepository),
+    new SetActiveCatalogUseCase(appConfigRepository),
+  )
+
+  // Billing
+  const getSubscriptionStatusUseCase = new GetSubscriptionStatusUseCase(appConfigRepository)
+  const billingController = new BillingController(
+    getSubscriptionStatusUseCase,
+    new UpdateSubscriptionPaymentUseCase(appConfigRepository),
   )
 
   return {
@@ -282,6 +330,7 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     leadController,
     bankController,
     userController,
+    roleController,
     sessionController,
     dashboardController,
     fipeController,
@@ -289,5 +338,8 @@ export function buildContainer(wsHub: WebSocketHub, sseHub: SseHub): AppContaine
     settingsController,
     categoryController,
     productController,
+    catalogController,
+    billingController,
+    getSubscriptionStatusUseCase,
   }
 }

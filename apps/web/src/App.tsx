@@ -9,9 +9,11 @@ import { SimulationsPage } from '@/pages/SimulationsPage'
 import { SessionsPage } from '@/pages/SessionsPage'
 import { ConversationsPage } from '@/pages/ConversationsPage'
 import { UsersPage } from '@/pages/UsersPage'
+import { RolesPage } from '@/pages/RolesPage'
 import { SettingsPage } from '@/pages/SettingsPage'
 import { CategoriesPage } from '@/pages/CategoriesPage'
 import { ProductsPage } from '@/pages/ProductsPage'
+import { CatalogsPage } from '@/pages/CatalogsPage'
 
 const ROUTES: Record<string, React.ComponentType> = {
   '/': DashboardPage,
@@ -21,9 +23,11 @@ const ROUTES: Record<string, React.ComponentType> = {
   '/sessions': SessionsPage,
   '/conversations': ConversationsPage,
   '/users': UsersPage,
+  '/roles': RolesPage,
   '/settings': SettingsPage,
   '/categories': CategoriesPage,
   '/products': ProductsPage,
+  '/catalogs': CatalogsPage,
 }
 
 export default function App() {

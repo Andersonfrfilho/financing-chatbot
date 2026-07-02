@@ -1,7 +1,7 @@
 import { eq, ilike, and, sql, desc } from 'drizzle-orm'
 import { db } from '@/infra/database/connection'
 import { users, roles } from '@/infra/database/schema'
-import type { User, Role } from '@/infra/database/schema'
+import type { User } from '@/infra/database/schema'
 import type { UserManagementRepository, CreateUserInput, UpdateUserInput, UserWithRole } from '../../domain/repositories/UserManagementRepository'
 import { NotFoundError } from '@/shared/errors/AppError'
 
@@ -68,9 +68,5 @@ export class DrizzleUserManagementRepository implements UserManagementRepository
 
   async delete(id: string): Promise<void> {
     await db.delete(users).where(eq(users.id, id))
-  }
-
-  async findAllRoles(): Promise<Role[]> {
-    return db.select().from(roles).orderBy(roles.name)
   }
 }

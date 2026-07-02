@@ -1,0 +1,1 @@
+ALTER TABLE "categories" ADD COLUMN "catalog_id" varchar(255);

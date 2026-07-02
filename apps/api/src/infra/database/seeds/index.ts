@@ -18,15 +18,35 @@ export async function seedDatabase() {
     })
     .onConflictDoNothing()
 
+  await db.insert(schema.roles).values({
+    name: 'gestor',
+    description: 'Gestor — acesso total ao operacional, exceto gestão de usuários e perfis',
+    permissions: [
+      { resource: 'clients', action: '*' },
+      { resource: 'leads', action: '*' },
+      { resource: 'simulations', action: '*' },
+      { resource: 'products', action: '*' },
+      { resource: 'categories', action: '*' },
+      { resource: 'catalogs', action: '*' },
+      { resource: 'banks', action: '*' },
+      { resource: 'sessions', action: '*' },
+      { resource: 'dashboard', action: 'read' },
+      { resource: 'settings', action: '*' },
+      { resource: 'fipe', action: 'read' },
+    ],
+  }).onConflictDoNothing()
+
   await db.insert(schema.roles).values([
     {
       name: 'comercial',
       description: 'Equipe comercial — gerencia leads e propostas',
       permissions: [
         { resource: 'leads', action: 'read' },
-        { resource: 'leads', action: 'update' },
+        { resource: 'leads', action: 'write' },
         { resource: 'clients', action: 'read' },
         { resource: 'simulations', action: 'read' },
+        { resource: 'simulations', action: 'write' },
+        { resource: 'fipe', action: 'read' },
       ],
     },
     {

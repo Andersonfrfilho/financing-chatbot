@@ -3,7 +3,6 @@ import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 import type { ListUsersUseCase } from '../../application/use-cases/ListUsersUseCase'
 import type { CreateUserUseCase } from '../../application/use-cases/CreateUserUseCase'
 import type { UpdateUserUseCase } from '../../application/use-cases/UpdateUserUseCase'
-import type { UserManagementRepository } from '../../domain/repositories/UserManagementRepository'
 
 const createSchema = z.object({
   name:     z.string().min(3),
@@ -22,10 +21,9 @@ const updateSchema = z.object({
 
 export class UserController {
   constructor(
-    private readonly listUsers:       ListUsersUseCase,
-    private readonly createUser:      CreateUserUseCase,
-    private readonly updateUser:      UpdateUserUseCase,
-    private readonly userRepository:  UserManagementRepository,
+    private readonly listUsers:  ListUsersUseCase,
+    private readonly createUser: CreateUserUseCase,
+    private readonly updateUser: UpdateUserUseCase,
   ) {}
 
   async list(request: ParsedRequest, response: ResponseHelper): Promise<void> {
@@ -50,10 +48,5 @@ export class UserController {
     const input = updateSchema.parse(request.body)
     const user  = await this.updateUser.execute(request.params['id'] ?? '', input)
     response.json(user)
-  }
-
-  async listRoles(_request: ParsedRequest, response: ResponseHelper): Promise<void> {
-    const roleList = await this.userRepository.findAllRoles()
-    response.json(roleList)
   }
 }

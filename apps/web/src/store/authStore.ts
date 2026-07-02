@@ -1,11 +1,14 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
+type Permission = { resource: string; action: string }
+
 type User = {
   id: string
   name: string
   email: string
-  role: { name: string; permissions: string[] }
+  role: string
+  permissions: Permission[]
 }
 
 type AuthState = {
@@ -16,7 +19,7 @@ type AuthState = {
   setAuth: (token: string, refreshToken: string, user: User) => void
   clearAuth: () => void
   refreshToken: () => Promise<void>
-  hasPermission: (permission: string) => boolean
+  hasPermission: (resource: string, action: string) => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -46,9 +49,15 @@ export const useAuthStore = create<AuthState>()(
         set({ token: data.accessToken })
       },
 
-      hasPermission: (permission) => {
+      hasPermission: (resource, action) => {
         const { user } = get()
-        return user?.role?.permissions?.includes(permission) ?? false
+        if (!user?.permissions) return false
+        return user.permissions.some(
+          (p) =>
+            (p.resource === '*' && p.action === '*') ||
+            (p.resource === resource && p.action === action) ||
+            (p.resource === resource && p.action === '*'),
+        )
       },
     }),
     { name: 'auth-storage', partialize: (state) => ({ token: state.token, refreshTokenValue: state.refreshTokenValue, user: state.user, isAuthenticated: state.isAuthenticated }) },

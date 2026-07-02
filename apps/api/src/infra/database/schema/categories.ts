@@ -6,6 +6,7 @@ export const categories = pgTable('categories', {
   name:        varchar('name', { length: 255 }).notNull(),
   description: text('description'),
   active:      boolean('active').default(true).notNull(),
+  catalogId:   varchar('catalog_id', { length: 255 }),
 
   // ── Sincronização com o Catálogo do WhatsApp (Meta Product Set) ──
   externalId: varchar('external_id', { length: 255 }),

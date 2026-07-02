@@ -17,9 +17,15 @@ type Category = {
   name: string
   description?: string
   active: boolean
+  catalogId?: string | null
   syncStatus: 'pending' | 'synced' | 'error'
   syncError?: string | null
   createdAt: string
+}
+
+type Catalog = {
+  id: string
+  name: string
 }
 
 const SYNC_BADGE: Record<Category['syncStatus'], string> = {
@@ -28,7 +34,7 @@ const SYNC_BADGE: Record<Category['syncStatus'], string> = {
   error:   'bg-red-100 text-red-700 dark:bg-red-950/50 dark:text-red-400',
 }
 
-const emptyForm = { name: '', description: '', active: true }
+const emptyForm = { name: '', description: '', active: true, catalogId: '' }
 
 export function CategoriesPage() {
   const [search, setSearch] = useState('')
@@ -67,13 +73,21 @@ export function CategoriesPage() {
 
   const { sorted, sortField, sortDirection, toggleSort } = useSortableData<Category>(data?.data, 'name', 'asc')
 
+  const { data: catalogs } = useQuery<Catalog[]>({
+    queryKey: ['catalogs'],
+    queryFn: () => api.get('/catalogs').then((r: any) => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const toPayload = (values: typeof emptyForm) => ({ ...values, catalogId: values.catalogId || null })
+
   const createCategory = useMutation({
-    mutationFn: () => api.post('/categories', form),
+    mutationFn: () => api.post('/categories', toPayload(form)),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categories'] }); setShowCreate(false); setForm(emptyForm) },
   })
 
   const updateCategory = useMutation({
-    mutationFn: ({ id, ...payload }: { id: string } & typeof emptyForm) => api.put(`/categories/${id}`, payload),
+    mutationFn: ({ id, ...payload }: { id: string } & typeof emptyForm) => api.put(`/categories/${id}`, toPayload(payload)),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categories'] }); setEditingId(null) },
   })
 
@@ -88,7 +102,7 @@ export function CategoriesPage() {
   })
 
   const startEdit = (category: Category) => {
-    setForm({ name: category.name, description: category.description || '', active: category.active })
+    setForm({ name: category.name, description: category.description || '', active: category.active, catalogId: category.catalogId || '' })
     setEditingId(category.id)
   }
 
@@ -255,6 +269,16 @@ export function CategoriesPage() {
             <div>
               <label className="text-sm font-medium">{text.form.description}</label>
               <Input value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-sm font-medium">{text.form.catalog}</label>
+              <Select value={form.catalogId} onValueChange={(v: string) => setForm({ ...form, catalogId: v })}>
+                <SelectTrigger><SelectValue placeholder={text.form.defaultCatalog} /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">{text.form.defaultCatalog}</SelectItem>
+                  {catalogs?.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
             <label className="flex items-center gap-2 text-sm font-medium cursor-pointer">
               <input

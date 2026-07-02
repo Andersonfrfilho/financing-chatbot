@@ -8,10 +8,13 @@ import { conversations } from './modules/conversations'
 import { sessions }      from './modules/sessions'
 import { simulations }   from './modules/simulations'
 import { users }         from './modules/users'
+import { roles }         from './modules/roles'
 import { settings }      from './modules/settings'
 import { categories }    from './modules/categories'
 import { products }      from './modules/products'
 import { banks }         from './modules/banks'
+import { catalogs }      from './modules/catalogs'
+import { billing }       from './modules/billing'
 
 export const locale = {
   common,
@@ -24,10 +27,13 @@ export const locale = {
   sessions,
   simulations,
   users,
+  roles,
   settings,
   categories,
   products,
   banks,
+  catalogs,
+  billing,
 } as const
 
 // Re-export modules individually for tree-shaking in large pages
@@ -42,10 +48,13 @@ export {
   sessions,
   simulations,
   users,
+  roles,
   settings,
   categories,
   products,
   banks,
+  catalogs,
+  billing,
 }
 
 // Utility type: extracts the return type of string-functions and plain strings
