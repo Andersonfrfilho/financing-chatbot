@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState, useMemo } from 'react'
-import { LogOut, Paperclip, Power, Search, SendHorizonal, Settings, UserCheck, X } from 'lucide-react'
+import { LogOut, Paperclip, Power, Search, SendHorizonal, Settings, UserCheck, X, MessageSquare, Clock, Users } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { api } from '@/lib/api'
 import { conversations as text } from '@/locales'
@@ -188,6 +188,9 @@ export function ConversationsPage() {
   const [search, setSearch] = useState('')
   const [selectedBulk, setSelectedBulk] = useState<Set<string>>(new Set())
   const [windowFilter, setWindowFilter] = useState<WindowStatus | 'all'>('all')
+  const [showTemplateModal, setShowTemplateModal] = useState(false)
+  const [templateSearch, setTemplateSearch] = useState('')
+  const [selectedTemplate, setSelectedTemplate] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const queryClient = useQueryClient()
@@ -195,6 +198,13 @@ export function ConversationsPage() {
     queryKey: ['conversations', waitingOnly],
     queryFn: () => api.get('/conversations', { params: { limit: 50, waitingHuman: waitingOnly ? 'true' : undefined } }).then((r: any) => r.data),
   })
+
+  const { data: templatesData } = useQuery<{ templates: Array<{ name: string; language: string; category: string; status: string }> }>({
+    queryKey: ['whatsapp-templates'],
+    queryFn: () => api.get('/settings/whatsapp/templates').then((r: any) => r.data),
+    staleTime: 5 * 60 * 1000,
+  })
+  const templates = templatesData?.templates ?? []
 
   const markRead = useMutation({
     mutationFn: (n: string) => api.post(`/conversations/${encodeURIComponent(n)}/read`),
@@ -285,15 +295,17 @@ export function ConversationsPage() {
   })
 
   const bulkSendTemplate = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (templateName?: string) => {
       const expired = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired')
       for (const c of expired) {
-        await api.post(`/conversations/${encodeURIComponent(c.whatsappNumber)}/send-template`, { clientName: c.clientName }).catch(() => {})
+        await api.post(`/conversations/${encodeURIComponent(c.whatsappNumber)}/send-template`, { clientName: c.clientName, templateName }).catch(() => {})
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] })
       setSelectedBulk(new Set())
+      setShowTemplateModal(false)
+      setSelectedTemplate('')
     },
   })
 
@@ -378,12 +390,37 @@ export function ConversationsPage() {
     if (body && !send.isPending) send.mutate(body)
   }
 
+  const totalUnread = conversations.reduce((sum, c) => sum + c.unread, 0)
+
+  const filteredTemplates = useMemo(() => {
+    if (!templateSearch.trim()) return templates
+    const q = templateSearch.toLowerCase()
+    return templates.filter((t) => t.name.toLowerCase().includes(q))
+  }, [templates, templateSearch])
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between flex-shrink-0 mb-4">
         <div>
           <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h2>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">{text.subtitle}</p>
+          <div className="flex items-center gap-3 mt-1.5">
+            <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
+              <MessageSquare size={14} />
+              {conversations.length} conversas
+            </span>
+            {waitingCount > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-sm text-yellow-600 dark:text-yellow-500">
+                <Clock size={14} />
+                {waitingCount} aguardando
+              </span>
+            )}
+            {totalUnread > 0 && (
+              <span className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400">
+                <Users size={14} />
+                {totalUnread} não lidas
+              </span>
+            )}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -392,7 +429,7 @@ export function ConversationsPage() {
           >
             {waitingCount > 0 ? text.filters.waitingWithCount(waitingCount) : text.filters.waitingHuman}
           </Button>
-          {waitingCount > 0 && (
+          {totalUnread > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -407,6 +444,77 @@ export function ConversationsPage() {
           )}
         </div>
       </div>
+
+      {/* Template Selector Modal */}
+      {showTemplateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
+            <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Selecionar template</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                  {templates.length} template(s) disponível(is)
+                </p>
+              </div>
+              <button onClick={() => setShowTemplateModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+              <div className="relative">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Buscar template..."
+                  value={templateSearch}
+                  onChange={(e) => setTemplateSearch(e.target.value)}
+                  autoFocus
+                  className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-300"
+                />
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-2 space-y-1">
+              {filteredTemplates.length === 0 && (
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">Nenhum template encontrado</p>
+              )}
+              {filteredTemplates.map((t) => (
+                <button
+                  key={t.name}
+                  onClick={() => setSelectedTemplate(t.name === selectedTemplate ? '' : t.name)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    t.name === selectedTemplate
+                      ? 'bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300'
+                      : 'hover:bg-gray-50 dark:hover:bg-gray-700/50 text-gray-700 dark:text-gray-300 border border-transparent'
+                  }`}
+                >
+                  <div className="font-medium truncate">{t.name}</div>
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-400 dark:text-gray-500">
+                    <span>{t.language}</span>
+                    <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+                    <span className="capitalize">{t.category?.toLowerCase()}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
+              <Button size="sm" variant="outline" onClick={() => setShowTemplateModal(false)}>
+                Cancelar
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  const expiredCount = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length
+                  if (expiredCount === 0) { alert(text.window.noExpiredSelected); return }
+                  bulkSendTemplate.mutate(selectedTemplate || undefined)
+                }}
+                disabled={bulkSendTemplate.isPending}
+              >
+                {bulkSendTemplate.isPending ? text.window.bulkTemplateSending : `Enviar para ${conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length} conversa(s)`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Lista - oculta em mobile quando conversa selecionada */}
@@ -427,17 +535,10 @@ export function ConversationsPage() {
                 <Button
                   size="sm"
                   variant="default"
-                  onClick={() => {
-                    const expiredCount = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length
-                    if (expiredCount === 0) { alert(text.window.noExpiredSelected); return }
-                    if (confirm(text.window.confirmBulkTemplate(expiredCount))) {
-                      bulkSendTemplate.mutate()
-                    }
-                  }}
-                  disabled={bulkSendTemplate.isPending}
+                  onClick={() => setShowTemplateModal(true)}
                   className="text-xs"
                 >
-                  {bulkSendTemplate.isPending ? text.window.bulkTemplateSending : text.window.bulkTemplate}
+                  {text.window.bulkTemplate}
                 </Button>
                 <Button
                   size="sm"
