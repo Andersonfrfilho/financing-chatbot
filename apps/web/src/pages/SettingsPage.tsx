@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useCompanySettings } from '@/hooks/useCompanySettings'
 import { Skeleton } from '@/components/ui/skeleton'
+import { settings as text, common } from '@/locales'
 
 export function SettingsPage() {
   const { data: company, isLoading } = useCompanySettings()
@@ -119,7 +120,7 @@ export function SettingsPage() {
       setCreateTemplate({ name: '', category: 'UTILITY', language: 'pt_BR', headerType: 'NONE', headerText: '', bodyText: '', footerText: '' })
       queryClient.invalidateQueries({ queryKey: ['whatsapp-templates'] })
     } catch (error: any) {
-      const message = error?.response?.data?.message || error?.message || 'Erro ao criar template'
+      const message = error?.response?.data?.message || error?.message || text.createTemplate.errorCreating
       setCreateTemplateResult({ ok: false, message })
     } finally {
       setCreatingTemplate(false)
@@ -145,8 +146,8 @@ export function SettingsPage() {
   return (
     <div className="max-w-2xl space-y-8 pb-8">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Configurações</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Informações da empresa e preferências do sistema.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">{text.title}</h1>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{text.subtitle}</p>
       </div>
 
       {/* Informações da empresa */}
@@ -154,13 +155,13 @@ export function SettingsPage() {
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Building2 size={16} className="text-blue-600 dark:text-blue-400" />
-            Informações da Empresa
+            {text.company.sectionTitle}
           </h2>
         </div>
         <form onSubmit={handleSave} className="p-6 space-y-5">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Nome da empresa
+              {text.company.name}
             </label>
             <div className="relative">
               <Building2 size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -168,7 +169,7 @@ export function SettingsPage() {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Ex: Financiamento Bot"
+                placeholder={text.company.namePlaceholder}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
@@ -176,7 +177,7 @@ export function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              URL da logo
+              {text.company.logoUrl}
             </label>
             <div className="relative">
               <Image size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -184,21 +185,21 @@ export function SettingsPage() {
                 type="url"
                 value={logoUrl}
                 onChange={(e) => setLogoUrl(e.target.value)}
-                placeholder="https://..."
+                placeholder={text.company.logoUrlPlaceholder}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
             {logoUrl && (
               <div className="mt-2 flex items-center gap-2">
                 <img src={logoUrl} alt="preview" className="h-8 w-8 rounded object-contain border border-gray-200 dark:border-gray-700" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                <span className="text-xs text-gray-500 dark:text-gray-400">Pré-visualização</span>
+                <span className="text-xs text-gray-500 dark:text-gray-400">{text.company.logoPreview}</span>
               </div>
             )}
           </div>
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              E-mail de contato
+              {text.company.email}
             </label>
             <div className="relative">
               <Mail size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -206,7 +207,7 @@ export function SettingsPage() {
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="contato@empresa.com"
+                placeholder={text.company.emailPlaceholder}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
@@ -214,7 +215,7 @@ export function SettingsPage() {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-              Telefone
+              {text.company.phone}
             </label>
             <div className="relative">
               <Phone size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -222,7 +223,7 @@ export function SettingsPage() {
                 type="text"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                placeholder="(11) 99999-9999"
+                placeholder={text.company.phonePlaceholder}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl pl-9 pr-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
@@ -230,7 +231,7 @@ export function SettingsPage() {
 
           {success && (
             <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
-              Configurações salvas com sucesso!
+              {text.company.saveSuccess}
             </div>
           )}
 
@@ -245,7 +246,7 @@ export function SettingsPage() {
               ) : (
                 <Save size={14} />
               )}
-              {saving ? 'Salvando...' : 'Salvar'}
+              {saving ? common.actions.saving : common.actions.save}
             </button>
           </div>
         </form>
@@ -256,17 +257,17 @@ export function SettingsPage() {
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <Mail size={16} className="text-blue-600 dark:text-blue-400" />
-            Recuperação de Senha por E-mail
+            {text.emailReset.sectionTitle}
           </h2>
         </div>
         <div className="p-6">
           <div className="flex items-start gap-4">
             <div className="flex-1">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Recuperação via e-mail
+                {text.emailReset.label}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Permite que usuários redefina a senha via link enviado por e-mail. Requer configuração SMTP ativa no servidor.
+                {text.emailReset.description}
               </p>
             </div>
             <button
@@ -294,7 +295,7 @@ export function SettingsPage() {
           </div>
           {emailResetEnabled && (
             <div className="mt-4 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-xl px-4 py-3 text-xs text-blue-700 dark:text-blue-400">
-              Configure as variáveis de ambiente SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM e FRONTEND_URL no servidor.
+              {text.emailReset.smtpHint}
             </div>
           )}
         </div>
@@ -305,17 +306,17 @@ export function SettingsPage() {
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <MessageSquare size={16} className="text-green-600 dark:text-green-400" />
-            WhatsApp — Template de Reengajamento
+            {text.whatsapp.sectionTitle}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Template HSM usado para reabrir conversas com janela de 24h expirada. O nome deve corresponder a um template aprovado no WhatsApp Business Manager.
+            {text.whatsapp.sectionDescription}
           </p>
         </div>
         <form onSubmit={handleSaveWhatsapp} className="p-6 space-y-4">
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Template aprovado
+                {text.whatsapp.templateLabel}
               </label>
               <button
                 type="button"
@@ -324,15 +325,15 @@ export function SettingsPage() {
                 className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
               >
                 <RefreshCw size={11} className={loadingTemplates ? 'animate-spin' : ''} />
-                Atualizar lista
+                {text.whatsapp.refreshList}
               </button>
             </div>
 
             {templatesError && (
               <div className="mb-2 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 px-3 py-2 text-xs text-amber-700 dark:text-amber-400">
-                Não foi possível carregar os templates da API. Verifique WHATSAPP_BUSINESS_ACCOUNT_ID e WHATSAPP_ACCESS_TOKEN.
+                {text.whatsapp.errorLoading}
                 <br />
-                <span className="text-gray-500 dark:text-gray-400 mt-0.5 block">Nome atual salvo: <strong>{whatsappTemplateName || '—'}</strong></span>
+                <span className="text-gray-500 dark:text-gray-400 mt-0.5 block">{text.whatsapp.currentNameSaved} <strong>{whatsappTemplateName || '—'}</strong></span>
               </div>
             )}
 
@@ -355,7 +356,7 @@ export function SettingsPage() {
                 }}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
               >
-                <option value="">— Selecione um template —</option>
+                <option value="">{text.whatsapp.selectPlaceholder}</option>
                 {whatsappTemplates?.templates.map((template) => (
                   <option key={`${template.name}-${template.language}`} value={template.name} disabled={template.status !== 'APPROVED'}>
                     {template.displayName} · {template.shortId} ({template.language}) {template.status !== 'APPROVED' ? `[${template.status}]` : ''}
@@ -377,7 +378,7 @@ export function SettingsPage() {
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                Variáveis do template
+                {text.whatsapp.variablesLabel}
               </label>
               <button
                 type="button"
@@ -385,14 +386,21 @@ export function SettingsPage() {
                 className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
                 <Plus size={12} />
-                Adicionar variável
+                {text.whatsapp.addVariable}
               </button>
             </div>
             <p className="text-xs text-gray-400 dark:text-gray-500 mb-2">
-              Cada linha é um parâmetro (<code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{1}}'}</code>, <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{2}}'}</code>...) enviado ao template. Use <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{clientName}'}</code> para o nome do cliente e <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{phone}'}</code> para o número.
+              {text.whatsapp.variablesDescriptionPrefix}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{1}}'}</code>
+              , <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{{2}}'}</code>
+              {text.whatsapp.variablesDescriptionMiddle}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{clientName}'}</code>
+              {text.whatsapp.variablesDescriptionForName}
+              <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{'{phone}'}</code>
+              {text.whatsapp.variablesDescriptionForPhone}
             </p>
             {whatsappTemplateVariables.length === 0 && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 italic">Nenhuma variável configurada. O template será enviado sem parâmetros.</p>
+              <p className="text-xs text-gray-400 dark:text-gray-500 italic">{text.whatsapp.noVariables}</p>
             )}
             <div className="space-y-2">
               {whatsappTemplateVariables.map((variable, index) => (
@@ -415,7 +423,7 @@ export function SettingsPage() {
                     type="button"
                     onClick={() => setWhatsappTemplateVariables((previous) => previous.filter((_, i) => i !== index))}
                     className="text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors flex-shrink-0"
-                    title="Remover variável"
+                    title={text.whatsapp.removeVariable}
                   >
                     <Trash2 size={14} />
                   </button>
@@ -426,7 +434,7 @@ export function SettingsPage() {
 
           {whatsappSuccess && (
             <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-xl px-4 py-3 text-sm text-green-700 dark:text-green-400">
-              Configurações de WhatsApp salvas!
+              {text.whatsapp.saveSuccess}
             </div>
           )}
           <div className="flex justify-end">
@@ -439,7 +447,7 @@ export function SettingsPage() {
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 : <Save size={14} />
               }
-              {savingWhatsapp ? 'Salvando...' : 'Salvar'}
+              {savingWhatsapp ? common.actions.saving : common.actions.save}
             </button>
           </div>
         </form>
@@ -450,16 +458,16 @@ export function SettingsPage() {
         <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
             <MessageSquare size={16} className="text-blue-600 dark:text-blue-400" />
-            Criar Template WhatsApp
+            {text.createTemplate.sectionTitle}
           </h2>
           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            Cria um novo template e envia para aprovação do WhatsApp. Use {'{{1}}'}, {'{{2}}'} como placeholders para variáveis.
+            {text.createTemplate.sectionDescription}
           </p>
         </div>
         <form onSubmit={handleCreateTemplate} className="p-6 space-y-4">
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Nome do template</label>
-            <p className="text-xs text-gray-400 mb-1.5">Apenas letras minúsculas, números e underscore (ex: reengajamento_cliente)</p>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.createTemplate.nameLabel}</label>
+            <p className="text-xs text-gray-400 mb-1.5">{text.createTemplate.nameHint}</p>
             <input
               type="text"
               value={createTemplate.name}
@@ -472,7 +480,7 @@ export function SettingsPage() {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Categoria</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.createTemplate.categoryLabel}</label>
               <select
                 value={createTemplate.category}
                 onChange={(e) => setCreateTemplate({ ...createTemplate, category: e.target.value })}
@@ -483,37 +491,37 @@ export function SettingsPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Idioma</label>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.createTemplate.languageLabel}</label>
               <select
                 value={createTemplate.language}
                 onChange={(e) => setCreateTemplate({ ...createTemplate, language: e.target.value })}
                 className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
               >
-                <option value="pt_BR">Português (Brasil)</option>
-                <option value="en_US">English (US)</option>
-                <option value="es_ES">Español</option>
+                <option value="pt_BR">{text.createTemplate.languagePtBr}</option>
+                <option value="en_US">{text.createTemplate.languageEnUs}</option>
+                <option value="es_ES">{text.createTemplate.languageEsEs}</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Cabeçalho (opcional)</label>
-            <p className="text-xs text-gray-400 mb-1.5">Texto destacado no topo da mensagem (até 60 caracteres)</p>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.createTemplate.headerLabel}</label>
+            <p className="text-xs text-gray-400 mb-1.5">{text.createTemplate.headerHint}</p>
             <div className="flex gap-2">
               <select
                 value={createTemplate.headerType}
                 onChange={(e) => setCreateTemplate({ ...createTemplate, headerType: e.target.value as 'NONE' | 'TEXT' })}
                 className="border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
               >
-                <option value="NONE">Sem cabeçalho</option>
-                <option value="TEXT">Texto</option>
+                <option value="NONE">{text.createTemplate.headerNone}</option>
+                <option value="TEXT">{text.createTemplate.headerText}</option>
               </select>
               {createTemplate.headerType === 'TEXT' && (
                 <input
                   type="text"
                   value={createTemplate.headerText}
                   onChange={(e) => setCreateTemplate({ ...createTemplate, headerText: e.target.value })}
-                  placeholder="Ex: Financiamento Imobiliário"
+                  placeholder={text.createTemplate.headerPlaceholder}
                   maxLength={60}
                   className="flex-1 border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition-all"
                 />
@@ -523,15 +531,15 @@ export function SettingsPage() {
 
           <div>
             <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              Corpo da mensagem
+              {text.createTemplate.bodyLabel}
             </label>
             <p className="text-xs text-gray-400 mb-1.5">
-              Use {'{{1}}'}, {'{{2}}'}, etc. para variáveis. Máximo 1024 caracteres.
+              {text.createTemplate.bodyHint}
             </p>
             <textarea
               value={createTemplate.bodyText}
               onChange={(e) => setCreateTemplate({ ...createTemplate, bodyText: e.target.value })}
-              placeholder="Olá {{1}}! 👋 Seu financiamento de {{2}} está disponível. Entre em contato para mais informações."
+              placeholder={text.createTemplate.bodyPlaceholder}
               rows={4}
               className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all resize-none placeholder:text-gray-400 dark:placeholder:text-gray-500"
               required
@@ -542,17 +550,17 @@ export function SettingsPage() {
               const examples = ['Nome do cliente', 'Produto', 'Valor', 'Prazo', 'Banco']
               return (
                 <div className="mt-2 rounded-lg bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 px-3 py-2">
-                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">Variáveis detectadas</p>
+                  <p className="text-[10px] font-medium text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide">{text.createTemplate.detectedVariables}</p>
                   <div className="flex flex-wrap gap-2">
                     {[...new Set(vars.map(v => v.replace(/[\{\}]/g, '')))].sort().map((num) => (
                       <span key={num} className="inline-flex items-center gap-1 text-[10px]">
                         <code className="bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded font-mono">{`{{${num}}}`}</code>
-                        <span className="text-gray-400 dark:text-gray-500">= {examples[Number(num) - 1] ?? `Variável ${num}`}</span>
+                        <span className="text-gray-400 dark:text-gray-500">= {examples[Number(num) - 1] ?? text.createTemplate.variableLabel(Number(num))}</span>
                       </span>
                     ))}
                   </div>
                   <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-1.5">
-                    Configure os valores reais em <strong>Template de Reengajamento → Variáveis</strong> após selecionar o template.
+                    {text.createTemplate.configureHintPrefix}<strong>{text.createTemplate.configureHintLink}</strong>{text.createTemplate.configureHintSuffix}
                   </p>
                 </div>
               )
@@ -560,13 +568,13 @@ export function SettingsPage() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Rodapé (opcional)</label>
-            <p className="text-xs text-gray-400 mb-1.5">Texto pequeno no final da mensagem (até 60 caracteres)</p>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">{text.createTemplate.footerLabel}</label>
+            <p className="text-xs text-gray-400 mb-1.5">{text.createTemplate.footerHint}</p>
             <input
               type="text"
               value={createTemplate.footerText}
               onChange={(e) => setCreateTemplate({ ...createTemplate, footerText: e.target.value })}
-              placeholder="Ex: Financiamento Bot · financimento.bot"
+              placeholder={text.createTemplate.footerPlaceholder}
               maxLength={60}
               className="w-full border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all"
             />
@@ -574,7 +582,7 @@ export function SettingsPage() {
 
           {/* Preview */}
           <div>
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">Pré-visualização</label>
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">{text.createTemplate.previewLabel}</label>
             <div className="rounded-2xl bg-[#e5ddd5] dark:bg-[#1a1a2e] border border-gray-300 dark:border-gray-600 overflow-hidden shadow-inner">
               {/* Barra superior do WhatsApp */}
               <div className="bg-[#075e54] dark:bg-[#075e54] px-4 py-2.5 flex items-center gap-2">
@@ -583,7 +591,7 @@ export function SettingsPage() {
                 </div>
                 <div>
                   <p className="text-white text-xs font-semibold leading-tight">{company?.company_name || 'Financiamento Bot'}</p>
-                  <p className="text-white/60 text-[10px]">online</p>
+                  <p className="text-white/60 text-[10px]">{text.createTemplate.previewOnline}</p>
                 </div>
               </div>
               {/* Chat area */}
@@ -591,7 +599,7 @@ export function SettingsPage() {
                 <div className="flex justify-start max-w-[85%]">
                   <div className="bg-white dark:bg-gray-700 rounded-lg rounded-tl-none px-3 py-2 shadow-sm">
                     <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
-                      Este modelo de mensagem será usado como template no WhatsApp. O texto com {'{{1}}'} será substituído pelo valor real no envio.
+                      {text.createTemplate.previewDescription}
                     </p>
                     <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 text-right">12:00</p>
                   </div>
@@ -600,7 +608,7 @@ export function SettingsPage() {
                   <div className="bg-[#dcf8c6] dark:bg-[#1b5e20] rounded-lg rounded-tr-none px-3 py-2 shadow-sm">
                     {createTemplate.headerType === 'TEXT' && createTemplate.headerText && (
                       <p className="text-xs font-bold text-gray-700 dark:text-gray-200 mb-1">
-                        {createTemplate.headerText.replace(/\{\{1\}\}/g, 'João').replace(/\{\{2\}\}/g, 'Imóvel') || 'Cabeçalho'}
+                        {createTemplate.headerText.replace(/\{\{1\}\}/g, 'João').replace(/\{\{2\}\}/g, 'Imóvel') || text.createTemplate.previewHeaderFallback}
                       </p>
                     )}
                     <p className="text-sm text-gray-800 dark:text-gray-100 leading-relaxed">
@@ -609,7 +617,7 @@ export function SettingsPage() {
                             .replace(/\{\{1\}\}/g, 'João')
                             .replace(/\{\{2\}\}/g, 'Imóvel')
                             .replace(/\{\{3\}\}/g, 'R$ 1.500')
-                        : <span className="text-gray-400 italic">Digite o corpo da mensagem...</span>
+                        : <span className="text-gray-400 italic">{text.createTemplate.previewBodyPlaceholder}</span>
                       }
                     </p>
                     {createTemplate.footerText && (
@@ -632,7 +640,7 @@ export function SettingsPage() {
             }`}>
               {createTemplateResult.message}
               {createTemplateResult.ok && (
-                <p className="text-xs mt-1 opacity-75">Status: {createTemplateResult.status}. O template ficará disponível após aprovação do WhatsApp (geralmente 1-2 minutos).</p>
+                <p className="text-xs mt-1 opacity-75">{text.createTemplate.successStatus(createTemplateResult.status!)}</p>
               )}
             </div>
           )}
@@ -647,7 +655,7 @@ export function SettingsPage() {
                 ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                 : <SendHorizonal size={14} />
               }
-              {creatingTemplate ? 'Enviando...' : 'Enviar para Aprovação'}
+              {creatingTemplate ? common.actions.sending : text.createTemplate.sendForApproval}
             </button>
           </div>
         </form>
