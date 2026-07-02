@@ -5,6 +5,11 @@ export const conversations = {
   empty:    'Nenhuma conversa ainda.',
   emptySearch: 'Nenhuma conversa encontrada.',
   noSelection: 'Selecione uma conversa',
+  stats: {
+    conversations: (n: number) => `${n} conversas`,
+    waiting:       (n: number) => `${n} aguardando`,
+    unread:        (n: number) => `${n} não lidas`,
+  },
   window: {
     legend: 'Janela:',
     active:      'Ativa (< 12h)',
@@ -30,6 +35,15 @@ export const conversations = {
       approaching: '12-21h',
       warning: '21-24h',
       expired: '>24h',
+    },
+    templateModal: {
+      title: 'Selecionar template',
+      availableCount: (n: number) => `${n} template(s) disponível(is)`,
+      searchPlaceholder: 'Buscar template...',
+      empty: 'Nenhum template encontrado',
+      cancel: 'Cancelar',
+      sendCount: (n: number) => `Enviar para ${n} conversa(s)`,
+      selectedChip: (name: string) => `Template: ${name}`,
     },
   },
   filters: {

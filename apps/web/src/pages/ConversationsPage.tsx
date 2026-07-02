@@ -85,21 +85,29 @@ function formatStalledDuration(minutes: number): string {
   return remaining > 0 ? `${hours}h:${String(remaining).padStart(2, '0')}m` : `${hours}h`
 }
 
-type WindowStatus = 'active' | 'approaching' | 'warning' | 'expired'
+const WINDOW_STATUS = {
+  ACTIVE:      'active',
+  APPROACHING: 'approaching',
+  WARNING:     'warning',
+  EXPIRED:     'expired',
+} as const
+type WindowStatus = (typeof WINDOW_STATUS)[keyof typeof WINDOW_STATUS]
+
+const WINDOW_FILTER_ALL = 'all' as const
 
 function getWindowStatus(hours: number | null): WindowStatus {
-  if (hours === null) return 'active'
-  if (hours >= 24) return 'expired'
-  if (hours >= 21) return 'warning'
-  if (hours >= 12) return 'approaching'
-  return 'active'
+  if (hours === null) return WINDOW_STATUS.ACTIVE
+  if (hours >= 24) return WINDOW_STATUS.EXPIRED
+  if (hours >= 21) return WINDOW_STATUS.WARNING
+  if (hours >= 12) return WINDOW_STATUS.APPROACHING
+  return WINDOW_STATUS.ACTIVE
 }
 
 const WINDOW_BORDER: Record<WindowStatus, string> = {
-  active:      'border-l-4 border-l-green-400 dark:border-l-green-500 animate-status-pulse',
-  approaching: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600 animate-status-pulse-attention',
-  warning:     'border-l-4 border-l-red-500 dark:border-l-red-500 animate-status-pulse-intense',
-  expired:     'border-l-4 border-l-gray-300 dark:border-l-gray-600',
+  [WINDOW_STATUS.ACTIVE]:      'border-l-4 border-l-green-400 dark:border-l-green-500 animate-status-pulse',
+  [WINDOW_STATUS.APPROACHING]: 'border-l-4 border-l-yellow-400 dark:border-l-yellow-600 animate-status-pulse-attention',
+  [WINDOW_STATUS.WARNING]:     'border-l-4 border-l-red-500 dark:border-l-red-500 animate-status-pulse-intense',
+  [WINDOW_STATUS.EXPIRED]:     'border-l-4 border-l-gray-300 dark:border-l-gray-600',
 }
 
 const HIDDEN_FIELDS = new Set(['flow', 'step'])
@@ -187,7 +195,7 @@ export function ConversationsPage() {
   const [waitingOnly, setWaitingOnly] = useState(false)
   const [search, setSearch] = useState('')
   const [selectedBulk, setSelectedBulk] = useState<Set<string>>(new Set())
-  const [windowFilter, setWindowFilter] = useState<WindowStatus | 'all'>('all')
+  const [windowFilter, setWindowFilter] = useState<WindowStatus | typeof WINDOW_FILTER_ALL>(WINDOW_FILTER_ALL)
   const [showTemplateModal, setShowTemplateModal] = useState(false)
   const [templateSearch, setTemplateSearch] = useState('')
   const [selectedTemplate, setSelectedTemplate] = useState('')
@@ -296,7 +304,7 @@ export function ConversationsPage() {
 
   const bulkSendTemplate = useMutation({
     mutationFn: async (templateName?: string) => {
-      const expired = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired')
+      const expired = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === WINDOW_STATUS.EXPIRED)
       for (const c of expired) {
         await api.post(`/conversations/${encodeURIComponent(c.whatsappNumber)}/send-template`, { clientName: c.clientName, templateName }).catch(() => {})
       }
@@ -372,7 +380,7 @@ export function ConversationsPage() {
         return name.includes(q) || content.includes(q) || c.whatsappNumber.includes(q)
       })
     }
-    if (windowFilter !== 'all') {
+    if (windowFilter !== WINDOW_FILTER_ALL) {
       result = result.filter((c) => getWindowStatus(getHoursAgo(c.lastInboundAt)) === windowFilter)
     }
     return result
@@ -398,6 +406,11 @@ export function ConversationsPage() {
     return templates.filter((t) => t.name.toLowerCase().includes(q))
   }, [templates, templateSearch])
 
+  const expiredSelectedCount = useMemo(
+    () => conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === WINDOW_STATUS.EXPIRED).length,
+    [conversations, selectedBulk],
+  )
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between flex-shrink-0 mb-4">
@@ -406,18 +419,18 @@ export function ConversationsPage() {
           <div className="flex items-center gap-3 mt-1.5">
             <span className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400">
               <MessageSquare size={14} />
-              {conversations.length} conversas
+              {text.stats.conversations(conversations.length)}
             </span>
             {waitingCount > 0 && (
               <span className="inline-flex items-center gap-1.5 text-sm text-yellow-600 dark:text-yellow-500">
                 <Clock size={14} />
-                {waitingCount} aguardando
+                {text.stats.waiting(waitingCount)}
               </span>
             )}
             {totalUnread > 0 && (
               <span className="inline-flex items-center gap-1.5 text-sm text-blue-600 dark:text-blue-400">
                 <Users size={14} />
-                {totalUnread} não lidas
+                {text.stats.unread(totalUnread)}
               </span>
             )}
           </div>
@@ -451,9 +464,9 @@ export function ConversationsPage() {
           <div className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 w-full max-w-md mx-4 max-h-[80vh] flex flex-col">
             <div className="px-5 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div>
-                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Selecionar template</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">{text.window.templateModal.title}</h3>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                  {templates.length} template(s) disponível(is)
+                  {text.window.templateModal.availableCount(templates.length)}
                 </p>
               </div>
               <button onClick={() => setShowTemplateModal(false)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400">
@@ -465,7 +478,7 @@ export function ConversationsPage() {
                 <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
-                  placeholder="Buscar template..."
+                  placeholder={text.window.templateModal.searchPlaceholder}
                   value={templateSearch}
                   onChange={(e) => setTemplateSearch(e.target.value)}
                   autoFocus
@@ -475,7 +488,7 @@ export function ConversationsPage() {
             </div>
             <div className="flex-1 overflow-y-auto p-2 space-y-1">
               {filteredTemplates.length === 0 && (
-                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">Nenhum template encontrado</p>
+                <p className="text-sm text-gray-400 dark:text-gray-500 text-center py-8">{text.window.templateModal.empty}</p>
               )}
               {filteredTemplates.map((t) => (
                 <button
@@ -498,18 +511,17 @@ export function ConversationsPage() {
             </div>
             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
               <Button size="sm" variant="outline" onClick={() => setShowTemplateModal(false)}>
-                Cancelar
+                {text.window.templateModal.cancel}
               </Button>
               <Button
                 size="sm"
                 onClick={() => {
-                  const expiredCount = conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length
-                  if (expiredCount === 0) { alert(text.window.noExpiredSelected); return }
+                  if (expiredSelectedCount === 0) { alert(text.window.noExpiredSelected); return }
                   bulkSendTemplate.mutate(selectedTemplate || undefined)
                 }}
                 disabled={bulkSendTemplate.isPending}
               >
-                {bulkSendTemplate.isPending ? text.window.bulkTemplateSending : `Enviar para ${conversations.filter((c) => selectedBulk.has(c.whatsappNumber) && getWindowStatus(getHoursAgo(c.lastInboundAt)) === 'expired').length} conversa(s)`}
+                {bulkSendTemplate.isPending ? text.window.bulkTemplateSending : text.window.templateModal.sendCount(expiredSelectedCount)}
               </Button>
             </div>
           </div>
@@ -522,8 +534,23 @@ export function ConversationsPage() {
           {/* Ações em massa */}
           {selectedBulk.size > 0 && (
             <div className="px-3 py-2 bg-blue-50 dark:bg-blue-950/40 border-b dark:border-gray-700 flex items-center justify-between flex-shrink-0">
-              <span className="text-sm font-medium text-blue-700 dark:text-blue-400">{text.bulk.selected(selectedBulk.size)}</span>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm font-medium text-blue-700 dark:text-blue-400 flex-shrink-0">{text.bulk.selected(selectedBulk.size)}</span>
+                {selectedTemplate && (
+                  <button
+                    onClick={() => setShowTemplateModal(true)}
+                    className="inline-flex items-center gap-1 text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full truncate hover:bg-blue-200 dark:hover:bg-blue-900/60 transition-colors"
+                  >
+                    <span className="truncate">{text.window.templateModal.selectedChip(selectedTemplate)}</span>
+                    <X
+                      size={12}
+                      className="flex-shrink-0"
+                      onClick={(e) => { e.stopPropagation(); setSelectedTemplate('') }}
+                    />
+                  </button>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
                 <Button
                   size="sm"
                   variant="outline"
@@ -588,22 +615,22 @@ export function ConversationsPage() {
               <span className="font-medium">{text.window.legend}</span>
               <div className="flex items-center gap-1">
                 <button
-                  onClick={() => setWindowFilter('all')}
-                  className={`px-1.5 py-0.5 rounded ${windowFilter === 'all' ? 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100' : ''}`}
+                  onClick={() => setWindowFilter(WINDOW_FILTER_ALL)}
+                  className={`px-1.5 py-0.5 rounded ${windowFilter === WINDOW_FILTER_ALL ? 'bg-gray-300 dark:bg-gray-600 text-gray-800 dark:text-gray-100' : ''}`}
                 >
                   {text.window.all}
                 </button>
-                {(['active', 'approaching', 'warning', 'expired'] as WindowStatus[]).map((status) => (
+                {(Object.values(WINDOW_STATUS)).map((status) => (
                   <button
                     key={status}
-                    onClick={() => setWindowFilter(windowFilter === status ? 'all' : status)}
+                    onClick={() => setWindowFilter(windowFilter === status ? WINDOW_FILTER_ALL : status)}
                     className={`flex items-center gap-1 px-1.5 py-0.5 rounded ${windowFilter === status ? 'ring-1 ring-offset-0' : ''}`}
                     title={text.window[status]}
                   >
                     <span className={`w-2 h-2 rounded-sm ${
-                      status === 'active' ? 'bg-green-400 dark:bg-green-600' :
-                      status === 'approaching' ? 'bg-yellow-400 dark:bg-yellow-500' :
-                      status === 'warning' ? 'bg-red-500' :
+                      status === WINDOW_STATUS.ACTIVE ? 'bg-green-400 dark:bg-green-600' :
+                      status === WINDOW_STATUS.APPROACHING ? 'bg-yellow-400 dark:bg-yellow-500' :
+                      status === WINDOW_STATUS.WARNING ? 'bg-red-500' :
                       'bg-gray-300 dark:bg-gray-600'
                     } flex-shrink-0`} />
                     {text.window.durationAbbr[status]}
@@ -636,7 +663,7 @@ export function ConversationsPage() {
             const windowStatus = getWindowStatus(hoursSinceInbound)
             const isStalled = c.mode === 'bot' && (minSinceInbound !== null ? minSinceInbound > 30 : minAgo > 30)
             const stalledMinutes = minSinceInbound ?? minAgo
-            const borderClass = c.waitingHuman && (windowStatus === 'active' || windowStatus === 'approaching')
+            const borderClass = c.waitingHuman && (windowStatus === WINDOW_STATUS.ACTIVE || windowStatus === WINDOW_STATUS.APPROACHING)
               ? 'border-l-4 border-l-yellow-400 animate-status-pulse-attention'
               : WINDOW_BORDER[windowStatus]
             return (
