@@ -3,7 +3,7 @@ import type { UserRepository } from '../../domain/repositories/UserRepository'
 import type { CacheProvider } from '@/shared/providers/CacheProvider'
 import { UnauthorizedError } from '@/shared/errors/AppError'
 
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET is required') })())
 const JWT_REFRESH_SECRET = new TextEncoder().encode(process.env.JWT_REFRESH_SECRET ?? 'changeme_refresh_32chars')
 const ACCESS_EXPIRES_IN = process.env.JWT_ACCESS_EXPIRES_IN ?? '9h'
 

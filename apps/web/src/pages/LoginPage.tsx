@@ -155,7 +155,7 @@ export function LoginPage() {
                     onChange={(e) => setRememberMe(e.target.checked)}
                     className="w-4 h-4 rounded border-gray-300 dark:border-gray-600 text-blue-600 focus:ring-blue-400"
                   />
-                  text.login.rememberMe
+                  {text.login.rememberMe}
                 </label>
                 <button
                   type="button"
@@ -166,7 +166,7 @@ export function LoginPage() {
                   }}
                   className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
                 >
-                  text.login.forgotPassword
+                  {text.login.forgotPassword}
                 </button>
               </div>
 
@@ -184,7 +184,7 @@ export function LoginPage() {
                 {loginLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    text.login.submitting
+                    {text.login.submitting}
                   </span>
                 ) : text.login.submit}
               </button>
@@ -200,7 +200,7 @@ export function LoginPage() {
                 className="flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 transition-colors mb-2"
               >
                 <ArrowLeft size={14} />
-                text.forgot.backToLogin
+                {text.forgot.backToLogin}
               </button>
 
                 <p className="text-sm text-gray-600 dark:text-gray-400">{text.forgot.description}</p>
@@ -240,7 +240,7 @@ export function LoginPage() {
                 {forgotLoading ? (
                   <span className="flex items-center justify-center gap-2">
                     <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    text.forgot.submitting
+                    {text.forgot.submitting}
                   </span>
                 ) : text.forgot.submit}
               </button>
@@ -252,7 +252,7 @@ export function LoginPage() {
             <div className="text-center py-4 space-y-4">
               <CheckCircle size={48} className="mx-auto text-green-500" />
               <div>
-                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">text.forgotSent.title</h2>
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">{text.forgotSent.title}</h2>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{text.forgotSent.description}</p>
               </div>
               <button
@@ -261,7 +261,7 @@ export function LoginPage() {
                 className="flex items-center gap-1.5 mx-auto text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium transition-colors"
               >
                 <ArrowLeft size={14} />
-                text.forgot.backToLogin
+                {text.forgot.backToLogin}
               </button>
             </div>
           )}

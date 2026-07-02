@@ -3,7 +3,7 @@ import type { JwtPayload } from '@/shared/types'
 import { UnauthorizedError } from '@/shared/errors/AppError'
 import type { ParsedRequest, ResponseHelper } from '@/infra/http/router'
 
-const JWT_SECRET       = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+const JWT_SECRET       = new TextEncoder().encode(process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET is required') })())
 const INTERNAL_TOKEN   = process.env.API_INTERNAL_TOKEN
 
 export async function authenticate(request: ParsedRequest, _response: ResponseHelper): Promise<void> {

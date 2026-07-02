@@ -12,7 +12,7 @@ import type { AppConfigRepository } from '@/modules/settings/infra/repositories/
 import { AppError } from '@/shared/errors/AppError'
 
 const sendSchema = z.object({ text: z.string().min(1) })
-const sendTemplateSchema = z.object({ clientName: z.string().optional() })
+const sendTemplateSchema = z.object({ clientName: z.string().optional(), templateName: z.string().optional() })
 
 const sendMediaSchema = z.object({
   base64:   z.string().min(1),
@@ -146,10 +146,11 @@ export class ConversationController {
     if (!this.waSender) { response.json({ error: 'Não configurado' }, 501); return }
     const whatsapp = request.params['whatsapp'] ?? ''
     const userId = request.user?.sub ?? ''
-    const { clientName } = validateBody(sendTemplateSchema, request.body ?? {})
+    const { clientName, templateName: overrideTemplate } = validateBody(sendTemplateSchema, request.body ?? {})
 
     const templateName =
-      (await this.configRepo?.getConfig('whatsapp_template_name'))
+      overrideTemplate
+      ?? (await this.configRepo?.getConfig('whatsapp_template_name'))
       ?? process.env.WHATSAPP_TEMPLATE_NAME
     const languageCode =
       (await this.configRepo?.getConfig('whatsapp_template_language'))

@@ -56,7 +56,7 @@ export async function createServer() {
 
   // SSE: stream ao vivo de uma conversa (Fase C). Aditivo — o painel também faz polling.
   // EventSource não envia header Authorization, então o JWT vem por query (?token=).
-  const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET ?? 'changeme_jwt_32chars')
+  const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || (() => { throw new Error('JWT_SECRET is required') })())
 
   // SSE global: notifica qualquer mudança de dados (conversas, dashboard, etc.)
   app.get('/api/events/stream', (res, req) => {
